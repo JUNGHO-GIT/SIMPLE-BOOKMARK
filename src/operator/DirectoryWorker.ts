@@ -21,8 +21,9 @@ export class DirectoryWorker {
     public async getChildren(element?: FileSystemObject): Promise<FileSystemObject[]> {
         if (element) {
             // 특정 폴더의 하위 항목을 불러올 때
-            return this.directorySearch(element.resourceUri);
-        } else {
+            return await this.directorySearch(element.resourceUri);
+        }
+        else {
             // 최상위 북마크 목록을 불러올 때
             if (this.bookmarkedDirectories.length > 0) {
                 // 북마크된 디렉토리 목록을 가져와 FileSystemObject로 변환하기 전에 정렬
@@ -62,6 +63,7 @@ export class DirectoryWorker {
     }
 
     public async removeItem(uri: vscode.Uri | undefined) {
+		console.log("removeItem called with uri:", uri?.toString());
         if (uri) {
             const typedDirectory = await buildTypedDirectory(uri);
             const index =

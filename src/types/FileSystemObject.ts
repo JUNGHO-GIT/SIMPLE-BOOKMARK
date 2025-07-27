@@ -2,13 +2,10 @@ import * as vscode from "vscode";
 import {DirectoryProviderCommands} from "../commands/CrudCommands";
 
 export class FileSystemObject extends vscode.TreeItem {
-	declare resourceUri: vscode.Uri;
-	declare command?: vscode.Command;
-
 	constructor (
 		public readonly label: string,
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-		uri: vscode.Uri
+		public uri: vscode.Uri
 	) {
 		super(label, collapsibleState);
 		this.tooltip = uri.fsPath;

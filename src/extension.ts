@@ -51,7 +51,7 @@ export function activate (context: vscode.ExtensionContext) {
 			vscode.commands.registerCommand(
 				DirectoryProviderCommands.SelectItem,
 				async (args) => {
-					let targetUri;
+					let targetUri = undefined;
 
 					// 1. context menu(폴더/파일): resourceUri/path 우선
 					if (args && args.resourceUri) {
@@ -79,8 +79,26 @@ export function activate (context: vscode.ExtensionContext) {
 			),
 			vscode.commands.registerCommand(
 				DirectoryProviderCommands.RemoveItem,
-				(args) => {
-					directoryProvider.removeItem(args.resourceUri);
+				async (file) => {
+					let targetUri: vscode.Uri | undefined = undefined;
+
+					// 1. context 메뉴 클릭 시
+					if (file?.resourceUri) {
+						targetUri = file.resourceUri;
+					}
+
+					// 2. 단축키 등 file 없음 → fallback
+					if (!targetUri) {
+						targetUri = await getExplorerSelectedResourceUri();
+					}
+
+					if (!targetUri) {
+						vscode.window.showErrorMessage("No file selected to remove.");
+						return;
+					}
+
+					console.log("RemoveItems via shortcut:", targetUri.toString());
+					await directoryProvider.removeItem(targetUri);
 				}
 			),
 			vscode.commands.registerCommand(
