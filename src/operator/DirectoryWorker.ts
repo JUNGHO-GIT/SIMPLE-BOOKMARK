@@ -7,7 +7,7 @@ export class DirectoryWorker {
     readonly vsCodeExtensionConfigurationKey: string = "JEXPLORER";
     readonly saveWorkspaceConfigurationSettingKey: string = "saveWorkspace";
     readonly storedBookmarksContextKey: string = "storedBookmarks";
-    readonly bookmarkedDirectoryContextValue: string = "directlyBookmarkedDirectory"
+    readonly bookmarkedDirectoryContextValue: string = "directlyBookmarkedDirectory";
     bookmarkedDirectories: TypedDirectory[] = [];
     saveWorkspaceSetting: boolean | undefined = false;
 
@@ -62,16 +62,17 @@ export class DirectoryWorker {
         this.saveBookmarks();
     }
 
-    public async removeItem(uri: vscode.Uri | undefined) {
-		console.log("removeItem called with uri:", uri?.toString());
-        if (uri) {
-            const typedDirectory = await buildTypedDirectory(uri);
-            const index =
-                this.bookmarkedDirectories.map(e => e.path)
-                    .indexOf(typedDirectory.path);
-            if (index > -1) {
-                this.bookmarkedDirectories.splice(index, 1);
-            }
+    public async removeItem(uri: string) {
+        const targetPath = uri.toLowerCase();
+        const index = this.bookmarkedDirectories.findIndex(bookmark => {
+            const bookmarkPath = vscode.Uri.file(bookmark.path).fsPath.toLowerCase();
+            return bookmarkPath === targetPath;
+        });
+
+        if (index > -1) {
+            this.bookmarkedDirectories.splice(index, 1);
+        } else {
+            console.warn("Bookmark not found for deletion:", targetPath);
         }
         this.saveBookmarks();
     }
@@ -127,7 +128,7 @@ export class DirectoryWorker {
                         ? vscode.TreeItemCollapsibleState.None
                         : vscode.TreeItemCollapsibleState.Collapsed,
                     file
-                ).setContextValue(this.bookmarkedDirectoryContextValue)
+				).setContextValue(this.bookmarkedDirectoryContextValue)
             );
         }
 

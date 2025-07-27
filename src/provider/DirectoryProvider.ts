@@ -32,7 +32,7 @@ export class DirectoryProvider
 	}
 
 	async removeItem (uri: vscode.Uri | undefined) {
-		await this.directoryOperator.removeItem(uri);
+		await this.directoryOperator.removeItem(uri.fsPath);
 		this.refresh();
 	}
 
