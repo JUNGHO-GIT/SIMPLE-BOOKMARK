@@ -1,0 +1,146 @@
+{
+	"name": "JEXPLORER",
+	"displayName": "JEXPLORER",
+	"publisher": "JUNGHO",
+	"icon": "logo.png",
+	"license": "Apache-2.0",
+	"version": "1.0.2",
+	"description": "Quickly access important folders and files",
+	"main": "./out/extension.js",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/JUNGHO-GIT/JEXPLORER.git"
+	},
+	"engines": {
+		"vscode": "^1.95.0",
+		"node": ">=18.0.0",
+		"npm": ">=10.0.0"
+	},
+	"activationEvents": [
+		"onCommand:explorer-bookmark.selectItem"
+	],
+	"categories": [
+		"Other"
+	],
+	"keywords": [
+		"explorer",
+		"folder",
+		"bookmark",
+		"file",
+		"focus",
+		"manager",
+		"finder",
+		"drawer"
+	],
+	"contributes": {
+		"viewsWelcome": [
+			{
+				"view": "explorer-bookmark",
+				"contents": "Right click and add a file or folder"
+			}
+		],
+		"views": {
+			"explorer": [
+				{
+					"id": "explorer-bookmark",
+					"name": "Explorer Bookmark"
+				}
+			]
+		},
+		"commands": [
+			{
+				"command": "explorer-bookmark.refreshentry",
+				"title": "Refresh",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "explorer-bookmark.selectitem",
+				"title": "Add to Explorer Bookmark"
+			},
+			{
+				"command": "explorer-bookmark.removeitem",
+				"title": "Remove from Explorer Bookmark",
+				"icon": "$(close)"
+			},
+			{
+				"command": "explorer-bookmark.removeallitems",
+				"title": "Remove All Items",
+				"icon": "$(trash)"
+			},
+			{
+				"command": "explorer-bookmark.cantremoveitem",
+				"title": "Remove from Explorer Bookmark"
+			}
+		],
+		"menus": {
+			"view/title": [
+				{
+					"command": "explorer-bookmark.refreshentry",
+					"when": "view == explorer-bookmark",
+					"group": "navigation"
+				},
+				{
+					"command": "explorer-bookmark.removeallitems",
+					"when": "view == explorer-bookmark",
+					"group": "navigation"
+				}
+			],
+			"explorer/context": [
+				{
+					"command": "explorer-bookmark.selectitem"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "explorer-bookmark.removeitem",
+					"when": "view == explorer-bookmark && viewItem == directlyBookmarkedDirectory"
+				},
+				{
+					"command": "explorer-bookmark.removeitem",
+					"when": "view == explorer-bookmark && viewItem == directlyBookmarkedDirectory",
+					"group": "inline"
+				},
+				{
+					"command": "explorer-bookmark.cantremoveitem",
+					"when": "view == explorer-bookmark && viewItem != directlyBookmarkedDirectory"
+				}
+			]
+		},
+		"configuration": {
+			"title": "Explorer Bookmark",
+			"properties": {
+				"explorer-bookmark.saveWorkspace": {
+					"type": "boolean",
+					"default": true,
+					"description": "Save the current explorer view when closing VS Code"
+				}
+			}
+		}
+	},
+	"scripts": {
+		"watch": "tsc -watch -p .",
+		"compile": "tsc -p .",
+		"vsce": "vsce package",
+		"npm-reset": "powershell -Command \"Remove-Item -Recurse -Force package-lock.json, node_modules; npm install --legacy-peer-deps;\"",
+		"gcloud": "node gcloud.cjs"
+	},
+	"dependencies": {
+		"@babel/core": "^7.26.0",
+		"glob": "^11.0.0",
+		"terser": "^5.36.0",
+		"yaml": "^2.8.0"
+	},
+	"devDependencies": {
+		"@types/glob": "^7.2.0",
+		"@types/mocha": "^8.2.3",
+		"@types/node": "^12.20.55",
+		"@types/vscode": "^1.55.0",
+		"@typescript-eslint/eslint-plugin": "^4.33.0",
+		"@typescript-eslint/parser": "^4.33.0",
+		"eslint": "^7.32.0",
+		"glob": "^7.2.3",
+		"mocha": "^10.2.0",
+		"typescript": "^4.9.5",
+		"vscode-test": "^1.6.1"
+	}
+}
