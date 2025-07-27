@@ -1,9 +1,12 @@
+// extension.ts
+
 import * as vscode from "vscode";
 import {DirectoryProvider} from "./provider/DirectoryProvider";
 import {DirectoryWorker} from "./operator/DirectoryWorker";
 import {DirectoryProviderCommands} from "./commands/CrudCommands";
 import {vsCodeCommands} from "./commands/CrudCommands";
 
+// -----------------------------------------------------------------------------------------------------------------
 export function activate (context: vscode.ExtensionContext) {
 	const directoryOperator = new DirectoryWorker(
 		context,
@@ -19,7 +22,7 @@ export function activate (context: vscode.ExtensionContext) {
 		directoryProvider
 	);
 
-    // explorer에서 선택된 리소스 URI를 강제로 감지(clipboard 사용)
+    // explorer에서 선택된 리소스 URI를 강제로 감지
     async function getExplorerSelectedResourceUri() {
         await vscode.commands.executeCommand('copyFilePath');
         const clipboard = await vscode.env.clipboard.readText();

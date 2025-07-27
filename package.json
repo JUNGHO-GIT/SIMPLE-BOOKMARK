@@ -4,7 +4,7 @@
 	"publisher": "JUNGHO",
 	"icon": "logo.png",
 	"license": "Apache-2.0",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "Quickly access important folders and files",
 	"main": "./out/extension.js",
 	"repository": {
@@ -43,7 +43,7 @@
 			"explorer": [
 				{
 					"id": "explorer-bookmark",
-					"name": "Explorer Bookmark"
+					"name": "JEXPLORER"
 				}
 			]
 		},
@@ -107,7 +107,7 @@
 			]
 		},
 		"configuration": {
-			"title": "Explorer Bookmark",
+			"title": "JEXPLORER",
 			"properties": {
 				"explorer-bookmark.saveWorkspace": {
 					"type": "boolean",
