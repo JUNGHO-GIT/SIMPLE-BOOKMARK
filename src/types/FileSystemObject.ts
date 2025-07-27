@@ -2,8 +2,8 @@ import * as vscode from "vscode";
 import {DirectoryProviderCommands} from "../commands/CrudCommands";
 
 export class FileSystemObject extends vscode.TreeItem {
-	resourceUri: vscode.Uri;
-	command?: vscode.Command;
+	declare resourceUri: vscode.Uri;
+	declare command?: vscode.Command;
 
 	constructor (
 		public readonly label: string,
