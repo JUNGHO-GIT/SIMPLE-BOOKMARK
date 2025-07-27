@@ -4,7 +4,7 @@
 	"publisher": "JUNGHO",
 	"icon": "logo.png",
 	"license": "Apache-2.0",
-	"version": "1.0.9",
+	"version": "1.1.0",
 	"description": "Quickly access important folders and files in VSCode",
 	"main": "./out/extension.js",
 	"repository": {
