@@ -3,10 +3,10 @@ export enum vsCodeCommands {
 };
 
 export enum DirectoryProviderCommands {
-	SelectItem = 'explorer-bookmark.selectitem',
-	OpenItem = 'explorer-bookmark.openitem',
-	RefreshEntry = 'explorer-bookmark.refreshentry',
-	CantRemoveItem = 'explorer-bookmark.cantremoveitem',
-	RemoveItem = 'explorer-bookmark.removeitem',
-	RemoveAllItems = 'explorer-bookmark.removeallitems',
+	SelectItem = 'JEXPLORER.selectitem',
+	OpenItem = 'JEXPLORER.openitem',
+	RefreshEntry = 'JEXPLORER.refreshentry',
+	CantRemoveItem = 'JEXPLORER.cantremoveitem',
+	RemoveItem = 'JEXPLORER.removeitem',
+	RemoveAllItems = 'JEXPLORER.removeallitems',
 };

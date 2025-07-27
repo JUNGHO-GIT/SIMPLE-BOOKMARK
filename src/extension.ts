@@ -18,7 +18,7 @@ export function activate (context: vscode.ExtensionContext) {
 	);
 
 	vscode.window.registerTreeDataProvider(
-		"explorer-bookmark",
+		"JEXPLORER",
 		directoryProvider
 	);
 

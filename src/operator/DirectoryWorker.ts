@@ -4,7 +4,7 @@ import { FileSystemObject } from "../types/FileSystemObject";
 import { TypedDirectory, buildTypedDirectory } from "../types/TypedDirectory";
 
 export class DirectoryWorker {
-    readonly vsCodeExtensionConfigurationKey: string = "explorer-bookmark";
+    readonly vsCodeExtensionConfigurationKey: string = "JEXPLORER";
     readonly saveWorkspaceConfigurationSettingKey: string = "saveWorkspace";
     readonly storedBookmarksContextKey: string = "storedBookmarks";
     readonly bookmarkedDirectoryContextValue: string = "directlyBookmarkedDirectory"

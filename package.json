@@ -17,7 +17,7 @@
 		"npm": ">=10.0.0"
 	},
 	"activationEvents": [
-		"onCommand:explorer-bookmark.selectItem"
+		"onCommand:JEXPLORER.selectItem"
 	],
 	"categories": [
 		"Other"
@@ -35,86 +35,76 @@
 	"contributes": {
 		"viewsWelcome": [
 			{
-				"view": "explorer-bookmark",
+				"view": "JEXPLORER",
 				"contents": "Right click and add a file or folder"
 			}
 		],
 		"views": {
 			"explorer": [
 				{
-					"id": "explorer-bookmark",
+					"id": "JEXPLORER",
 					"name": "JEXPLORER"
 				}
 			]
 		},
 		"commands": [
 			{
-				"command": "explorer-bookmark.refreshentry",
+				"command": "JEXPLORER.refreshentry",
 				"title": "Refresh",
 				"icon": "$(refresh)"
 			},
 			{
-				"command": "explorer-bookmark.selectitem",
+				"command": "JEXPLORER.selectitem",
 				"title": "Add to Explorer Bookmark"
 			},
 			{
-				"command": "explorer-bookmark.removeitem",
-				"title": "Remove from Explorer Bookmark",
-				"icon": "$(close)"
-			},
-			{
-				"command": "explorer-bookmark.removeallitems",
+				"command": "JEXPLORER.removeallitems",
 				"title": "Remove All Items",
 				"icon": "$(trash)"
 			},
 			{
-				"command": "explorer-bookmark.cantremoveitem",
+				"command": "JEXPLORER.removeitem",
+				"title": "Remove from Explorer Bookmark",
+				"icon": "$(close)"
+			},
+			{
+				"command": "JEXPLORER.cantremoveitem",
 				"title": "Remove from Explorer Bookmark"
 			}
 		],
 		"menus": {
 			"view/title": [
 				{
-					"command": "explorer-bookmark.refreshentry",
-					"when": "view == explorer-bookmark",
+					"command": "JEXPLORER.refreshentry",
+					"when": "view == JEXPLORER",
 					"group": "navigation"
 				},
 				{
-					"command": "explorer-bookmark.removeallitems",
-					"when": "view == explorer-bookmark",
+					"command": "JEXPLORER.removeallitems",
+					"when": "view == JEXPLORER",
 					"group": "navigation"
 				}
 			],
 			"explorer/context": [
 				{
-					"command": "explorer-bookmark.selectitem"
+					"command": "JEXPLORER.selectitem"
 				}
 			],
 			"view/item/context": [
 				{
-					"command": "explorer-bookmark.removeitem",
-					"when": "view == explorer-bookmark && viewItem == directlyBookmarkedDirectory"
+					"command": "JEXPLORER.removeitem",
+					"when": "view == JEXPLORER && viewItem == directlyBookmarkedDirectory"
 				},
 				{
-					"command": "explorer-bookmark.removeitem",
-					"when": "view == explorer-bookmark && viewItem == directlyBookmarkedDirectory",
+					"command": "JEXPLORER.removeitem",
+					"when": "view == JEXPLORER && viewItem == directlyBookmarkedDirectory",
 					"group": "inline"
 				},
 				{
-					"command": "explorer-bookmark.cantremoveitem",
-					"when": "view == explorer-bookmark && viewItem != directlyBookmarkedDirectory"
+					"command": "JEXPLORER.cantremoveitem",
+					"when":  "view == JEXPLORER && viewItem != directlyBookmarkedDirectory"
 				}
 			]
-		},
-		"configuration": {
-			"title": "JEXPLORER",
-			"properties": {
-				"explorer-bookmark.saveWorkspace": {
-					"type": "boolean",
-					"default": true,
-					"description": "Save the current explorer view when closing VS Code"
-				}
-			}
 		}
 	},
 	"scripts": {
