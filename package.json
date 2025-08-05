@@ -119,6 +119,15 @@
 				{
 					"command": "JEXPLORER.cantremoveitem",
 					"when":  "view == JEXPLORER && viewItem != directlyBookmarkedDirectory"
+				},
+				{
+					"command": "JEXPLORER.gotoitem",
+					"when": "view == JEXPLORER && viewItem == directlyBookmarkedDirectory"
+				},
+				{
+					"command": "JEXPLORER.gotoitem",
+					"when": "view == JEXPLORER && viewItem == directlyBookmarkedDirectory",
+					"group": "inline"
 				}
 			]
 		}

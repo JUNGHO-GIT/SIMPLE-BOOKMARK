@@ -1,12 +1,15 @@
-// utils.js
+// utils.ts
 
 // --------------------------------------------------------------------------------------------------------------
-export const detectFileType = (label) => {
+export const detectFileType = (label: string) => {
 	if (label.startsWith('.')) {
 		if (!label.includes('.', 1)) {
 			return true;
 		}
-		const basename = label.split('/').pop()
+		const basename = label.split('/').pop();
+		if (!basename) {
+			return true;
+		}
 		if (basename.indexOf('.') === 0 && basename.lastIndexOf('.') === 0) {
 			return false;
 		}
@@ -19,7 +22,7 @@ export const detectFileType = (label) => {
 }
 
 // --------------------------------------------------------------------------------------------------------------
-export const safeStringify = (obj) => {
+export const safeStringify = (obj: any): string => {
 	const seen = new WeakSet();
 	const result = JSON.stringify(obj, function (key, value) {
 		if (typeof value === "object" && value !== null) {

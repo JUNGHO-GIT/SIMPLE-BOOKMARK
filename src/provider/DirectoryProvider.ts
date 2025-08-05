@@ -1,7 +1,10 @@
+// DirectoryProvider.ts
+
 import * as vscode from "vscode";
 import {FileSystemObject} from "../types/FileSystemObject";
 import {DirectoryWorker} from "../operator/DirectoryWorker";
 
+// -----------------------------------------------------------------------------------------------------------------
 export class DirectoryProvider
 	implements vscode.TreeDataProvider<FileSystemObject> {
 	private _onDidChangeTreeData: vscode.EventEmitter<

@@ -1,5 +1,8 @@
+// TypedDirectory.ts
+
 import * as vscode from "vscode";
 
+// -----------------------------------------------------------------------------------------------------------------
 export class TypedDirectory {
 	path: string;
 	type: vscode.FileType;

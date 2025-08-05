@@ -1,7 +1,11 @@
+// CrudCommands.ts
+
+// -----------------------------------------------------------------------------------------------------------------
 export enum vsCodeCommands {
 	Open = 'vscode.open',
 };
 
+// -----------------------------------------------------------------------------------------------------------------
 export enum DirectoryProviderCommands {
 	SelectItem = 'JEXPLORER.selectitem',
 	OpenItem = 'JEXPLORER.openitem',

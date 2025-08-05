@@ -1,8 +1,11 @@
+// DirectoryWorker.ts
+
 import * as vscode from "vscode";
 import * as path from "path";
 import { FileSystemObject } from "../types/FileSystemObject";
 import { TypedDirectory, buildTypedDirectory } from "../types/TypedDirectory";
 
+// -----------------------------------------------------------------------------------------------------------------
 export class DirectoryWorker {
     readonly vsCodeExtensionConfigurationKey: string = "JEXPLORER";
     readonly saveWorkspaceConfigurationSettingKey: string = "saveWorkspace";
@@ -41,12 +44,14 @@ export class DirectoryWorker {
         if (element && element.resourceUri) {
             const result = await this.directorySearch(element.resourceUri);
             return result;
-        } else {
+        }
+		else {
             if (this.bookmarkedDirectories.length > 0) {
                 const sortedBookmarks = [...this.bookmarkedDirectories].sort(this.sortByDirThenExtThenName);
                 const result = await this.createEntries(sortedBookmarks);
                 return result;
-            } else {
+            }
+			else {
                 const result: FileSystemObject[] = [];
                 return result;
             }
@@ -67,12 +72,7 @@ export class DirectoryWorker {
             const bookmarkPath = vscode.Uri.file(bookmark.path).fsPath.toLowerCase();
             return bookmarkPath === targetPath;
         });
-
-        if (index > -1) {
-            this.bookmarkedDirectories.splice(index, 1);
-        } else {
-            console.warn("Bookmark not found for deletion:", targetPath);
-        }
+		this.bookmarkedDirectories.splice(index, 1);
         this.saveBookmarks();
     }
 

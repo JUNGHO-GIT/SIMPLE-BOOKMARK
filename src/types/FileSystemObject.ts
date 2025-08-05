@@ -1,6 +1,9 @@
+// FileSystemObject.ts
+
 import * as vscode from "vscode";
 import {DirectoryProviderCommands} from "../commands/CrudCommands";
 
+// -----------------------------------------------------------------------------------------------------------------
 export class FileSystemObject extends vscode.TreeItem {
 	constructor (
 		public readonly label: string,
