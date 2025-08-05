@@ -70,6 +70,11 @@
 			{
 				"command": "JEXPLORER.cantremoveitem",
 				"title": "Remove from Explorer Bookmark"
+			},
+			{
+				"command": "JEXPLORER.gotoitem",
+				"title": "Go to Item",
+				"icon": "$(go-to-file)"
 			}
 		],
 		"keybindings": [

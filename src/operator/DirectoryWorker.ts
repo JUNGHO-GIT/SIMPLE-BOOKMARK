@@ -38,18 +38,17 @@ export class DirectoryWorker {
     }
 
     public async getChildren(element?: FileSystemObject): Promise<FileSystemObject[]> {
-        if (element) {
+        if (element && element.resourceUri) {
             const result = await this.directorySearch(element.resourceUri);
-            return result
-        }
-        else {
+            return result;
+        } else {
             if (this.bookmarkedDirectories.length > 0) {
                 const sortedBookmarks = [...this.bookmarkedDirectories].sort(this.sortByDirThenExtThenName);
                 const result = await this.createEntries(sortedBookmarks);
-                return result
+                return result;
             } else {
                 const result: FileSystemObject[] = [];
-                return result
+                return result;
             }
         }
     }

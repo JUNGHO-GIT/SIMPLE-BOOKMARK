@@ -9,4 +9,5 @@ export enum DirectoryProviderCommands {
 	CantRemoveItem = 'JEXPLORER.cantremoveitem',
 	RemoveItem = 'JEXPLORER.removeitem',
 	RemoveAllItems = 'JEXPLORER.removeallitems',
+	GotoItem = 'JEXPLORER.gotoitem',
 };

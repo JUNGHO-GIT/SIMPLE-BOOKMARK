@@ -5,11 +5,11 @@ import {DirectoryWorker} from "../operator/DirectoryWorker";
 export class DirectoryProvider
 	implements vscode.TreeDataProvider<FileSystemObject> {
 	private _onDidChangeTreeData: vscode.EventEmitter<
-		FileSystemObject | undefined | null | void
-	> = new vscode.EventEmitter<FileSystemObject | undefined | null | void>();
+		FileSystemObject | undefined | null
+	> = new vscode.EventEmitter<FileSystemObject | undefined | null>();
 
 	readonly onDidChangeTreeData: vscode.Event<
-		FileSystemObject | undefined | null | void
+		FileSystemObject | undefined | null
 	> = this._onDidChangeTreeData.event;
 
 	constructor (
@@ -32,8 +32,10 @@ export class DirectoryProvider
 	}
 
 	async removeItem (uri: vscode.Uri | undefined) {
-		await this.directoryOperator.removeItem(uri.fsPath);
-		this.refresh();
+		if (uri) {
+			await this.directoryOperator.removeItem(uri.fsPath);
+			this.refresh();
+		}
 	}
 
 	removeAllItems () {
