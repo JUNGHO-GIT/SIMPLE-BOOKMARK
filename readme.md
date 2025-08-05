@@ -1,9 +1,6 @@
 # 🚀 JEXPLORER - The Ultimate BookmarkExplorer for VSCode
----
 
 ![demo](logo_demonstration.gif)
-
----
 
 ## ⚡️ Features
 
@@ -13,8 +10,6 @@
 - ***Session persistence  :*** Your bookmarks are saved automatically and restored across VS Code restarts (by default)
 - ***Bulk management  :*** Quickly reset or clear all bookmarks in a single action
 - ***Zero scroll  :*** Perfect for giant repos, monorepos, or rapid project switching
-
----
 
 ## 🖱️ Quick Actions
 
@@ -26,15 +21,11 @@
 | Refresh list                  | Click **Refresh** (🔄) in sidebar      |
 | Remove all bookmarks          | Click **RemoveAll** (🗑️) in sidebar   |
 
----
-
 ## 💡 Tips
 
 - To avoid shortcut conflicts with VS Code or other extensions
 - JEXPLORER’s shortcuts are context-aware and only active when the sidebar is visible.
 - Check your keybindings: `"when": "view.JEXPLORER.visible"`
-
----
 
 ## 🚧 Roadmap
 
@@ -44,14 +35,10 @@
 - Smart context actions (move/copy/open-in-terminal)
 - More keyboard shortcuts (configurable)
 
----
-
 ## 🛠️ Under the Hood
 
 - Built for maximum speed, clarity, and zero risk
 - Designed for large teams, polyrepo, monorepo, or any developer who hates scrolling
-
----
 
 ## 📢 Contributing
 

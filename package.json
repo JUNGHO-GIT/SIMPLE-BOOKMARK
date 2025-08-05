@@ -4,7 +4,7 @@
 	"publisher": "JUNGHO",
 	"icon": "logo_image.png",
 	"license": "Apache-2.0",
-	"version": "1.1.4",
+	"version": "1.1.6",
 	"description": "Quickly access important folders and files in VSCode",
 	"main": "./out/extension.js",
 	"repository": {
@@ -77,15 +77,6 @@
 			{
 				"key": "shift+alt+a",
 				"command": "JEXPLORER.additem"
-			},
-			{
-				"key": "shift+alt+s",
-				"command": "JEXPLORER.selectitem"
-			},
-			{
-				"key": "shift+alt+d",
-				"command": "JEXPLORER.removeitem",
-				"when": "view.JEXPLORER.visible"
 			}
 		],
 		"menus": {

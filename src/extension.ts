@@ -1,3 +1,5 @@
+// extension.ts
+
 import * as vscode from "vscode";
 import { DirectoryProvider } from "./provider/DirectoryProvider";
 import { DirectoryWorker } from "./operator/DirectoryWorker";
@@ -19,7 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
 		showCollapseAll: true,
 		canSelectMany: false
 	});
-	treeView.onDidChangeSelection(e => {
+	treeView.onDidChangeSelection(async (e) => {
 		const selection = e.selection && e.selection[0];
 		if (selection && selection.resourceUri) {
 			directoryProvider.setLastSelectedUri(selection.resourceUri);
@@ -61,7 +63,7 @@ export function activate(context: vscode.ExtensionContext) {
 		async () => directoryProvider.refresh()
 	));
 
-	// 2. 북마크 아이템 열기/선택 -----------------------------------------
+	// 2. 북마크 아이템 선택 -----------------------------------------
 	context.subscriptions.push(vscode.commands.registerCommand(
 		DirectoryProviderCommands.SelectItem,
 		async (args) => {

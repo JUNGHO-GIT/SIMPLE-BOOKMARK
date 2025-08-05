@@ -78,10 +78,33 @@ export class DirectoryWorker {
 					preview: false
 				});
 			}
+			// 1. 일반 탐색기에서 표시
 			await vscode.commands.executeCommand("revealInExplorer", uri);
+
+			// 2. 잠깐 기다렸다가 북마크 뷰로 포커스 복구 및 selection도 복원
+			setTimeout(async () => {
+				// JEXPLORER 트리뷰로 포커스
+				await vscode.commands.executeCommand("workbench.view.extension.JEXPLORER");
+				// 트리뷰의 아이템을 선택 상태로 만듦 (포커스까지)
+				const treeView = vscode.window.createTreeView("JEXPLORER", {
+					treeDataProvider: (this as any).directoryProvider,
+					showCollapseAll: true,
+					canSelectMany: false
+				});
+				treeView.reveal(
+					new FileSystemObject(
+						path.basename(uri.fsPath),
+						stat.type === vscode.FileType.File
+							? vscode.TreeItemCollapsibleState.None
+							: vscode.TreeItemCollapsibleState.Collapsed,
+						uri
+					),
+					{ select: true, focus: true }
+				);
+			}, 200);
 		}
 		catch (err) {
-			vscode.window.showErrorMessage(`파일 또는 폴더를 열 수 없습니다: ${err}`);
+			vscode.window.showErrorMessage(`could not open or reveal the item: ${err}`);
 		}
 	}
 
