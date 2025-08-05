@@ -2,9 +2,9 @@
 	"name": "JEXPLORER",
 	"displayName": "JEXPLORER",
 	"publisher": "JUNGHO",
-	"icon": "logo.png",
+	"icon": "logo_image.png",
 	"license": "Apache-2.0",
-	"version": "1.1.0",
+	"version": "1.1.4",
 	"description": "Quickly access important folders and files in VSCode",
 	"main": "./out/extension.js",
 	"repository": {
@@ -16,9 +16,6 @@
 		"node": ">=18.0.0",
 		"npm": ">=10.0.0"
 	},
-	"activationEvents": [
-		"onCommand:JEXPLORER.selectItem"
-	],
 	"categories": [
 		"Other"
 	],
@@ -55,37 +52,40 @@
 			},
 			{
 				"command": "JEXPLORER.selectitem",
-				"title": "Add to Explorer Bookmark"
+				"title": "Select/Focus"
 			},
 			{
-				"command": "JEXPLORER.removeallitems",
-				"title": "Remove All Items",
-				"icon": "$(trash)"
+				"command": "JEXPLORER.additem",
+				"title": "Add Bookmark"
 			},
 			{
 				"command": "JEXPLORER.removeitem",
-				"title": "Remove from Explorer Bookmark",
+				"title": "Remove",
 				"icon": "$(close)"
 			},
 			{
-				"command": "JEXPLORER.cantremoveitem",
-				"title": "Remove from Explorer Bookmark"
+				"command": "JEXPLORER.removeallitems",
+				"title": "Remove All",
+				"icon": "$(trash)"
 			},
 			{
-				"command": "JEXPLORER.gotoitem",
-				"title": "Go to Item",
-				"icon": "$(go-to-file)"
+				"command": "JEXPLORER.cantremoveitem",
+				"title": "Cannot Remove"
 			}
 		],
 		"keybindings": [
 			{
 				"key": "shift+alt+a",
+				"command": "JEXPLORER.additem"
+			},
+			{
+				"key": "shift+alt+s",
 				"command": "JEXPLORER.selectitem"
 			},
 			{
 				"key": "shift+alt+d",
 				"command": "JEXPLORER.removeitem",
-				"when": "JEXPLORER.active && view.JEXPLORER.visible"
+				"when": "view.JEXPLORER.visible"
 			}
 		],
 		"menus": {
@@ -103,7 +103,7 @@
 			],
 			"explorer/context": [
 				{
-					"command": "JEXPLORER.selectitem"
+					"command": "JEXPLORER.additem"
 				}
 			],
 			"view/item/context": [
@@ -119,15 +119,6 @@
 				{
 					"command": "JEXPLORER.cantremoveitem",
 					"when":  "view == JEXPLORER && viewItem != directlyBookmarkedDirectory"
-				},
-				{
-					"command": "JEXPLORER.gotoitem",
-					"when": "view == JEXPLORER && viewItem == directlyBookmarkedDirectory"
-				},
-				{
-					"command": "JEXPLORER.gotoitem",
-					"when": "view == JEXPLORER && viewItem == directlyBookmarkedDirectory",
-					"group": "inline"
 				}
 			]
 		}

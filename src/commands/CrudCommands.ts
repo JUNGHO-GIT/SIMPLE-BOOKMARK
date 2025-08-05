@@ -7,11 +7,10 @@ export enum vsCodeCommands {
 
 // -----------------------------------------------------------------------------------------------------------------
 export enum DirectoryProviderCommands {
+	AddItem = 'JEXPLORER.additem',
 	SelectItem = 'JEXPLORER.selectitem',
-	OpenItem = 'JEXPLORER.openitem',
-	RefreshEntry = 'JEXPLORER.refreshentry',
-	CantRemoveItem = 'JEXPLORER.cantremoveitem',
 	RemoveItem = 'JEXPLORER.removeitem',
 	RemoveAllItems = 'JEXPLORER.removeallitems',
-	GotoItem = 'JEXPLORER.gotoitem',
+	CantRemoveItem = 'JEXPLORER.cantremoveitem',
+	RefreshEntry = 'JEXPLORER.refreshentry'
 };

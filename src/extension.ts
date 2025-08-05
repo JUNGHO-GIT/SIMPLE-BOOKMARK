@@ -1,200 +1,127 @@
-// extension.ts
-
 import * as vscode from "vscode";
 import { DirectoryProvider } from "./provider/DirectoryProvider";
 import { DirectoryWorker } from "./operator/DirectoryWorker";
 import { DirectoryProviderCommands } from "./commands/CrudCommands";
-import { vsCodeCommands } from "./commands/CrudCommands";
 
 // -----------------------------------------------------------------------------------------------------------------
 export function activate(context: vscode.ExtensionContext) {
+
+	// 0. 디렉토리 작업자 및 제공자 생성 -----------------------------------------------------------------------
 	const directoryOperator = new DirectoryWorker(
 		context,
 		vscode.workspace.workspaceFolders
 	);
-	const directoryProvider = new DirectoryProvider(
-		directoryOperator
-	);
-	vscode.window.registerTreeDataProvider(
-		"JEXPLORER",
-		directoryProvider
-	);
+	const directoryProvider = new DirectoryProvider(directoryOperator);
 
-	// explorer에서 선택된 리소스 URI를 강제로 감지
-	async function getExplorerSelectedResourceUri() {
+	// 1. 트리뷰 생성 및 선택된 항목 기억 ------------------------------------------------------------------------
+	const treeView = vscode.window.createTreeView("JEXPLORER", {
+		treeDataProvider: directoryProvider,
+		showCollapseAll: true,
+		canSelectMany: false
+	});
+	treeView.onDidChangeSelection(e => {
+		const selection = e.selection && e.selection[0];
+		if (selection && selection.resourceUri) {
+			directoryProvider.setLastSelectedUri(selection.resourceUri);
+		}
+	});
+	context.subscriptions.push(treeView);
+	vscode.window.registerTreeDataProvider("JEXPLORER", directoryProvider);
+
+	// URI 파싱 유틸 ---------------------------------------------------
+	const resolveTargetUri = async (args: any): Promise<vscode.Uri | undefined> => {
+		if (args?.resourceUri) {
+			return args.resourceUri;
+		}
+		if (args?.path) {
+			return vscode.Uri.parse(args.path);
+		}
+		if (args?.uri) {
+			return vscode.Uri.parse(args.uri);
+		}
+		// 트리뷰에서 마지막 선택된 uri 우선 사용
+		if (directoryProvider.getLastSelectedUri()) {
+			return directoryProvider.getLastSelectedUri();
+		}
 		await vscode.commands.executeCommand('copyFilePath');
 		const clipboard = await vscode.env.clipboard.readText();
-		if (!clipboard) {
-			return undefined;
-		}
-		return vscode.Uri.file(clipboard);
-	}
 
-	// 북마크 새로고침
-	const refreshCommand = vscode.commands.registerCommand(
+		if (clipboard) {
+			return vscode.Uri.file(clipboard);
+		}
+		if (vscode.window.activeTextEditor) {
+			return vscode.window.activeTextEditor.document.uri;
+		}
+		return undefined;
+	};
+
+	// 1. 북마크 새로고침 ------------------------------------------------
+	context.subscriptions.push(vscode.commands.registerCommand(
 		DirectoryProviderCommands.RefreshEntry,
-		() => directoryProvider.refresh()
-	);
+		async () => directoryProvider.refresh()
+	));
 
-	// 북마크 파일/폴더 열기
-	const openItemCommand = vscode.commands.registerCommand(
-		DirectoryProviderCommands.OpenItem,
-		(file) => {
-			vscode.commands.executeCommand(
-				vsCodeCommands.Open,
-				vscode.Uri.parse(file.resourceUri.path)
-			);
-		}
-	);
-
-	// 북마크 추가 (컨텍스트 메뉴/단축키 등)
-	const addItemCommand = vscode.commands.registerCommand(
+	// 2. 북마크 아이템 열기/선택 -----------------------------------------
+	context.subscriptions.push(vscode.commands.registerCommand(
 		DirectoryProviderCommands.SelectItem,
 		async (args) => {
-			let targetUri: vscode.Uri | undefined = undefined;
-
-			// 1. context menu/TreeItem에서 실행
-			if (args && args.resourceUri) {
-				targetUri = args.resourceUri;
-			}
-			else if (args && args.path) {
-				targetUri = vscode.Uri.parse(args.path);
-			}
-
-			// 2. 단축키 등 직접 선택이 없을 때 clipboard fallback
+			const targetUri = await resolveTargetUri(args);
+			console.log(`[SelectItem]`, targetUri?.path);
 			if (!targetUri) {
-				targetUri = await getExplorerSelectedResourceUri();
-			}
-
-			// 3. 그래도 없으면 열린 에디터의 파일
-			if (!targetUri && vscode.window.activeTextEditor) {
-				targetUri = vscode.window.activeTextEditor.document.uri;
-			}
-
-			if (!targetUri) {
-				vscode.window.showErrorMessage("No file or folder selected in explorer or editor.");
+				vscode.window.showErrorMessage("No file or folder selected.");
 				return;
 			}
-			directoryProvider.selectItem(targetUri);
+			await directoryProvider.selectItem(targetUri);
 		}
-	);
+	));
 
-	// 북마크 삭제(컨텍스트/inline/단축키 모두)
-	const removeItemCommand = vscode.commands.registerCommand(
+	// 3. 북마크 추가 -----------------------------------------------------
+	context.subscriptions.push(vscode.commands.registerCommand(
+		DirectoryProviderCommands.AddItem,
+		async (args) => {
+			const targetUri = await resolveTargetUri(args);
+			console.log(`[AddItem]`, targetUri?.path);
+			if (!targetUri) {
+				vscode.window.showErrorMessage("No file or folder selected to add.");
+				return;
+			}
+			await directoryProvider.addItem(targetUri);
+		}
+	));
+
+	// 4. 북마크 아이템 제거 ----------------------------------------------
+	context.subscriptions.push(vscode.commands.registerCommand(
 		DirectoryProviderCommands.RemoveItem,
 		async (args) => {
-			let targetUri: vscode.Uri | undefined = undefined;
-
-			// 1. context menu/TreeItem에서 실행
-			if (args && args.resourceUri) {
-				targetUri = args.resourceUri;
-			}
-			else if (args && args.path) {
-				targetUri = vscode.Uri.parse(args.path);
-			}
-
-			// 2. 단축키 등 직접 선택이 없을 때 clipboard fallback
-			if (!targetUri) {
-				targetUri = await getExplorerSelectedResourceUri();
-			}
-
-			// 3. 그래도 없으면 열린 에디터의 파일
-			if (!targetUri && vscode.window.activeTextEditor) {
-				targetUri = vscode.window.activeTextEditor.document.uri;
-			}
-
+			const targetUri = await resolveTargetUri(args);
+			console.log(`[RemoveItem]`, targetUri?.path);
 			if (!targetUri) {
 				vscode.window.showErrorMessage("No file or folder selected to remove.");
 				return;
 			}
-			directoryProvider.removeItem(targetUri);
+			await directoryProvider.removeItem(targetUri);
 		}
-	);
+	));
 
-	// 북마크 삭제 불가
-	const cantRemoveItemCommand = vscode.commands.registerCommand(
+	// 5. 북마크 전체 삭제 -------------------------------------------------
+	context.subscriptions.push(vscode.commands.registerCommand(
+		DirectoryProviderCommands.RemoveAllItems,
+		async () => {
+			console.log(`[RemoveAllItems]`);
+			await directoryProvider.removeAllItems();
+		}
+	));
+
+	// 6. 북마크 아이템 제거 불가 ------------------------------------------
+	context.subscriptions.push(vscode.commands.registerCommand(
 		DirectoryProviderCommands.CantRemoveItem,
-		() => {
-			vscode.window.showInformationMessage(
-				"You can only remove items that were directly added to the view"
+		async () => {
+			await vscode.window.showErrorMessage(
+				"Cannot remove this item. It is either a system file or not supported."
 			);
 		}
-	);
-
-	// 북마크 전체 삭제
-	const removeAllItemsCommand = vscode.commands.registerCommand(
-		DirectoryProviderCommands.RemoveAllItems,
-		() => directoryProvider.removeAllItems()
-	);
-
-	// 실제 파일로 이동 및 포커스
-	const gotoItemCommand = vscode.commands.registerCommand(
-		DirectoryProviderCommands.GotoItem,
-		async (args) => {
-			let targetUri: vscode.Uri | undefined = undefined;
-
-			// 1. context menu/TreeItem에서 실행
-			if (args && args.resourceUri) {
-				targetUri = args.resourceUri;
-			}
-			else if (args && args.path) {
-				targetUri = vscode.Uri.parse(args.path);
-			}
-
-			// 2. 단축키 등 직접 선택이 없을 때 clipboard fallback
-			if (!targetUri) {
-				targetUri = await getExplorerSelectedResourceUri();
-			}
-
-			// 3. 그래도 없으면 열린 에디터의 파일
-			if (!targetUri && vscode.window.activeTextEditor) {
-				targetUri = vscode.window.activeTextEditor.document.uri;
-			}
-
-			if (!targetUri) {
-				vscode.window.showErrorMessage("No file or folder selected to go to.");
-				return;
-			}
-
-			// 4. 에디터에서 파일 열기
-			const document = await vscode.workspace.openTextDocument(targetUri);
-			await vscode.window.showTextDocument(document, {
-				preserveFocus: true,
-				viewColumn: vscode.ViewColumn.One,
-				preview: false
-			});
-
-			// 5. 실제 파일 탐색기에서 클릭한 것처럼 선택/포커스 이동
-			await vscode.commands.executeCommand("revealInExplorer", targetUri);
-
-			// 6. (선택) 커스텀 TreeView(JEXPLORER)에서도 선택 상태 동기화
-			const treeView = vscode.window.createTreeView("JEXPLORER", {
-				treeDataProvider: directoryProvider
-			});
-			const allItems = await directoryProvider.getChildren();
-			const targetItem = allItems.find(item => item.resourceUri?.toString() === targetUri.toString());
-			if (targetItem) {
-				treeView.reveal(targetItem, { select: true, focus: true });
-			}
-		}
-	);
-
-
-	// 이벤트 리스너 등록
-	directoryProvider.onDidChangeTreeData(() => {
-		directoryProvider.refresh();
-	});
-
-	// 명령어 등록
-	context.subscriptions.push(
-		refreshCommand,
-		openItemCommand,
-		addItemCommand,
-		removeItemCommand,
-		cantRemoveItemCommand,
-		removeAllItemsCommand,
-		gotoItemCommand
-	);
+	));
 }
 
+// -----------------------------------------------------------------------------------------------------------------
 export function deactivate() {}

@@ -7,66 +7,98 @@ import { TypedDirectory, buildTypedDirectory } from "../types/TypedDirectory";
 
 // -----------------------------------------------------------------------------------------------------------------
 export class DirectoryWorker {
-    readonly vsCodeExtensionConfigurationKey: string = "JEXPLORER";
-    readonly saveWorkspaceConfigurationSettingKey: string = "saveWorkspace";
-    readonly storedBookmarksContextKey: string = "storedBookmarks";
-    readonly bookmarkedDirectoryContextValue: string = "directlyBookmarkedDirectory";
-    bookmarkedDirectories: TypedDirectory[] = [];
-    saveWorkspaceSetting: boolean | undefined = false;
 
-    constructor(
-        private extensionContext: vscode.ExtensionContext,
-        private workspaceRoot: readonly vscode.WorkspaceFolder[] | undefined
-    ) {
-        this.hydrateState();
-    }
+	// 0. 상수 및 상태 변수 ----------------------------------------------------------------------------------------
+	readonly vsCodeExtensionConfigurationKey: string = "JEXPLORER";
+	readonly saveWorkspaceConfigurationSettingKey: string = "saveWorkspace";
+	readonly storedBookmarksContextKey: string = "storedBookmarks";
+	readonly bookmarkedDirectoryContextValue: string = "directlyBookmarkedDirectory";
+	bookmarkedDirectories: TypedDirectory[] = [];
+	saveWorkspaceSetting: boolean | undefined = false;
 
-    // 폴더 우선, 파일은 확장자 → 이름 순 정렬 함수
-    private sortByDirThenExtThenName(a: { type: number; path: string }, b: { type: number; path: string }): number {
-        if (a.type === vscode.FileType.Directory && b.type !== vscode.FileType.Directory) {
-            return -1;
-        }
-        if (a.type !== vscode.FileType.Directory && b.type === vscode.FileType.Directory) {
-            return 1;
-        }
-        if (a.type === vscode.FileType.File && b.type === vscode.FileType.File) {
-            const extA = path.extname(a.path).toLowerCase();
-            const extB = path.extname(b.path).toLowerCase();
-            if (extA !== extB) {
-                return extA.localeCompare(extB);
-            }
-            return path.basename(a.path).localeCompare(path.basename(b.path));
-        }
-        return path.basename(a.path).localeCompare(path.basename(b.path));
-    }
+	// 0. 생성자 --------------------------------------------------------------------------------------------------
+	constructor(
+		private extensionContext: vscode.ExtensionContext,
+		private workspaceRoot: readonly vscode.WorkspaceFolder[] | undefined
+	) {
+		this.hydrateState();
+	}
 
-    public async getChildren(element?: FileSystemObject): Promise<FileSystemObject[]> {
-        if (element && element.resourceUri) {
-            const result = await this.directorySearch(element.resourceUri);
-            return result;
-        }
+	// 1. 북마크된 디렉토리 가져오기 -------------------------------------------------------------------------------
+	private sortByDirThenExtThenName(a: { type: number; path: string }, b: { type: number; path: string }): number {
+		if (a.type === vscode.FileType.Directory && b.type !== vscode.FileType.Directory) {
+			return -1;
+		}
+		if (a.type !== vscode.FileType.Directory && b.type === vscode.FileType.Directory) {
+			return 1;
+		}
+		if (a.type === vscode.FileType.File && b.type === vscode.FileType.File) {
+			const extA = path.extname(a.path).toLowerCase();
+			const extB = path.extname(b.path).toLowerCase();
+			if (extA !== extB) {
+				return extA.localeCompare(extB);
+			}
+			return path.basename(a.path).localeCompare(path.basename(b.path));
+		}
+		return path.basename(a.path).localeCompare(path.basename(b.path));
+	}
+
+	// 2. 자식 요소 가져오기 ----------------------------------------------------------------------------------------
+	public async getChildren(element?: FileSystemObject): Promise<FileSystemObject[]> {
+		if (element && element.resourceUri) {
+			const result = await this.directorySearch(element.resourceUri);
+			return result;
+		}
 		else {
-            if (this.bookmarkedDirectories.length > 0) {
-                const sortedBookmarks = [...this.bookmarkedDirectories].sort(this.sortByDirThenExtThenName);
-                const result = await this.createEntries(sortedBookmarks);
-                return result;
-            }
+			if (this.bookmarkedDirectories.length > 0) {
+				const sortedBookmarks = [...this.bookmarkedDirectories].sort(this.sortByDirThenExtThenName);
+				const result = await this.createEntries(sortedBookmarks);
+				return result;
+			}
 			else {
-                const result: FileSystemObject[] = [];
-                return result;
-            }
-        }
-    }
+				const result: FileSystemObject[] = [];
+				return result;
+			}
+		}
+	}
 
-    public async selectItem(uri: vscode.Uri | undefined) {
-        if (uri) {
-            this.bookmarkedDirectories.push(await buildTypedDirectory(uri));
-        }
-        this.bookmarkedDirectories.sort(this.sortByDirThenExtThenName);
-        this.saveBookmarks();
-    }
+	// 3. 아이템 열기/선택 -----------------------------------------------------------------------------------
+	public async openOrReveal(uri: vscode.Uri | undefined) {
+		if (!uri) {
+			return;
+		}
+		try {
+			const stat = await vscode.workspace.fs.stat(uri);
 
-    public async removeItem(uri: string) {
+			if (stat.type === vscode.FileType.File) {
+				const document = await vscode.workspace.openTextDocument(uri);
+				await vscode.window.showTextDocument(document, {
+					preserveFocus: false,
+					viewColumn: vscode.ViewColumn.Active,
+					preview: false
+				});
+			}
+			await vscode.commands.executeCommand("revealInExplorer", uri);
+		}
+		catch (err) {
+			vscode.window.showErrorMessage(`파일 또는 폴더를 열 수 없습니다: ${err}`);
+		}
+	}
+
+	// 4. 아이템 추가 -----------------------------------------------------------------------------------------------
+	public async addItem(uri: vscode.Uri | undefined) {
+		if (uri) {
+			const already = this.bookmarkedDirectories.find(b => vscode.Uri.file(b.path).fsPath.toLowerCase() === uri.fsPath.toLowerCase());
+			if (!already) {
+				this.bookmarkedDirectories.push(await buildTypedDirectory(uri));
+				this.bookmarkedDirectories.sort(this.sortByDirThenExtThenName);
+				this.saveBookmarks();
+			}
+		}
+	}
+
+	// 5. 아이템 제거 -----------------------------------------------------------------------------------------------
+	public async removeItem(uri: string) {
         const targetPath = uri.toLowerCase();
         const index = this.bookmarkedDirectories.findIndex(bookmark => {
             const bookmarkPath = vscode.Uri.file(bookmark.path).fsPath.toLowerCase();
@@ -74,17 +106,18 @@ export class DirectoryWorker {
         });
 		this.bookmarkedDirectories.splice(index, 1);
         this.saveBookmarks();
-    }
+	}
 
-    public removeAllItems() {
-        this.bookmarkedDirectories = [];
-        this.saveBookmarks();
-    }
+	// 6. 모든 아이템 제거 ------------------------------------------------------------------------------------------
+	public async removeAllItems() {
+		this.bookmarkedDirectories = [];
+		this.saveBookmarks();
+	}
 
-    private async directorySearch(uri: vscode.Uri) {
-        const entries = await vscode.workspace.fs.readDirectory(uri);
-        const result = entries.sort((a, b) => {
-			// 폴더 우선
+	// 7. 디렉토리 검색 -------------------------------------------------------------------------------------------
+	private async directorySearch(uri: vscode.Uri) {
+		const entries = await vscode.workspace.fs.readDirectory(uri);
+		const result = entries.sort((a, b) => {
 			const isADir = a[1] === vscode.FileType.Directory;
 			const isBDir = b[1] === vscode.FileType.Directory;
 			if (isADir && !isBDir) {
@@ -93,7 +126,6 @@ export class DirectoryWorker {
 			if (!isADir && isBDir) {
 				return 1;
 			}
-			// 둘 다 파일이면 확장자 > 이름
 			if (!isADir && !isBDir) {
 				const extA = path.extname(a[0]).toLowerCase();
 				const extB = path.extname(b[0]).toLowerCase();
@@ -102,7 +134,6 @@ export class DirectoryWorker {
 				}
 				return a[0].localeCompare(b[0]);
 			}
-			// 둘 다 폴더면 이름
 			return a[0].localeCompare(b[0]);
 		})
 		.map((item) => {
@@ -118,52 +149,55 @@ export class DirectoryWorker {
 				vscode.Uri.file(`${uri.path}/${name}`)
 			);
 		});
-        return result
-    }
+		return result
+	}
 
-    private async createEntries(bookmarkedDirectories: TypedDirectory[]) {
-        let fileSystem: FileSystemObject[] = [];
-        for (const dir of bookmarkedDirectories) {
-            const { path: filePath, type: type } = dir;
-            const file = vscode.Uri.file(filePath);
-            fileSystem.push(
-                new FileSystemObject(
-                    `${path.basename(dir.path)}`,
-                    type === vscode.FileType.File
-                        ? vscode.TreeItemCollapsibleState.None
-                        : vscode.TreeItemCollapsibleState.Collapsed,
-                    file
-                ).setContextValue(this.bookmarkedDirectoryContextValue)
-            );
-        }
-        const result = fileSystem
-        return result
-    }
+	// 8. 북마크된 디렉토리 엔트리 생성 ---------------------------------------------------------------------------
+	private async createEntries(bookmarkedDirectories: TypedDirectory[]) {
+		let fileSystem: FileSystemObject[] = [];
+		for (const dir of bookmarkedDirectories) {
+			const { path: filePath, type: type } = dir;
+			const file = vscode.Uri.file(filePath);
+			fileSystem.push(
+				new FileSystemObject(
+					`${path.basename(dir.path)}`,
+					type === vscode.FileType.File
+						? vscode.TreeItemCollapsibleState.None
+						: vscode.TreeItemCollapsibleState.Collapsed,
+					file
+				).setContextValue(this.bookmarkedDirectoryContextValue)
+			);
+		}
+		const result = fileSystem
+		return result
+	}
 
-    private hydrateState(): void {
-        this.saveWorkspaceSetting = vscode.workspace
-		.getConfiguration(this.vsCodeExtensionConfigurationKey)
-		.get(this.saveWorkspaceConfigurationSettingKey);
+	// 9. 상태 초기화 ---------------------------------------------------------------------------------------------
+	private async hydrateState(): Promise<void> {
+		this.saveWorkspaceSetting = vscode.workspace
+			.getConfiguration(this.vsCodeExtensionConfigurationKey)
+			.get(this.saveWorkspaceConfigurationSettingKey);
 
-        const stored = (
+		const stored = (
 			this.workspaceRoot
-            ? this.extensionContext.workspaceState.get<TypedDirectory[]>(this.storedBookmarksContextKey)
-            : this.extensionContext.globalState.get<TypedDirectory[]>(this.storedBookmarksContextKey)
+				? this.extensionContext.workspaceState.get<TypedDirectory[]>(this.storedBookmarksContextKey)
+				: this.extensionContext.globalState.get<TypedDirectory[]>(this.storedBookmarksContextKey)
 		) || [];
 
-        const result = stored.sort(this.sortByDirThenExtThenName)
-        this.bookmarkedDirectories = result
-    }
+		const result = stored.sort(this.sortByDirThenExtThenName)
+		this.bookmarkedDirectories = result
+	}
 
-    private saveBookmarks() {
-        this.workspaceRoot
-		? this.extensionContext.workspaceState.update(
-			this.storedBookmarksContextKey,
-			this.bookmarkedDirectories
-		)
-		: this.extensionContext.globalState.update(
-			this.storedBookmarksContextKey,
-			this.bookmarkedDirectories
-		);
-    }
+	// 10. 북마크 저장 ---------------------------------------------------------------------------------------------
+	private async saveBookmarks() {
+		this.workspaceRoot
+			? await this.extensionContext.workspaceState.update(
+				this.storedBookmarksContextKey,
+				this.bookmarkedDirectories
+			)
+			: await this.extensionContext.globalState.update(
+				this.storedBookmarksContextKey,
+				this.bookmarkedDirectories
+			);
+	}
 }
