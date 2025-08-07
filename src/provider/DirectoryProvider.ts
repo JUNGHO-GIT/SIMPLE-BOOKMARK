@@ -1,5 +1,6 @@
+// DirectoryProvider.ts
+
 import * as vscode from "vscode";
-import * as util from "util";
 import { FileSystemObject } from "../types/FileSystemObject";
 import { DirectoryWorker } from "../operator/DirectoryWorker";
 
@@ -14,6 +15,7 @@ export class DirectoryProvider implements vscode.TreeDataProvider<FileSystemObje
 	readonly onDidChangeTreeData: vscode.Event<
 		FileSystemObject | undefined | null
 	> = this._onDidChangeTreeData.event;
+
 
 	// ★ 트리뷰 마지막 선택된 uri 기억용 변수 -----------------------------------------------------------
 	private lastSelectedUri: vscode.Uri | undefined = undefined;
