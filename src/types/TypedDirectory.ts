@@ -3,20 +3,32 @@
 import * as vscode from "vscode";
 
 // -----------------------------------------------------------------------------------------------------------------
-export class TypedDirectory {
+export type TypedDirectoryType = {
 	path: string;
 	type: vscode.FileType;
+};
 
-	constructor (
-		path: string,
-		type: vscode.FileType
-	) {
-		this.path = path;
-		this.type = type;
-	}
-}
+// -----------------------------------------------------------------------------------------------------------------
+export const TypedDirectory = (
+	path: string,
+	type: vscode.FileType
+) => ({
+	path,
+	type
+});
 
-export async function buildTypedDirectory (uri: vscode.Uri) {
+// -----------------------------------------------------------------------------------------------------------------
+export const buildTypedDirectory = async (
+	uri: vscode.Uri
+): Promise<TypedDirectoryType> => {
+
+	// 파일 시스템 상태 가져오기
 	const type = (await vscode.workspace.fs.stat(uri)).type;
-	return new TypedDirectory(uri.path, type);
-}
+
+	const finalResult = TypedDirectory(
+		uri.fsPath,
+		type
+	);
+
+	return finalResult;
+};

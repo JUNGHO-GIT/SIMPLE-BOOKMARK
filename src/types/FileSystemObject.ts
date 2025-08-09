@@ -1,26 +1,44 @@
 // FileSystemObject.ts
 
 import * as vscode from "vscode";
-import {DirectoryProviderCommands} from "../commands/CrudCommands";
+import { DirectoryProviderCommands } from "../commands/CrudCommands";
 
 // -----------------------------------------------------------------------------------------------------------------
-export class FileSystemObject extends vscode.TreeItem {
-	constructor (
-		public readonly label: string,
-		public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-		public uri: vscode.Uri
-	) {
-		super(label, collapsibleState);
-		this.tooltip = uri.fsPath;
-		this.resourceUri = uri;
-		this.command = collapsibleState === vscode.TreeItemCollapsibleState.None ? {
-			arguments: [this],
+export type FileSystemObjectType = vscode.TreeItem & {
+	resourceUri?: vscode.Uri;
+	contextValue?: string;
+};
+
+// -----------------------------------------------------------------------------------------------------------------
+// 파일 시스템 객체 생성
+export const FileSystemObject = (
+	label: string,
+	collapsibleState: vscode.TreeItemCollapsibleState,
+	uri: vscode.Uri
+): FileSystemObjectType => {
+
+	const item = new vscode.TreeItem(label, collapsibleState);
+	item.tooltip = uri.fsPath;
+	item.resourceUri = uri;
+
+	// 명령어 설정
+	if (collapsibleState === vscode.TreeItemCollapsibleState.None) {
+		item.command = {
+			arguments: [item],
 			command: DirectoryProviderCommands.SelectItem,
-			title: this.label,
-		} : undefined;
+			title: label,
+		};
 	}
-	setContextValue (value: string) {
-		this.contextValue = value;
-		return this;
-	}
-}
+
+	return item;
+};
+
+// -----------------------------------------------------------------------------------------------------------------
+// contextValue 설정 함수
+export const setContextValue = (
+	item: FileSystemObjectType,
+	value: string
+): FileSystemObjectType => {
+	item.contextValue = value;
+	return item;
+};

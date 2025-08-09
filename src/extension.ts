@@ -5,15 +5,19 @@ import { DirectoryProvider } from "./provider/DirectoryProvider";
 import { DirectoryWorker } from "./operator/DirectoryWorker";
 import { DirectoryProviderCommands } from "./commands/CrudCommands";
 
-// -----------------------------------------------------------------------------------------------------------------
-export function activate(context: vscode.ExtensionContext) {
+// ------------------------------------------------------------------------------------------------------------
+export const deactivate = () => {};
+export const activate = (context: vscode.ExtensionContext) => {
 
 	// 0. 디렉토리 작업자 및 제공자 생성 -----------------------------------------------------------------------
-	const directoryOperator = new DirectoryWorker(
+	const directoryOperator = DirectoryWorker(
 		context,
 		vscode.workspace.workspaceFolders
 	);
-	const directoryProvider = new DirectoryProvider(directoryOperator);
+	const directoryProvider = DirectoryProvider(directoryOperator);
+	if (directoryOperator.setDirectoryProvider) {
+		directoryOperator.setDirectoryProvider(directoryProvider);
+	}
 
 	// 1. 트리뷰 생성 및 선택된 항목 기억 ------------------------------------------------------------------------
 	const treeView = vscode.window.createTreeView("JEXPLORER", {
@@ -23,107 +27,137 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	treeView.onDidChangeSelection(async (e) => {
 		const selection = e.selection && e.selection[0];
-		if (selection && selection.resourceUri) {
+		if (selection?.resourceUri) {
 			directoryProvider.setLastSelectedUri(selection.resourceUri);
 		}
 	});
 	context.subscriptions.push(treeView);
 	vscode.window.registerTreeDataProvider("JEXPLORER", directoryProvider);
 
-	// URI 파싱 유틸 ---------------------------------------------------
+	// URI 파싱 유틸 (경로 형식 통일) ----------------------------------------------------------------------------
 	const resolveTargetUri = async (args: any): Promise<vscode.Uri | undefined> => {
-		if (args?.resourceUri) {
-			return args.resourceUri;
-		}
-		if (args?.path) {
-			return vscode.Uri.parse(args.path);
-		}
-		if (args?.uri) {
-			return vscode.Uri.parse(args.uri);
-		}
-		// 트리뷰에서 마지막 선택된 uri 우선 사용
-		if (directoryProvider.getLastSelectedUri()) {
-			return directoryProvider.getLastSelectedUri();
-		}
-		await vscode.commands.executeCommand('copyFilePath');
-		const clipboard = await vscode.env.clipboard.readText();
+		let target: vscode.Uri | undefined;
 
-		if (clipboard) {
-			return vscode.Uri.file(clipboard);
+		if (args?.resourceUri) {
+			target = args.resourceUri;
 		}
-		if (vscode.window.activeTextEditor) {
-			return vscode.window.activeTextEditor.document.uri;
+		else if (args?.path) {
+			target = vscode.Uri.parse(args.path);
 		}
-		return undefined;
+		else if (args?.uri) {
+			target = vscode.Uri.parse(args.uri);
+		}
+		else if (directoryProvider.getLastSelectedUri()) {
+			target = directoryProvider.getLastSelectedUri();
+		}
+		else {
+			// 클립보드에서 경로 가져오기
+			await vscode.commands.executeCommand("copyFilePath");
+			const clipboard = await vscode.env.clipboard.readText();
+			if (clipboard) {
+				target = vscode.Uri.file(clipboard);
+			}
+			else if (vscode.window.activeTextEditor) {
+				target = vscode.window.activeTextEditor.document.uri;
+			}
+		}
+
+		// 경로 형식 통일
+		return target ? vscode.Uri.file(target.fsPath) : undefined;
 	};
 
-	// 1. 북마크 새로고침 ------------------------------------------------
+	// 1. 북마크 새로고침 ---------------------------------------------------------------------------------------
 	context.subscriptions.push(vscode.commands.registerCommand(
 		DirectoryProviderCommands.RefreshEntry,
-		async () => directoryProvider.refresh()
+		async () => {
+			console.debug(`extension: [RefreshEntry]`);
+			await directoryProvider.refresh();
+		}
 	));
 
-	// 2. 북마크 아이템 선택 -----------------------------------------
+	// 2. 북마크 아이템 선택 ------------------------------------------------------------------------------------
 	context.subscriptions.push(vscode.commands.registerCommand(
 		DirectoryProviderCommands.SelectItem,
 		async (args) => {
 			const targetUri = await resolveTargetUri(args);
-			console.log(`[SelectItem]`, targetUri?.path);
-			if (!targetUri) {
+			console.debug(`[SelectItem]`, JSON.stringify(targetUri?.fsPath, null, 2));
+
+			if (targetUri) {
+				await directoryProvider.selectItem(targetUri?.fsPath);
+			}
+			else {
 				vscode.window.showErrorMessage("No file or folder selected.");
 				return;
 			}
-			await directoryProvider.selectItem(targetUri);
 		}
 	));
 
-	// 3. 북마크 추가 -----------------------------------------------------
+	// 3. 북마크 추가 --------------------------------------------------------------------------------------------
 	context.subscriptions.push(vscode.commands.registerCommand(
 		DirectoryProviderCommands.AddItem,
 		async (args) => {
 			const targetUri = await resolveTargetUri(args);
-			console.log(`[AddItem]`, targetUri?.path);
-			if (!targetUri) {
+			console.debug(`extension: [AddItem]`, JSON.stringify(targetUri?.fsPath, null, 2));
+
+			if (targetUri) {
+				await directoryProvider.addItem(targetUri?.fsPath);
+			}
+			else {
 				vscode.window.showErrorMessage("No file or folder selected to add.");
 				return;
 			}
-			await directoryProvider.addItem(targetUri);
 		}
 	));
 
-	// 4. 북마크 아이템 제거 ----------------------------------------------
+	// 4. 북마크 선택 제거 --------------------------------------------------------------------------------------
 	context.subscriptions.push(vscode.commands.registerCommand(
 		DirectoryProviderCommands.RemoveItem,
 		async (args) => {
 			const targetUri = await resolveTargetUri(args);
-			console.log(`[RemoveItem]`, targetUri?.path);
-			if (!targetUri) {
+			console.debug(`extension: [RemoveItem]`, JSON.stringify(targetUri?.fsPath, null, 2));
+
+			if (targetUri) {
+				await directoryProvider.removeItem(targetUri?.fsPath);
+			}
+			else {
 				vscode.window.showErrorMessage("No file or folder selected to remove.");
 				return;
 			}
-			await directoryProvider.removeItem(targetUri);
 		}
 	));
 
-	// 5. 북마크 전체 삭제 -------------------------------------------------
+	// 5. 북마크 전체 삭제 ----------------------------------------------------------------------------------------
 	context.subscriptions.push(vscode.commands.registerCommand(
 		DirectoryProviderCommands.RemoveAllItems,
 		async () => {
-			console.log(`[RemoveAllItems]`);
-			await directoryProvider.removeAllItems();
+			const bookmarkLength = directoryOperator.bookmarkedDirectories.length;
+			console.debug(`extension: [RemoveAllItems]`, bookmarkLength);
+
+			if (bookmarkLength > 0) {
+				await directoryProvider.removeAllItems();
+			}
+			else {
+				vscode.window.showErrorMessage("No bookmarks to remove.");
+				return;
+			}
 		}
 	));
 
-	// 6. 북마크 아이템 제거 불가 ------------------------------------------
+	// 6. 북마크 아이템 제거 불가 ---------------------------------------------------------------------------------
 	context.subscriptions.push(vscode.commands.registerCommand(
 		DirectoryProviderCommands.CantRemoveItem,
 		async () => {
-			await vscode.window.showErrorMessage(
-				"Cannot remove this item. It is either a system file or not supported."
-			);
+
+			const bookmarkLength = directoryOperator.bookmarkedDirectories.length;
+			console.debug(`extension: [CantRemoveItem]`, bookmarkLength);
+
+			if (bookmarkLength > 0) {
+				vscode.window.showErrorMessage("Cannot remove this item from bookmarks.");
+			}
+			else {
+				vscode.window.showErrorMessage("No bookmarks to prevent removal.");
+				return;
+			}
 		}
 	));
-}
-
-// -----------------------------------------------------------------------------------------------------------------
-export function deactivate() {}
+};
