@@ -4,8 +4,8 @@
 	"publisher": "JUNGHO",
 	"icon": "logo_image.png",
 	"license": "Apache-2.0",
-	"version": "1.1.8",
-	"description": "Quickly access important folders and files in VSCode",
+	"version": "1.2.0",
+	"description": "Quickly access important folders and files in VSCode with copy/paste support",
 	"main": "./out/extension.js",
 	"repository": {
 		"type": "git",
@@ -27,7 +27,21 @@
 		"focus",
 		"manager",
 		"finder",
-		"drawer"
+		"drawer",
+		"copy",
+		"paste",
+		"sync"
+	],
+	"activationEvents": [
+		"onView:JEXPLORER",
+		"onCommand:JEXPLORER.refreshentry",
+		"onCommand:JEXPLORER.selectitem",
+		"onCommand:JEXPLORER.additem",
+		"onCommand:JEXPLORER.removeitem",
+		"onCommand:JEXPLORER.removeallitems",
+		"onCommand:JEXPLORER.cantremoveitem",
+		"onCommand:JEXPLORER.copyitem",
+		"onCommand:JEXPLORER.pasteitem"
 	],
 	"contributes": {
 		"views": {
@@ -51,27 +65,74 @@
 			},
 			{
 				"command": "JEXPLORER.additem",
-				"title": "Add Bookmark"
+				"title": "Add Bookmark",
+				"icon": "$(add)"
 			},
 			{
 				"command": "JEXPLORER.removeitem",
-				"title": "Remove",
+				"title": "Remove from Bookmarks",
 				"icon": "$(close)"
 			},
 			{
 				"command": "JEXPLORER.removeallitems",
-				"title": "Remove All",
+				"title": "Remove All Bookmarks",
 				"icon": "$(trash)"
 			},
 			{
 				"command": "JEXPLORER.cantremoveitem",
 				"title": "Cannot Remove"
+			},
+			{
+				"command": "JEXPLORER.copyitem",
+				"title": "Copy",
+				"icon": "$(files)"
+			},
+			{
+				"command": "JEXPLORER.pasteitem",
+				"title": "Paste",
+				"icon": "$(paste)"
 			}
 		],
 		"keybindings": [
 			{
 				"key": "shift+alt+a",
-				"command": "JEXPLORER.additem"
+				"command": "JEXPLORER.additem",
+				"when": "focusedView == JEXPLORER"
+			},
+			{
+				"key": "shift+alt+a",
+				"command": "JEXPLORER.additem",
+				"when": "explorerViewletVisible && filesExplorerFocus"
+			},
+			{
+				"key": "ctrl+c",
+				"command": "JEXPLORER.copyitem",
+				"when": "focusedView == JEXPLORER"
+			},
+			{
+				"key": "cmd+c",
+				"command": "JEXPLORER.copyitem",
+				"when": "focusedView == JEXPLORER && isMac"
+			},
+			{
+				"key": "ctrl+v",
+				"command": "JEXPLORER.pasteitem",
+				"when": "focusedView == JEXPLORER"
+			},
+			{
+				"key": "cmd+v",
+				"command": "JEXPLORER.pasteitem",
+				"when": "focusedView == JEXPLORER && isMac"
+			},
+			{
+				"key": "delete",
+				"command": "JEXPLORER.removeitem",
+				"when": "focusedView == JEXPLORER"
+			},
+			{
+				"key": "enter",
+				"command": "JEXPLORER.selectitem",
+				"when": "focusedView == JEXPLORER"
 			}
 		],
 		"menus": {
@@ -79,23 +140,40 @@
 				{
 					"command": "JEXPLORER.refreshentry",
 					"when": "view == JEXPLORER",
-					"group": "navigation"
+					"group": "navigation@1"
 				},
 				{
 					"command": "JEXPLORER.removeallitems",
 					"when": "view == JEXPLORER",
-					"group": "navigation"
+					"group": "navigation@2"
 				}
 			],
 			"explorer/context": [
 				{
-					"command": "JEXPLORER.additem"
+					"command": "JEXPLORER.additem",
+					"group": "2_workspace@1"
 				}
 			],
 			"view/item/context": [
 				{
+					"command": "JEXPLORER.selectitem",
+					"when": "view == JEXPLORER",
+					"group": "1_modification@1"
+				},
+				{
+					"command": "JEXPLORER.copyitem",
+					"when": "view == JEXPLORER",
+					"group": "1_modification@2"
+				},
+				{
+					"command": "JEXPLORER.pasteitem",
+					"when": "view == JEXPLORER",
+					"group": "1_modification@3"
+				},
+				{
 					"command": "JEXPLORER.removeitem",
-					"when": "view == JEXPLORER && viewItem == directlyBookmarkedDirectory"
+					"when": "view == JEXPLORER && viewItem == directlyBookmarkedDirectory",
+					"group": "2_workspace@1"
 				},
 				{
 					"command": "JEXPLORER.removeitem",
@@ -104,9 +182,25 @@
 				},
 				{
 					"command": "JEXPLORER.cantremoveitem",
-					"when": "view == JEXPLORER && viewItem != directlyBookmarkedDirectory"
+					"when": "view == JEXPLORER && viewItem != directlyBookmarkedDirectory",
+					"group": "2_workspace@2"
 				}
 			]
+		},
+		"configuration": {
+			"title": "JEXPLORER",
+			"properties": {
+				"JEXPLORER.saveWorkspace": {
+					"type": "boolean",
+					"default": false,
+					"description": "Save bookmarks per workspace"
+				},
+				"JEXPLORER.autoSync": {
+					"type": "boolean",
+					"default": true,
+					"description": "Automatically sync with file system changes"
+				}
+			}
 		}
 	},
 	"scripts": {

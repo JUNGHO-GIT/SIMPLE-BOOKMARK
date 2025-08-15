@@ -1,5 +1,3 @@
-// FileSystemObject.ts
-
 import * as vscode from "vscode";
 import { DirectoryProviderCommands } from "../commands/CrudCommands";
 
@@ -11,34 +9,39 @@ export type FileSystemObjectType = vscode.TreeItem & {
 
 // -----------------------------------------------------------------------------------------------------------------
 // 파일 시스템 객체 생성
-export const FileSystemObject = (
+export function FileSystemObject(
 	label: string,
 	collapsibleState: vscode.TreeItemCollapsibleState,
 	uri: vscode.Uri
-): FileSystemObjectType => {
+): FileSystemObjectType {
 
 	const item = new vscode.TreeItem(label, collapsibleState);
 	item.tooltip = uri.fsPath;
 	item.resourceUri = uri;
 
-	// 명령어 설정
-	if (collapsibleState === vscode.TreeItemCollapsibleState.None) {
-		item.command = {
-			arguments: [item],
-			command: DirectoryProviderCommands.SelectItem,
-			title: label,
-		};
+	// 아이콘 설정 (폴더/파일 구분)
+	if (collapsibleState !== vscode.TreeItemCollapsibleState.None) {
+		item.iconPath = vscode.ThemeIcon.Folder;
+	} else {
+		item.iconPath = vscode.ThemeIcon.File;
 	}
 
+	// 명령어 설정 - 모든 항목에 동일하게 설정
+	item.command = {
+		arguments: [item],
+		command: DirectoryProviderCommands.SelectItem,
+		title: label,
+	};
+
 	return item;
-};
+}
 
 // -----------------------------------------------------------------------------------------------------------------
 // contextValue 설정 함수
-export const setContextValue = (
+export function setContextValue(
 	item: FileSystemObjectType,
 	value: string
-): FileSystemObjectType => {
+): FileSystemObjectType {
 	item.contextValue = value;
 	return item;
-};
+}

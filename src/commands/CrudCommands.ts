@@ -12,5 +12,7 @@ export enum DirectoryProviderCommands {
 	RemoveItem = "JEXPLORER.removeitem",
 	RemoveAllItems = "JEXPLORER.removeallitems",
 	CantRemoveItem = "JEXPLORER.cantremoveitem",
-	RefreshEntry = "JEXPLORER.refreshentry"
+	RefreshEntry = "JEXPLORER.refreshentry",
+	CopyItem = "JEXPLORER.copyitem",
+	PasteItem = "JEXPLORER.pasteitem"
 }
