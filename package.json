@@ -4,7 +4,7 @@
 	"publisher": "JUNGHO",
 	"icon": "logo_image.png",
 	"license": "Apache-2.0",
-	"version": "2.0.0",
+	"version": "2.0.3",
 	"description": "Real-time synchronized bookmarks for VSCode with .bookmark folder-based organization",
 	"main": "./out/extension.js",
 	"repository": {
@@ -12,7 +12,7 @@
 		"url": "https://github.com/JUNGHO-GIT/JEXPLORER.git"
 	},
 	"engines": {
-		"vscode": "^1.95.0"
+		"vscode": "^1.103.0"
 	},
 	"categories": [
 		"Other"
@@ -30,10 +30,9 @@
 		"onView:JEXPLORER",
 		"onCommand:JEXPLORER.additem",
 		"onCommand:JEXPLORER.refreshentry",
-		"onCommand:JEXPLORER.undo",
-		"onCommand:JEXPLORER.redo",
 		"onCommand:JEXPLORER.copyitem",
 		"onCommand:JEXPLORER.pasteitem",
+    	"onCommand:JEXPLORER.pasteroot",
 		"onCommand:JEXPLORER.removeitem",
 		"onCommand:JEXPLORER.removeallitems",
 		"onCommand:JEXPLORER.createfolder",
@@ -45,7 +44,7 @@
 				{
 					"id": "JEXPLORER",
 					"name": "JEXPLORER",
-					"icon": "logo_image.png",
+					"icon": "$(bookmark)",
 					"when": "workspaceFolderCount > 0"
 				}
 			]
@@ -63,28 +62,22 @@
 				"icon": "$(refresh)"
 			},
 			{
-				"command": "JEXPLORER.undo",
-				"title": "Undo",
-				"category": "JEXPLORER",
-				"icon": "$(discard)"
-			},
-			{
-				"command": "JEXPLORER.redo",
-				"title": "Redo",
-				"category": "JEXPLORER",
-				"icon": "$(redo)"
-			},
-			{
 				"command": "JEXPLORER.copyitem",
-				"title": "Copy Item",
+				"title": "Copy",
 				"category": "JEXPLORER",
 				"icon": "$(copy)"
 			},
 			{
 				"command": "JEXPLORER.pasteitem",
-				"title": "Paste Item",
+				"title": "Paste",
 				"category": "JEXPLORER",
-				"icon": "$(paste)"
+				"icon": "$(replace-all)"
+			},
+			{
+				"command": "JEXPLORER.pasteroot",
+				"title": "Paste to Root",
+				"category": "JEXPLORER",
+				"icon": "$(replace-all)"
 			},
 			{
 				"command": "JEXPLORER.createfolder",
@@ -100,41 +93,42 @@
 			},
 			{
 				"command": "JEXPLORER.removeitem",
-				"title": "Remove Bookmark",
+				"title": "Remove",
 				"category": "JEXPLORER",
-				"icon": "$(trash)"
+				"icon": "$(remove-close)"
 			},
 			{
 				"command": "JEXPLORER.removeallitems",
-				"title": "Remove All Bookmarks",
-				"category": "JEXPLORER"
+				"title": "Remove All",
+				"category": "JEXPLORER",
+				"icon": "$(terminal-kill)"
 			}
 		],
 		"keybindings": [
 			{
 				"key": "shift+alt+a",
 				"command": "JEXPLORER.additem",
-				"when": "view == JEXPLORER && viewItem == resource"
+				"when": "focusedView == JEXPLORER"
 			},
 			{
 				"key": "shift+alt+a",
 				"command": "JEXPLORER.additem",
-				"when": "explorerViewletVisible && filesExplorerFocus && !inputFocus"
+				"when": "explorerViewletVisible && filesExplorerFocus"
+			},
+			{
+				"key": "ctrl+c",
+				"command": "JEXPLORER.copyitem",
+				"when": "focusedView == JEXPLORER"
+			},
+			{
+				"key": "ctrl+v",
+				"command": "JEXPLORER.pasteitem",
+				"when": "focusedView == JEXPLORER"
 			},
 			{
 				"key": "ctrl+d",
 				"command": "JEXPLORER.removeitem",
-				"when": "view == JEXPLORER && viewItem == resource && !inputFocus"
-			},
-			{
-				"key": "ctrl+z",
-				"command": "JEXPLORER.undo",
-				"when": "view == JEXPLORER && !inputFocus"
-			},
-			{
-				"key": "shift+ctrl+z",
-				"command": "JEXPLORER.redo",
-				"when": "view == JEXPLORER && !inputFocus"
+				"when": "focusedView == JEXPLORER"
 			}
 		],
 		"menus": {
@@ -142,32 +136,22 @@
 				{
 					"command": "JEXPLORER.refreshentry",
 					"when": "view == JEXPLORER",
-					"group": "navigation@1"
+					"group": "navigation"
 				},
 				{
-					"command": "JEXPLORER.undo",
+					"command": "JEXPLORER.copyitem",
 					"when": "view == JEXPLORER",
-					"group": "navigation@2"
+					"group": "navigation"
 				},
 				{
-					"command": "JEXPLORER.redo",
+					"command": "JEXPLORER.pasteroot",
 					"when": "view == JEXPLORER",
-					"group": "navigation@3"
+					"group": "navigation"
 				},
 				{
-					"command": "JEXPLORER.createfolder",
+					"command": "JEXPLORER.removeallitems",
 					"when": "view == JEXPLORER",
-					"group": "1_modification@1"
-				},
-				{
-					"command": "JEXPLORER.createfile",
-					"when": "view == JEXPLORER",
-					"group": "1_modification@2"
-				},
-				{
-					"command": "JEXPLORER.pasteitem",
-					"when": "view == JEXPLORER",
-					"group": "2_workspace@1"
+					"group": "navigation"
 				}
 			],
 			"view/item/context": [

@@ -1,5 +1,3 @@
-// commands/BookmarkCommand.ts
-
 import * as vscode from "vscode";
 import * as path from "path";
 import { BookmarkProvider } from "../providers/BookmarkProvider";
@@ -31,12 +29,11 @@ export class BookmarkCommand {
             this.registerRemoveBookmarkCommand(),
             this.registerCopyCommand(),
             this.registerPasteCommand(),
+            this.registerPasteToRootCommand(),
             this.registerDeleteBookmarkCommand(),
             this.registerDeleteAllBookmarksCommand(),
             this.registerCreateFolderCommand(),
-            this.registerCreateFileCommand(),
-            this.registerUndoCommand(),
-            this.registerRedoCommand()
+            this.registerCreateFileCommand()
         ];
     }
 
@@ -167,39 +164,62 @@ export class BookmarkCommand {
     // 복사
     // ---------------------------------------------------------------------------------------------
     private registerCopyCommand(): vscode.Disposable {
-        return vscode.commands.registerCommand("JEXPLORER.copyitem", (item?: BookmarkSystemItem) => {
-            let targets: BookmarkSystemItem[] = [];
+        return vscode.commands.registerCommand(
+            "JEXPLORER.copyitem",
+            (item?: BookmarkSystemItem, selected?: BookmarkSystemItem[]) => {
+                let targets: BookmarkSystemItem[] = [];
 
-            if (item) {
-                targets = [item];
-                this.updateSelectedItems(targets);
-            }
-            else if (this.selectedItems.length > 0) {
-                targets = this.selectedItems;
-            }
-            else {
-                vscode.window.showErrorMessage("No items selected to copy.");
-                return;
-            }
+                if (Array.isArray(selected) && selected.length > 0) {
+                    targets = selected;
+                }
+                else if (this.selectedItems.length > 0) {
+                    targets = this.selectedItems;
+                }
+                else if (item) {
+                    targets = [item];
+                }
+                else {
+                    vscode.window.showErrorMessage("No items selected to copy.");
+                    return;
+                }
 
-            const available = targets.filter(t => t.isOriginalAvailable);
-            if (available.length === 0) {
-                vscode.window.showWarningMessage("No available original files to copy.");
-                return;
-            }
+                // 중복 제거
+                const dedupMap = new Map<string, BookmarkSystemItem>();
+                for (const t of targets) {
+                    if (!dedupMap.has(t.originalPath)) {
+                        dedupMap.set(t.originalPath, t);
+                    }
+                }
+                targets = Array.from(dedupMap.values());
 
-            this.provider.copyItems(available);
-            this.provider.refresh();
-        });
+                const available = targets.filter((t) => t.isOriginalAvailable);
+                if (available.length === 0) {
+                    vscode.window.showWarningMessage("No available original files to copy.");
+                    return;
+                }
+
+                this.updateSelectedItems(available);
+                this.provider.copyItems(available);
+                this.provider.refresh();
+            }
+        );
     }
 
     // ---------------------------------------------------------------------------------------------
     // 붙여넣기
+    // - 아이템 지정 없음: 루트 매칭 덮어쓰기
+    // - 아이템 컨텍스트: 해당 위치로 붙여넣기
     // ---------------------------------------------------------------------------------------------
     private registerPasteCommand(): vscode.Disposable {
         return vscode.commands.registerCommand("JEXPLORER.pasteitem", async (item?: BookmarkSystemItem) => {
             if (!this.provider.hasCopiedItems()) {
                 vscode.window.showErrorMessage("No items to paste.");
+                return;
+            }
+
+            if (!item && this.selectedItems.length === 0) {
+                await this.provider.pasteItemsToRoot();
+                this.provider.refresh();
                 return;
             }
 
@@ -218,26 +238,32 @@ export class BookmarkCommand {
                 const folder = this.selectedItems.find(s => !s.bookmarkMetadata.isFile && s.isOriginalAvailable);
                 targetPath = folder ? folder.originalPath : path.dirname(this.selectedItems[0].originalPath);
             }
-
-            if (!targetPath) {
-                const folderUri = await vscode.window.showOpenDialog({
-                    canSelectFiles: false,
-                    canSelectFolders: true,
-                    canSelectMany: false,
-                    openLabel: "Select Target Folder"
-                });
-                if (folderUri && folderUri.length > 0) {
-                    targetPath = folderUri[0].fsPath;
-                }
+            else {
+                targetPath = this.provider.rootPath;
             }
 
             if (targetPath) {
+                console.debug(`[JEXPLORER.pasteitem] `, JSON.stringify(targetPath, null, 2));
                 await this.provider.pasteItems(targetPath);
                 this.provider.refresh();
             }
             else {
                 vscode.window.showWarningMessage("Select a valid target folder to paste into.");
             }
+        });
+    }
+
+	// ---------------------------------------------------------------------------------------------
+    // 붙여넣기(루트 전용)
+	// ---------------------------------------------------------------------------------------------
+    private registerPasteToRootCommand(): vscode.Disposable {
+        return vscode.commands.registerCommand("JEXPLORER.pasteroot", async () => {
+            if (!this.provider.hasCopiedItems()) {
+                vscode.window.showErrorMessage("No items to paste.");
+                return;
+            }
+            await this.provider.pasteItemsToRoot();
+            this.provider.refresh();
         });
     }
 
@@ -322,24 +348,6 @@ export class BookmarkCommand {
             else {
                 vscode.window.showWarningMessage("Please select a valid parent folder.");
             }
-        });
-    }
-
-    // ---------------------------------------------------------------------------------------------
-    // Undo
-    // ---------------------------------------------------------------------------------------------
-    private registerUndoCommand(): vscode.Disposable {
-        return vscode.commands.registerCommand("JEXPLORER.undo", async () => {
-            await this.provider.undo();
-        });
-    }
-
-    // ---------------------------------------------------------------------------------------------
-    // Redo
-    // ---------------------------------------------------------------------------------------------
-    private registerRedoCommand(): vscode.Disposable {
-        return vscode.commands.registerCommand("JEXPLORER.redo", async () => {
-            await this.provider.redo();
         });
     }
 }

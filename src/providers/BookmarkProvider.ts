@@ -1,10 +1,7 @@
-// providers/BookmarkProvider.ts
-
 import * as vscode from "vscode";
 import * as path from "path";
 import { BookmarkSystemItem } from "../models/BookmarkSystemItem";
 import { BookmarkOperationService } from "../services/BookmarkOperationService";
-import { BookmarkHistoryService } from "../services/BookmarkHistoryService";
 import { BookmarkSyncService } from "../services/BookmarkSyncService";
 import { BookmarkPathUtil } from "../utils/BookmarkPathUtil";
 import { BookmarkStatus } from "../types/BookmarkTypes";
@@ -17,19 +14,19 @@ export class BookmarkProvider implements vscode.TreeDataProvider<BookmarkSystemI
     private bookmarkPath: string | undefined;
     private copiedItems: vscode.Uri[] = [];
     private fileOperationService: BookmarkOperationService | undefined;
-    private historyService: BookmarkHistoryService;
     private syncService: BookmarkSyncService | undefined;
     private bookmarkStatusMap: Map<string, BookmarkStatus> = new Map();
 
+    // refresh 디바운스
+    private refreshTimer: NodeJS.Timeout | null = null;
+    private refreshDebounceMs = 150;
+
     constructor(private workspaceRoot: string | undefined) {
-        this.historyService = new BookmarkHistoryService();
-        this.initializeBookmarkFolder();
+        setTimeout(() => this.initializeBookmarkFolder(), 0);
     }
 
     // ---------------------------------------------------------------------------------------------
     // .bookmark 폴더 초기화
-    // - 존재하지 않으면 생성
-    // - SyncService 및 OperationService 초기화
     // ---------------------------------------------------------------------------------------------
     private async initializeBookmarkFolder(): Promise<void> {
         if (!this.workspaceRoot) {
@@ -63,17 +60,21 @@ export class BookmarkProvider implements vscode.TreeDataProvider<BookmarkSystemI
 
             this.fileOperationService = new BookmarkOperationService(
                 this.bookmarkPath,
-                this.historyService,
                 this.syncService
             );
         }
     }
 
     // ---------------------------------------------------------------------------------------------
-    // 트리 갱신
+    // 트리 갱신(디바운스)
     // ---------------------------------------------------------------------------------------------
     refresh(): void {
-        this._onDidChangeTreeData.fire();
+        if (this.refreshTimer) {
+            clearTimeout(this.refreshTimer);
+        }
+        this.refreshTimer = setTimeout(() => {
+            this._onDidChangeTreeData.fire();
+        }, this.refreshDebounceMs);
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -85,8 +86,7 @@ export class BookmarkProvider implements vscode.TreeDataProvider<BookmarkSystemI
 
     // ---------------------------------------------------------------------------------------------
     // 자식 항목 가져오기
-    // - 루트 레벨 북마크
-    // - 폴더일 경우 실제 하위 파일/폴더
+    // - 최상위: 실제 루트 북마크 목록만 반환(가짜 아이템 없음)
     // ---------------------------------------------------------------------------------------------
     async getChildren(element?: BookmarkSystemItem): Promise<BookmarkSystemItem[]> {
         if (!this.bookmarkPath || !this.syncService) {
@@ -124,8 +124,12 @@ export class BookmarkProvider implements vscode.TreeDataProvider<BookmarkSystemI
             const aIsDir = !a.bookmarkMetadata.isFile;
             const bIsDir = !b.bookmarkMetadata.isFile;
 
-            if (aIsDir && !bIsDir) return -1;
-            if (!aIsDir && bIsDir) return 1;
+            if (aIsDir && !bIsDir) {
+                return -1;
+            }
+            if (!aIsDir && bIsDir) {
+                return 1;
+            }
             return a.bookmarkMetadata.bookmarkName.localeCompare(b.bookmarkMetadata.bookmarkName);
         });
     }
@@ -139,8 +143,12 @@ export class BookmarkProvider implements vscode.TreeDataProvider<BookmarkSystemI
             const items: BookmarkSystemItem[] = [];
 
             const sortedEntries = entries.sort((a, b) => {
-                if (a[1] === vscode.FileType.Directory && b[1] !== vscode.FileType.Directory) return -1;
-                if (a[1] !== vscode.FileType.Directory && b[1] === vscode.FileType.Directory) return 1;
+                if (a[1] === vscode.FileType.Directory && b[1] !== vscode.FileType.Directory) {
+                    return -1;
+                }
+                if (a[1] !== vscode.FileType.Directory && b[1] === vscode.FileType.Directory) {
+                    return 1;
+                }
                 return a[0].localeCompare(b[0]);
             });
 
@@ -169,7 +177,6 @@ export class BookmarkProvider implements vscode.TreeDataProvider<BookmarkSystemI
 
     // ---------------------------------------------------------------------------------------------
     // 북마크 추가
-    // - 동일한 이름이 존재하면 기존 북마크 제거 후 새로 추가
     // ---------------------------------------------------------------------------------------------
     async addBookmark(sourcePath: string, bookmarkName?: string): Promise<void> {
         if (!this.syncService) {
@@ -216,10 +223,18 @@ export class BookmarkProvider implements vscode.TreeDataProvider<BookmarkSystemI
     // 복사 / 붙여넣기
     // ---------------------------------------------------------------------------------------------
     copyItems(items: BookmarkSystemItem[]): void {
-        this.copiedItems = items.map(item => vscode.Uri.file(item.originalPath));
-        const message = items.length === 1
-            ? `Copied: ${path.basename(items[0].originalPath)}`
-            : `Copied ${items.length} items`;
+        // 스냅샷 + 중복 제거
+        const dedup = new Map<string, vscode.Uri>();
+        for (const it of items) {
+            if (!dedup.has(it.originalPath)) {
+                dedup.set(it.originalPath, vscode.Uri.file(it.originalPath));
+            }
+        }
+        this.copiedItems = Array.from(dedup.values());
+
+        const message = this.copiedItems.length === 1
+            ? `Copied: ${path.basename(this.copiedItems[0].fsPath)}`
+            : `Copied ${this.copiedItems.length} items`;
         vscode.window.showInformationMessage(message);
     }
 
@@ -229,6 +244,29 @@ export class BookmarkProvider implements vscode.TreeDataProvider<BookmarkSystemI
             return;
         }
         await this.fileOperationService.pasteItems(this.copiedItems, targetPath);
+    }
+
+    // 루트 붙여넣기: 파일명 매칭 → 각 북마크의 실제 경로에 덮어쓰기
+    async pasteItemsToRoot(): Promise<void> {
+        if (!this.fileOperationService || !this.syncService) {
+            vscode.window.showErrorMessage("File operation service not initialized.");
+            return;
+        }
+        const all = this.syncService.getAllBookmarks();
+
+        const nameToOriginalPath = new Map<string, string>();
+        for (const m of all) {
+            if (m.isFile) {
+                nameToOriginalPath.set(m.bookmarkName, m.originalPath);
+            }
+        }
+
+        if (nameToOriginalPath.size === 0) {
+            vscode.window.showWarningMessage("No root file bookmarks to overwrite.");
+            return;
+        }
+
+        await this.fileOperationService.pasteItemsToRoot(this.copiedItems, nameToOriginalPath);
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -248,52 +286,6 @@ export class BookmarkProvider implements vscode.TreeDataProvider<BookmarkSystemI
             return;
         }
         await this.fileOperationService.createFile(parentPath, fileName);
-    }
-
-    // ---------------------------------------------------------------------------------------------
-    // 파일 이름 변경 (실제 파일 + 메타데이터 경로 갱신)
-    // ---------------------------------------------------------------------------------------------
-    async renameOriginalFile(oldPath: string, newName: string): Promise<void> {
-        if (!this.fileOperationService) {
-            vscode.window.showErrorMessage("File operation service not initialized.");
-            return;
-        }
-        await this.fileOperationService.renameOriginalFile(oldPath, newName);
-    }
-
-    // ---------------------------------------------------------------------------------------------
-    // Undo / Redo
-    // ---------------------------------------------------------------------------------------------
-    async undo(): Promise<void> {
-        try {
-            const success = await this.historyService.undo();
-            if (success) {
-                this.refresh();
-                vscode.window.showInformationMessage("Undo successful.");
-            }
-            else {
-                vscode.window.showInformationMessage("Nothing to undo.");
-            }
-        }
-        catch (error) {
-            vscode.window.showErrorMessage(`Undo failed: ${error}`);
-        }
-    }
-
-    async redo(): Promise<void> {
-        try {
-            const success = await this.historyService.redo();
-            if (success) {
-                this.refresh();
-                vscode.window.showInformationMessage("Redo successful.");
-            }
-            else {
-                vscode.window.showInformationMessage("Nothing to redo.");
-            }
-        }
-        catch (error) {
-            vscode.window.showErrorMessage(`Redo failed: ${error}`);
-        }
     }
 
     // ---------------------------------------------------------------------------------------------

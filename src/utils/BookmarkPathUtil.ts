@@ -1,5 +1,3 @@
-// utils/BookmarkPathUtil.ts
-
 import * as path from "path";
 import * as fs from "fs";
 
@@ -29,8 +27,6 @@ export class BookmarkPathUtil {
 
     // ---------------------------------------------------------------------------------------------
     // 파일명 유효성 검사
-    // - 빈 문자열인지 확인
-    // - 슬래시(/, \) 포함 여부 확인
     // ---------------------------------------------------------------------------------------------
     static validateFileName(fileName: string): string | null {
         if (!fileName || !fileName.trim()) {
