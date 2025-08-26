@@ -224,7 +224,7 @@
 		"watch": "tsc -watch -p .",
 		"compile": "tsc -p .",
 		"vsce": "vsce package",
-		"npm-reset": "powershell -Command \"Remove-Item -Recurse -Force package-lock.json, node_modules; npm install --legacy-peer-deps;\"",
+		"npm-reset": "powershell -NoProfile -Command \"try { Stop-Process -Name node -Force -ErrorAction SilentlyContinue } catch {}; Start-Sleep -Milliseconds 200; if (Test-Path 'node_modules') { cmd /c 'rd /s /q \"node_modules\"' } ; if (Test-Path 'package-lock.json') { cmd /c 'del /f /q \"package-lock.json\"' } ; npm install --legacy-peer-deps\"",
 		"gcloud": "node gcloud.cjs"
 	},
 	"dependencies": {
