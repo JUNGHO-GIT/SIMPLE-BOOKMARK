@@ -4,7 +4,7 @@
 	"publisher": "JUNGHO",
 	"icon": "logo_image.png",
 	"license": "Apache-2.0",
-	"version": "2.0.3",
+	"version": "2.0.5",
 	"description": "Real-time synchronized bookmarks for VSCode with .bookmark folder-based organization",
 	"main": "./out/extension.js",
 	"repository": {
@@ -43,7 +43,7 @@
 			"explorer": [
 				{
 					"id": "JEXPLORER",
-					"name": "JEXPLORER",
+					"name": "BOOKMARK",
 					"icon": "$(bookmark)",
 					"when": "workspaceFolderCount > 0"
 				}
