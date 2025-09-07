@@ -32,7 +32,7 @@
 		"onCommand:JEXPLORER.refreshentry",
 		"onCommand:JEXPLORER.copyitem",
 		"onCommand:JEXPLORER.pasteitem",
-    	"onCommand:JEXPLORER.pasteroot",
+		"onCommand:JEXPLORER.pasteroot",
 		"onCommand:JEXPLORER.removeitem",
 		"onCommand:JEXPLORER.removeallitems",
 		"onCommand:JEXPLORER.createfolder",
@@ -224,24 +224,24 @@
 		"watch": "tsc -watch -p .",
 		"compile": "tsc -p .",
 		"vsce": "vsce package",
-		"npm-reset": "powershell -NoProfile -Command \"try { Stop-Process -Name node -Force -ErrorAction SilentlyContinue } catch {}; Start-Sleep -Milliseconds 200; if (Test-Path 'node_modules') { cmd /c 'rd /s /q \"node_modules\"' } ; if (Test-Path 'package-lock.json') { cmd /c 'del /f /q \"package-lock.json\"' } ; npm install --legacy-peer-deps\"",
-		"gcloud": "node gcloud.cjs"
+		"gcloud-deploy": "node .node/gcloud.cjs --full-deploy",
+		"pnpm-reset": "pwsh -NoProfile -Command \"try { Stop-Process -Name node -Force -ErrorAction SilentlyContinue } catch {}; Start-Sleep -Milliseconds 200; if (Test-Path 'node_modules') { cmd /c 'rd /s /q \"node_modules\"' } ; if (Test-Path 'package-lock.json') { cmd /c 'del /f /q \"package-lock.json\"' } ; pnpm install\""
 	},
 	"dependencies": {
-		"@babel/core": "^7.28.3",
+		"@babel/core": "^7.28.4",
 		"glob": "^11.0.3",
-		"terser": "^5.43.1",
+		"terser": "^5.44.0",
 		"yaml": "^2.8.1"
 	},
 	"devDependencies": {
 		"@types/glob": "^9.0.0",
 		"@types/mocha": "^10.0.10",
-		"@types/node": "^24.3.0",
+		"@types/node": "^24.3.1",
 		"@types/vscode": "^1.103.0",
-		"@typescript-eslint/eslint-plugin": "^8.40.0",
-		"@typescript-eslint/parser": "^8.40.0",
-		"eslint": "^9.34.0",
-		"mocha": "^11.7.1",
+		"@typescript-eslint/eslint-plugin": "^8.42.0",
+		"@typescript-eslint/parser": "^8.42.0",
+		"eslint": "^9.35.0",
+		"mocha": "^11.7.2",
 		"typescript": "^5.9.2",
 		"vscode-test": "^1.6.1"
 	}
