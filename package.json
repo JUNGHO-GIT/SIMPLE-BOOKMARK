@@ -4,7 +4,8 @@
 	"publisher": "JUNGHO",
 	"icon": "logo_image.png",
 	"license": "Apache-2.0",
-	"version": "2.0.6",
+	"type": "module",
+	"version": "2.0.8",
 	"description": "Real-time synchronized bookmarks for VSCode with .bookmark folder-based organization",
 	"main": "./out/extension.js",
 	"repository": {
@@ -225,9 +226,9 @@
 	"scripts": {
 		"watch": "tsc -watch -p .",
 		"compile": "tsc -p .",
-		"vsce": "pnpm exec vsce package --no-dependencies",
+		"vsce": "tsc -p . && vsce package",
 		"gcloud-deploy": "node .node/gcloud.cjs --full-deploy",
-		"pnpm-reset": "pwsh -NoProfile -Command \"try { Stop-Process -Name node -Force -ErrorAction SilentlyContinue } catch {}; Start-Sleep -Milliseconds 200; if (Test-Path 'node_modules') { cmd /c 'rd /s /q \"node_modules\"' } ; if (Test-Path 'package-lock.json') { cmd /c 'del /f /q \"package-lock.json\"' } ; pnpm install\""
+		"npm-reset": "pwsh -NoProfile -Command \"try { Stop-Process -Name node -Force -ErrorAction SilentlyContinue } catch {}; Start-Sleep -Milliseconds 200; if (Test-Path 'node_modules') { cmd /c 'rd /s /q \"node_modules\"' } ; if (Test-Path 'package-lock.json') { cmd /c 'del /f /q \"package-lock.json\"' } ; npm install\""
 	},
 	"dependencies": {
 		"@babel/core": "^7.28.4",
@@ -245,6 +246,6 @@
 		"eslint": "^9.35.0",
 		"mocha": "^11.7.2",
 		"typescript": "^5.9.2",
-		"vscode-test": "^1.6.1"
+		"@vscode/test-electron": "^2.5.2"
 	}
 }
