@@ -5,7 +5,7 @@
 	"icon": "logo_image.png",
 	"license": "Apache-2.0",
 	"type": "module",
-	"version": "2.0.8",
+	"version": "2.1.1",
 	"description": "Real-time synchronized bookmarks for VSCode with .bookmark folder-based organization",
 	"main": "./out/extension.js",
 	"repository": {
@@ -13,7 +13,7 @@
 		"url": "https://github.com/JUNGHO-GIT/JEXPLORER.git"
 	},
 	"engines": {
-		"vscode": "^1.103.0",
+		"vscode": "^1.104.0",
 		"node": ">=18.0.0",
 		"npm": ">=10.0.0"
 	},
@@ -31,13 +31,14 @@
 	],
 	"activationEvents": [
 		"onView:JEXPLORER",
-		"onCommand:JEXPLORER.additem",
+		"onCommand:JEXPLORER.addbookmark",
 		"onCommand:JEXPLORER.refreshentry",
-		"onCommand:JEXPLORER.copyitem",
-		"onCommand:JEXPLORER.pasteitem",
-		"onCommand:JEXPLORER.pasteroot",
-		"onCommand:JEXPLORER.removeitem",
-		"onCommand:JEXPLORER.removeallitems",
+		"onCommand:JEXPLORER.copybookmark",
+		"onCommand:JEXPLORER.pastebookmark",
+		"onCommand:JEXPLORER.pasterootbookmark",
+		"onCommand:JEXPLORER.renamebookmark",
+		"onCommand:JEXPLORER.removebookmark",
+		"onCommand:JEXPLORER.removeallbookmark",
 		"onCommand:JEXPLORER.createfolder",
 		"onCommand:JEXPLORER.createfile"
 	],
@@ -54,7 +55,7 @@
 		},
 		"commands": [
 			{
-				"command": "JEXPLORER.additem",
+				"command": "JEXPLORER.addbookmark",
 				"title": "Add to Bookmarks",
 				"category": "JEXPLORER"
 			},
@@ -65,19 +66,19 @@
 				"icon": "$(refresh)"
 			},
 			{
-				"command": "JEXPLORER.copyitem",
+				"command": "JEXPLORER.copybookmark",
 				"title": "Copy",
 				"category": "JEXPLORER",
 				"icon": "$(copy)"
 			},
 			{
-				"command": "JEXPLORER.pasteitem",
+				"command": "JEXPLORER.pastebookmark",
 				"title": "Paste",
 				"category": "JEXPLORER",
 				"icon": "$(replace-all)"
 			},
 			{
-				"command": "JEXPLORER.pasteroot",
+				"command": "JEXPLORER.pasterootbookmark",
 				"title": "Paste to Root",
 				"category": "JEXPLORER",
 				"icon": "$(replace-all)"
@@ -95,42 +96,53 @@
 				"icon": "$(new-file)"
 			},
 			{
-				"command": "JEXPLORER.removeitem",
+				"command": "JEXPLORER.removebookmark",
 				"title": "Remove",
 				"category": "JEXPLORER",
 				"icon": "$(remove-close)"
 			},
 			{
-				"command": "JEXPLORER.removeallitems",
+				"command": "JEXPLORER.removeallbookmark",
 				"title": "Remove All",
 				"category": "JEXPLORER",
 				"icon": "$(terminal-kill)"
+			},
+			{
+				"command": "JEXPLORER.renamebookmark",
+				"title": "Rename",
+				"category": "JEXPLORER",
+				"icon": "$(edit)"
 			}
 		],
 		"keybindings": [
 			{
 				"key": "shift+alt+a",
-				"command": "JEXPLORER.additem",
+				"command": "JEXPLORER.addbookmark",
 				"when": "focusedView == JEXPLORER"
 			},
 			{
 				"key": "shift+alt+a",
-				"command": "JEXPLORER.additem",
+				"command": "JEXPLORER.addbookmark",
 				"when": "explorerViewletVisible && filesExplorerFocus"
 			},
 			{
 				"key": "ctrl+c",
-				"command": "JEXPLORER.copyitem",
+				"command": "JEXPLORER.copybookmark",
 				"when": "focusedView == JEXPLORER"
 			},
 			{
 				"key": "ctrl+v",
-				"command": "JEXPLORER.pasteitem",
+				"command": "JEXPLORER.pastebookmark",
 				"when": "focusedView == JEXPLORER"
 			},
 			{
 				"key": "ctrl+d",
-				"command": "JEXPLORER.removeitem",
+				"command": "JEXPLORER.removebookmark",
+				"when": "focusedView == JEXPLORER"
+			},
+			{
+				"key": "f2",
+				"command": "JEXPLORER.renamebookmark",
 				"when": "focusedView == JEXPLORER"
 			}
 		],
@@ -142,36 +154,41 @@
 					"group": "navigation"
 				},
 				{
-					"command": "JEXPLORER.copyitem",
+					"command": "JEXPLORER.copybookmark",
 					"when": "view == JEXPLORER",
 					"group": "navigation"
 				},
 				{
-					"command": "JEXPLORER.pasteroot",
+					"command": "JEXPLORER.pasterootbookmark",
 					"when": "view == JEXPLORER",
 					"group": "navigation"
 				},
 				{
-					"command": "JEXPLORER.removeallitems",
+					"command": "JEXPLORER.removeallbookmark",
 					"when": "view == JEXPLORER",
 					"group": "navigation"
 				}
 			],
 			"view/item/context": [
 				{
-					"command": "JEXPLORER.copyitem",
+					"command": "JEXPLORER.copybookmark",
 					"when": "view == JEXPLORER",
 					"group": "1_clipboard@1"
 				},
 				{
-					"command": "JEXPLORER.pasteitem",
+					"command": "JEXPLORER.pastebookmark",
 					"when": "view == JEXPLORER && viewItem == bookmarkFolder",
 					"group": "1_clipboard@2"
 				},
 				{
-					"command": "JEXPLORER.pasteitem",
+					"command": "JEXPLORER.pastebookmark",
 					"when": "view == JEXPLORER && viewItem == bookmarkFile",
 					"group": "1_clipboard@3"
+				},
+				{
+					"command": "JEXPLORER.renamebookmark",
+					"when": "view == JEXPLORER && (viewItem == bookmarkFile || viewItem == bookmarkFolder)",
+					"group": "2_modification@0"
 				},
 				{
 					"command": "JEXPLORER.createfolder",
@@ -184,19 +201,24 @@
 					"group": "2_modification@2"
 				},
 				{
-					"command": "JEXPLORER.removeitem",
+					"command": "JEXPLORER.removebookmark",
 					"when": "view == JEXPLORER",
 					"group": "4_danger@1"
 				},
 				{
-					"command": "JEXPLORER.removeitem",
+					"command": "JEXPLORER.removebookmark",
+					"when": "view == JEXPLORER",
+					"group": "inline"
+				},
+				{
+					"command": "JEXPLORER.renamebookmark",
 					"when": "view == JEXPLORER",
 					"group": "inline"
 				}
 			],
 			"explorer/context": [
 				{
-					"command": "JEXPLORER.additem",
+					"command": "JEXPLORER.addbookmark",
 					"when": "explorerResourceIsFolder || explorerResourceIsFile",
 					"group": "2_workspace@1"
 				}
@@ -228,7 +250,7 @@
 		"compile": "tsc -p .",
 		"vsce": "tsc -p . && vsce package",
 		"gcloud-deploy": "node .node/gcloud.cjs --full-deploy",
-		"npm-reset": "pwsh -NoProfile -Command \"try { Stop-Process -Name node -Force -ErrorAction SilentlyContinue } catch {}; Start-Sleep -Milliseconds 200; if (Test-Path 'node_modules') { cmd /c 'rd /s /q \"node_modules\"' } ; if (Test-Path 'package-lock.json') { cmd /c 'del /f /q \"package-lock.json\"' } ; npm install\""
+		"npm-reset": "pwsh -NoProfile -Command \"try { Stop-Process -Name node -Force -ErrorAction SilentlyContinue } catch {}; Start-Sleep -Milliseconds 200; if (Test-Path 'node_modules') { cmd /c 'rd /s /q \\\"node_modules\\\"' } ; if (Test-Path 'package-lock.json') { cmd /c 'del /f /q \\\"package-lock.json\\\"' } ; npm install\""
 	},
 	"dependencies": {
 		"@babel/core": "^7.28.4",
@@ -238,12 +260,12 @@
 	"devDependencies": {
 		"@types/glob": "^9.0.0",
 		"@types/mocha": "^10.0.10",
-		"@types/node": "^24.3.1",
-		"@types/vscode": "^1.103.0",
-		"@typescript-eslint/eslint-plugin": "^8.42.0",
-		"@typescript-eslint/parser": "^8.42.0",
+		"@types/node": "^24.5.2",
+		"@types/vscode": "^1.104.0",
+		"@typescript-eslint/eslint-plugin": "^8.44.0",
+		"@typescript-eslint/parser": "^8.44.0",
 		"@vscode/vsce": "^3.6.0",
-		"eslint": "^9.35.0",
+		"eslint": "^9.36.0",
 		"mocha": "^11.7.2",
 		"typescript": "^5.9.2",
 		"@vscode/test-electron": "^2.5.2"

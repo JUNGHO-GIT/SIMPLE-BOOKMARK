@@ -1,50 +1,53 @@
 // extension.ts
 
 import * as vscode from "vscode";
-import {BookmarkProvider} from "./providers/BookmarkProvider.js";
-import {BookmarkCommand} from "./commands/BookmarkCommand.js";
-import {BookmarkSystemItem} from "./models/BookmarkSystemItem.js";
+import { createBookmarkProvider } from "./providers/BookmarkProvider.js";
+import { createBookmarkCommand } from "./commands/BookmarkCommand.js";
+import type { BookmarkSystemItem } from "./models/BookmarkSystemItem.js";
 
-// -------------------------------------------------------------------------------------------------------------
-function setupAdditionalListeners (
-	provider: BookmarkProvider,
-	commandManager: BookmarkCommand,
+// 추가 리스너 설정 ---------------------------------------------------------------------
+const setupAdditionalListeners = (
+	provider: ReturnType<typeof createBookmarkProvider>,
+	commandManager: ReturnType<typeof createBookmarkCommand>,
 	treeView: vscode.TreeView<BookmarkSystemItem>
-): vscode.Disposable[] {
+): vscode.Disposable[] => {
 	const listeners: vscode.Disposable[] = [];
 
 	// 선택 변경 → 캐시 동기화
 	const selListener = treeView.onDidChangeSelection(e => {
-		commandManager.updateSelectedItems(e.selection as BookmarkSystemItem[]);
+		console.debug("[JEXPLORER.selectionChanged]", e.selection.length);
+		commandManager.updateSelectedBookmark(e.selection as BookmarkSystemItem[]);
 	});
 
 	// 워크스페이스 폴더 변경 감지 → 북마크 갱신
 	const workspaceListener = vscode.workspace.onDidChangeWorkspaceFolders(() => {
-		vscode.window.showInformationMessage('Workspace changed. JEXPLORER bookmarks may need to be refreshed.');
+		console.debug("[JEXPLORER.workspaceChanged]");
+		vscode.window.showInformationMessage("Workspace changed. JEXPLORER bookmarks may need to be refreshed.");
 		provider.refresh();
 	});
 
 	// 확장 설정 변경 감지 → 북마크 갱신
 	const configListener = vscode.workspace.onDidChangeConfiguration(e => {
-		if (e.affectsConfiguration('JEXPLORER')) {
+		if (e.affectsConfiguration("JEXPLORER")) {
+			console.debug("[JEXPLORER.configChanged]");
 			provider.refresh();
 		}
 	});
 
 	// 파일 저장 이벤트 감지 (로그)
-	const saveListener = vscode.workspace.onDidSaveTextDocument(() => {
-		console.debug(`[JEXPLORER.saveitem]`, JSON.stringify(saveListener, null, 2));
+	const saveListener = vscode.workspace.onDidSaveTextDocument((doc) => {
+		console.debug("[JEXPLORER.savebookmark]", doc.uri.fsPath);
 	});
 
 	listeners.push(selListener, workspaceListener, configListener, saveListener);
 	return listeners;
-}
+};
 
-// -------------------------------------------------------------------------------------------------------------
+// 활성화 훅 --------------------------------------------------------------------------------
 export const activate = (
 	context: vscode.ExtensionContext
 ): void => {
-
+	console.debug("[JEXPLORER.activate] start");
 	const workspaceRoot = (
 		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
@@ -52,14 +55,16 @@ export const activate = (
 	);
 
 	if (!workspaceRoot) {
-		vscode.window.showWarningMessage('JEXPLORER requires an open workspace to function properly.');
+		vscode.window.showWarningMessage("JEXPLORER requires an open workspace to function properly.");
+		console.debug("[JEXPLORER.activate] no workspace");
 		return;
 	}
 
-	const provider = new BookmarkProvider(workspaceRoot);
-	const commandManager = new BookmarkCommand(provider, context);
+	const provider = createBookmarkProvider(workspaceRoot);
+	const commandManager = createBookmarkCommand(provider, context);
 	const commands = commandManager.registerCommands();
-	const treeView = vscode.window.createTreeView('JEXPLORER', {
+
+	const treeView = vscode.window.createTreeView("JEXPLORER", {
 		treeDataProvider: provider,
 		canSelectMany: true,
 		showCollapseAll: true
@@ -71,9 +76,12 @@ export const activate = (
 		treeView,
 		...commands,
 		...additionalListeners,
-		{dispose: () => provider.dispose()}
+		{ dispose: () => provider.dispose() }
 	);
-}
+	console.debug("[JEXPLORER.activate] ready");
+};
 
-// -------------------------------------------------------------------------------------------------------------
-export const deactivate = (): void => {}
+// 비활성화 훅 ---------------------------------------------------------------------------------
+export const deactivate = (): void => {
+	console.debug("[JEXPLORER.deactivate]");
+};
