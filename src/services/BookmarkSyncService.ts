@@ -14,7 +14,7 @@ export const createBookmarkSyncService = (
 	onSyncUpdate?: (p: string, status: BookmarkStatus) => void,
 	onRefreshNeeded?: () => void
 ) => {
-	console.debug("[JEXPLORER.sync] init path =", bookmarkPath);
+	console.debug("[SIMPLE-BOOKMARK.sync] init path =", bookmarkPath);
 
 	const bookmarkWatchers = new Map<string, vscode.FileSystemWatcher>();
 	const bookmarkedFiles = new Map<string, BookmarkMetadata>();
@@ -61,7 +61,7 @@ export const createBookmarkSyncService = (
 			if (!isBookmarkedFile(filePath)) {
 				return;
 			}
-			console.debug("[JEXPLORER.sync.save-hit]", filePath);
+			console.debug("[SIMPLE-BOOKMARK.sync.save-hit]", filePath);
 			await syncBookmark(filePath);
 		});
 
@@ -79,7 +79,7 @@ export const createBookmarkSyncService = (
 
 		watcher.onDidChange(async (uri) => {
 			if (uri.fsPath === originalPath) {
-				console.debug("[JEXPLORER.sync.change]", originalPath);
+				console.debug("[SIMPLE-BOOKMARK.sync.change]", originalPath);
 				await syncBookmark(originalPath);
 			}
 		});
@@ -170,7 +170,7 @@ export const createBookmarkSyncService = (
 			onSyncUpdate && onSyncUpdate(originalPath, BookmarkStatus.SYNCED);
 			onRefreshNeeded && onRefreshNeeded();
 
-			console.debug("[JEXPLORER.sync.add]", uniqueBookmarkName);
+			console.debug("[SIMPLE-BOOKMARK.sync.add]", uniqueBookmarkName);
 		}
 		catch (error) {
 			throw new Error(`Failed to add bookmark: ${error}`);
@@ -221,7 +221,7 @@ export const createBookmarkSyncService = (
 
 		// 3) 파일시스템 rename
 		try {
-			console.debug("[JEXPLORER.sync.rename.fs] from:", metadata.originalPath, "to:", newOriginalPath);
+			console.debug("[SIMPLE-BOOKMARK.sync.rename.fs] from:", metadata.originalPath, "to:", newOriginalPath);
 			await vscode.workspace.fs.rename(vscode.Uri.file(metadata.originalPath), vscode.Uri.file(newOriginalPath), { overwrite: false });
 		} catch (e) {
 			throw new Error(`Failed to rename original item: ${e}`);
@@ -249,7 +249,7 @@ export const createBookmarkSyncService = (
 
 		onSyncUpdate && onSyncUpdate(newOriginalPath, BookmarkStatus.SYNCED);
 		onRefreshNeeded && onRefreshNeeded();
-		console.debug("[JEXPLORER.sync.rename] meta:", finalMetaName, "path:", newOriginalPath);
+		console.debug("[SIMPLE-BOOKMARK.sync.rename] meta:", finalMetaName, "path:", newOriginalPath);
 	};
 
 	// 북마크 제거 ------------------------------------------------------------------------
@@ -267,7 +267,7 @@ export const createBookmarkSyncService = (
 			disposeWatcherFor(originalPath);
 
 			onRefreshNeeded && onRefreshNeeded();
-			console.debug("[JEXPLORER.sync.remove]", originalPath);
+			console.debug("[SIMPLE-BOOKMARK.sync.remove]", originalPath);
 		}
 		catch (error) {
 			console.error(`Failed to remove bookmark: ${error}`);

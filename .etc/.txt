@@ -23,28 +23,28 @@ const setupAdditionalListeners = (
 
 	// 선택 변경 → 캐시 동기화
 	const selListener = treeView.onDidChangeSelection(e => {
-		console.debug("[JEXPLORER.selectionChanged]", e.selection.length);
+		console.debug("[SIMPLE-BOOKMARK.selectionChanged]", e.selection.length);
 		commandManager.updateSelectedBookmark(e.selection as BookmarkSystemItem[]);
 	});
 
 	// 워크스페이스 폴더 변경 감지 → 북마크 갱신
 	const workspaceListener = vscode.workspace.onDidChangeWorkspaceFolders(() => {
-		console.debug("[JEXPLORER.workspaceChanged]");
-		vscode.window.showInformationMessage("Workspace changed. JEXPLORER bookmarks may need to be refreshed.");
+		console.debug("[SIMPLE-BOOKMARK.workspaceChanged]");
+		vscode.window.showInformationMessage("Workspace changed. SIMPLE-BOOKMARK bookmarks may need to be refreshed.");
 		provider.refresh();
 	});
 
 	// 확장 설정 변경 감지 → 북마크 갱신
 	const configListener = vscode.workspace.onDidChangeConfiguration(e => {
-		if (e.affectsConfiguration("JEXPLORER")) {
-			console.debug("[JEXPLORER.configChanged]");
+		if (e.affectsConfiguration("SIMPLE-BOOKMARK")) {
+			console.debug("[SIMPLE-BOOKMARK.configChanged]");
 			provider.refresh();
 		}
 	});
 
 	// 파일 저장 이벤트 감지 (로그)
 	const saveListener = vscode.workspace.onDidSaveTextDocument((doc) => {
-		console.debug("[JEXPLORER.savebookmark]", doc.uri.fsPath);
+		console.debug("[SIMPLE-BOOKMARK.savebookmark]", doc.uri.fsPath);
 	});
 
 	listeners.push(selListener, workspaceListener, configListener, saveListener);
@@ -55,7 +55,7 @@ const setupAdditionalListeners = (
 export const activate = (
 	context: vscode.ExtensionContext
 ): void => {
-	console.debug("[JEXPLORER.activate] start");
+	console.debug("[SIMPLE-BOOKMARK.activate] start");
 	const workspaceRoot = (
 		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
@@ -63,8 +63,8 @@ export const activate = (
 	);
 
 	if (!workspaceRoot) {
-		vscode.window.showWarningMessage("JEXPLORER requires an open workspace to function properly.");
-		console.debug("[JEXPLORER.activate] no workspace");
+		vscode.window.showWarningMessage("SIMPLE-BOOKMARK requires an open workspace to function properly.");
+		console.debug("[SIMPLE-BOOKMARK.activate] no workspace");
 		return;
 	}
 
@@ -72,7 +72,7 @@ export const activate = (
 	const commandManager = createBookmarkCommand(provider, context);
 	const commands = commandManager.registerCommands();
 
-	const treeView = vscode.window.createTreeView("JEXPLORER", {
+	const treeView = vscode.window.createTreeView("SIMPLE-BOOKMARK", {
 		treeDataProvider: provider,
 		canSelectMany: true,
 		showCollapseAll: true
@@ -86,12 +86,12 @@ export const activate = (
 		...additionalListeners,
 		{ dispose: () => provider.dispose() }
 	);
-	console.debug("[JEXPLORER.activate] ready");
+	console.debug("[SIMPLE-BOOKMARK.activate] ready");
 };
 
 // 비활성화 훅 ---------------------------------------------------------------------------------
 export const deactivate = (): void => {
-	console.debug("[JEXPLORER.deactivate]");
+	console.debug("[SIMPLE-BOOKMARK.deactivate]");
 };
 
 
@@ -174,7 +174,7 @@ export const createBookmarkSyncService = (
 	onSyncUpdate?: (p: string, status: BookmarkStatus) => void,
 	onRefreshNeeded?: () => void
 ) => {
-	console.debug("[JEXPLORER.sync] init path =", bookmarkPath);
+	console.debug("[SIMPLE-BOOKMARK.sync] init path =", bookmarkPath);
 
 	const bookmarkWatchers = new Map<string, vscode.FileSystemWatcher>();
 	const bookmarkedFiles = new Map<string, BookmarkMetadata>();
@@ -189,7 +189,7 @@ export const createBookmarkSyncService = (
 			if (!isBookmarkedFile(filePath)) {
 				return;
 			}
-			console.debug("[JEXPLORER.sync.save-hit]", filePath);
+			console.debug("[SIMPLE-BOOKMARK.sync.save-hit]", filePath);
 			await syncBookmark(filePath);
 		});
 
@@ -207,7 +207,7 @@ export const createBookmarkSyncService = (
 
 		watcher.onDidChange(async (uri) => {
 			if (uri.fsPath === originalPath) {
-				console.debug("[JEXPLORER.sync.change]", originalPath);
+				console.debug("[SIMPLE-BOOKMARK.sync.change]", originalPath);
 				await syncBookmark(originalPath);
 			}
 		});
@@ -298,7 +298,7 @@ export const createBookmarkSyncService = (
 			onSyncUpdate && onSyncUpdate(originalPath, BookmarkStatus.SYNCED);
 			onRefreshNeeded && onRefreshNeeded();
 
-			console.debug("[JEXPLORER.sync.add]", uniqueBookmarkName);
+			console.debug("[SIMPLE-BOOKMARK.sync.add]", uniqueBookmarkName);
 		}
 		catch (error) {
 			throw new Error(`Failed to add bookmark: ${error}`);
@@ -356,7 +356,7 @@ export const createBookmarkSyncService = (
 		catch { /* noop */ }
 
 		onRefreshNeeded && onRefreshNeeded();
-		console.debug("[JEXPLORER.sync.rename] ->", finalName);
+		console.debug("[SIMPLE-BOOKMARK.sync.rename] ->", finalName);
 	};
 
 	// 북마크 제거 ------------------------------------------------------------------------
@@ -374,7 +374,7 @@ export const createBookmarkSyncService = (
 			disposeWatcherFor(originalPath);
 
 			onRefreshNeeded && onRefreshNeeded();
-			console.debug("[JEXPLORER.sync.remove]", originalPath);
+			console.debug("[SIMPLE-BOOKMARK.sync.remove]", originalPath);
 		}
 		catch (error) {
 			console.error(`Failed to remove bookmark: ${error}`);
@@ -580,7 +580,7 @@ export const createBookmarkOperationService = (
 
 			// 자기 자신에 대한 붙여넣기 방지 -----------------------------------------------------
 			if (path.resolve(item.fsPath) === path.resolve(targetFile)) {
-				console.debug("[JEXPLORER.pasteItems]", item.fsPath);
+				console.debug("[SIMPLE-BOOKMARK.pasteItems]", item.fsPath);
 				continue;
 			}
 
@@ -603,7 +603,7 @@ export const createBookmarkOperationService = (
 			? "Item pasted (overwritten)"
 			: `${pasteCount} items pasted (overwritten)`;
 		vscode.window.showInformationMessage(message);
-		console.debug("[JEXPLORER.pasteItems.count]", pasteCount);
+		console.debug("[SIMPLE-BOOKMARK.pasteItems.count]", pasteCount);
 	};
 
 	// 루트 붙여넣기: 파일명 매칭 → 각 북마크의 실제 경로에 덮어쓰기 ----------------------------
@@ -634,7 +634,7 @@ export const createBookmarkOperationService = (
 			}
 
 			if (path.resolve(src) === path.resolve(realTarget)) {
-				console.debug("[JEXPLORER.pasteItemsToRoot]", src);
+				console.debug("[SIMPLE-BOOKMARK.pasteItemsToRoot]", src);
 				continue;
 			}
 
@@ -660,7 +660,7 @@ export const createBookmarkOperationService = (
 			vscode.window.showInformationMessage(msg);
 		}
 		if (skipped.length > 0) {
-			console.debug("[JEXPLORER skipped(non-matching names)]:", skipped);
+			console.debug("[SIMPLE-BOOKMARK skipped(non-matching names)]:", skipped);
 		}
 	};
 
@@ -672,7 +672,7 @@ export const createBookmarkOperationService = (
 			try {
 				await vscode.workspace.fs.delete(item, { recursive: true });
 				deleteCount++;
-				console.debug("[JEXPLORER.deleteOriginalFiles]", item.fsPath);
+				console.debug("[SIMPLE-BOOKMARK.deleteOriginalFiles]", item.fsPath);
 			}
 			catch (error) {
 				console.error(`Failed to delete original file: ${item.fsPath}`, error);
@@ -704,7 +704,7 @@ export const createBookmarkOperationService = (
 		await vscode.workspace.fs.createDirectory(vscode.Uri.file(folderPath));
 
 		vscode.window.showInformationMessage(`Folder created in original location: ${folderName}`);
-		console.debug("[JEXPLORER.createFolder]", folderPath);
+		console.debug("[SIMPLE-BOOKMARK.createFolder]", folderPath);
 	};
 
 	// 실제 위치에 새 파일 생성 ---------------------------------------------------------------
@@ -720,7 +720,7 @@ export const createBookmarkOperationService = (
 		await vscode.workspace.fs.writeFile(vscode.Uri.file(filePath), new Uint8Array(0));
 
 		vscode.window.showInformationMessage(`File created in original location: ${fileName}`);
-		console.debug("[JEXPLORER.createFile]", filePath);
+		console.debug("[SIMPLE-BOOKMARK.createFile]", filePath);
 
 		try {
 			const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
@@ -940,7 +940,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 
 			await syncService.addBookmark(sourcePath, finalBookmarkName);
 			vscode.window.showInformationMessage(`Bookmark overwritten: ${finalBookmarkName}`);
-			console.debug("[JEXPLORER.provider.add]", sourcePath, "->", finalBookmarkName);
+			console.debug("[SIMPLE-BOOKMARK.provider.add]", sourcePath, "->", finalBookmarkName);
 		}
 		catch (error) {
 			vscode.window.showErrorMessage(`Failed to add bookmark: ${error}`);
@@ -956,7 +956,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 
 		try {
 			await syncService.removeBookmark(originalPath);
-			console.debug("[JEXPLORER.provider.remove]", originalPath);
+			console.debug("[SIMPLE-BOOKMARK.provider.remove]", originalPath);
 		}
 		catch (error) {
 			vscode.window.showErrorMessage(`Failed to remove bookmark: ${error}`);
@@ -972,7 +972,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 
 		try {
 			await syncService.renameBookmark(originalPath, newName);
-			console.debug("[JEXPLORER.provider.rename]", originalPath, "->", newName);
+			console.debug("[SIMPLE-BOOKMARK.provider.rename]", originalPath, "->", newName);
 		}
 		catch (error) {
 			vscode.window.showErrorMessage(`Failed to rename bookmark: ${error}`);
@@ -994,7 +994,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 			? `Copied: ${path.basename(copiedBookmarks[0].fsPath)}`
 			: `Copied ${copiedBookmarks.length} items`;
 		vscode.window.showInformationMessage(message);
-		console.debug("[JEXPLORER.provider.copy.len]", copiedBookmarks.length);
+		console.debug("[SIMPLE-BOOKMARK.provider.copy.len]", copiedBookmarks.length);
 	};
 
 	const pasteItems = async (targetPath: string): Promise<void> => {
@@ -1237,14 +1237,14 @@ export const createBookmarkCommand = (
 
 	// 북마크 새로고침 -------------------------------------------------------------------------
 	const registerRefreshCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("JEXPLORER.refreshentry", () => {
-		console.debug("[JEXPLORER.cmd.refresh]");
+	vscode.commands.registerCommand("SIMPLE-BOOKMARK.refreshentry", () => {
+		console.debug("[SIMPLE-BOOKMARK.cmd.refresh]");
 		provider.refresh();
 	});
 
 	// 북마크 추가 (Explorer 선택 기반) --------------------------------------------------------
 	const registerAddBookmarkCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("JEXPLORER.addbookmark", async (uri?: vscode.Uri) => {
+	vscode.commands.registerCommand("SIMPLE-BOOKMARK.addbookmark", async (uri?: vscode.Uri) => {
 		if (!uri) {
 			await vscode.commands.executeCommand("copyFilePath");
 			const copied = await vscode.env.clipboard.readText();
@@ -1271,7 +1271,7 @@ export const createBookmarkCommand = (
 
 	// 북마크 제거 (루트만) --------------------------------------------------------------------
 	const registerRemoveBookmarkCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("JEXPLORER.removebookmark", async (item?: BookmarkSystemItem) => {
+	vscode.commands.registerCommand("SIMPLE-BOOKMARK.removebookmark", async (item?: BookmarkSystemItem) => {
 		let itemsToRemove: string[];
 
 		if (item) {
@@ -1302,7 +1302,7 @@ export const createBookmarkCommand = (
 	});
 
 	// 북마크 이름 변경 -------------------------------------------------------------------------
-	const registerRenameBookmarkCommand = (): vscode.Disposable => vscode.commands.registerCommand("JEXPLORER.renamebookmark", async (item?: BookmarkSystemItem) => {
+	const registerRenameBookmarkCommand = (): vscode.Disposable => vscode.commands.registerCommand("SIMPLE-BOOKMARK.renamebookmark", async (item?: BookmarkSystemItem) => {
 		let target: BookmarkSystemItem | undefined = item || (selectedBookmarks.length > 0 ? selectedBookmarks[0] : undefined);
 
 		if (!target) {
@@ -1333,7 +1333,7 @@ export const createBookmarkCommand = (
 
 	// 복사 ----------------------------------------------------------------------------------
 	const registerCopyBookmarkCommand = (): vscode.Disposable =>
-		vscode.commands.registerCommand("JEXPLORER.copybookmark", (item?: BookmarkSystemItem, selected?: BookmarkSystemItem[]) => {
+		vscode.commands.registerCommand("SIMPLE-BOOKMARK.copybookmark", (item?: BookmarkSystemItem, selected?: BookmarkSystemItem[]) => {
 			let targets: BookmarkSystemItem[] = [];
 
 			if (Array.isArray(selected) && selected.length > 0) {
@@ -1372,7 +1372,7 @@ export const createBookmarkCommand = (
 	// - 아이템 지정 없음: 루트 매칭 덮어쓰기
 	// - 아이템 컨텍스트: 해당 위치로 붙여넣기
 	const registerPasteBookmarkCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("JEXPLORER.pastebookmark", async (item?: BookmarkSystemItem) => {
+	vscode.commands.registerCommand("SIMPLE-BOOKMARK.pastebookmark", async (item?: BookmarkSystemItem) => {
 		if (!provider.hasCopiedItems()) {
 			vscode.window.showErrorMessage("No items to paste.");
 			return;
@@ -1401,7 +1401,7 @@ export const createBookmarkCommand = (
 		}
 
 		if (targetPath) {
-			console.debug("[JEXPLORER.pastebookmark]", targetPath);
+			console.debug("[SIMPLE-BOOKMARK.pastebookmark]", targetPath);
 			await provider.pasteItems(targetPath);
 			provider.refresh();
 		}
@@ -1412,7 +1412,7 @@ export const createBookmarkCommand = (
 
 	// 붙여넣기(루트 전용) -----------------------------------------------------------------
 	const registerPasteToRootBookmarkCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("JEXPLORER.pasterootbookmark", async () => {
+	vscode.commands.registerCommand("SIMPLE-BOOKMARK.pasterootbookmark", async () => {
 		if (!provider.hasCopiedItems()) {
 			vscode.window.showErrorMessage("No items to paste.");
 			return;
@@ -1423,7 +1423,7 @@ export const createBookmarkCommand = (
 
 	// 모든 북마크 삭제 --------------------------------------------------------------------
 	const registerDeleteAllBookmarkCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("JEXPLORER.removeallbookmark", async () => {
+	vscode.commands.registerCommand("SIMPLE-BOOKMARK.removeallbookmark", async () => {
 		const allItems = await provider.getChildren();
 
 		if (allItems && allItems.length > 0) {
@@ -1440,7 +1440,7 @@ export const createBookmarkCommand = (
 
 	// 폴더 생성 --------------------------------------------------------------------------
 	const registerCreateFolderCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("JEXPLORER.createfolder", async (item?: BookmarkSystemItem) => {
+	vscode.commands.registerCommand("SIMPLE-BOOKMARK.createfolder", async (item?: BookmarkSystemItem) => {
 		const folderName = await vscode.window.showInputBox({
 			prompt: "Enter folder name (will be created in original location)",
 			validateInput: validateFileName
@@ -1475,7 +1475,7 @@ export const createBookmarkCommand = (
 
 	// 파일 생성 --------------------------------------------------------------------------
 	const registerCreateFileCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("JEXPLORER.createfile", async (item?: BookmarkSystemItem) => {
+	vscode.commands.registerCommand("SIMPLE-BOOKMARK.createfile", async (item?: BookmarkSystemItem) => {
 		const fileName = await vscode.window.showInputBox({
 			prompt: "Enter file name (will be created in original location)",
 			validateInput: validateFileName
@@ -1519,8 +1519,8 @@ export const createBookmarkCommand = (
 ================================================================================================================================================================================================================================================
 
 	{
-		"name": "JEXPLORER",
-		"displayName": "JEXPLORER",
+		"name": "SIMPLE-BOOKMARK",
+		"displayName": "SIMPLE-BOOKMARK",
 		"publisher": "JUNGHO",
 		"icon": "logo_image.png",
 		"license": "Apache-2.0",
@@ -1530,7 +1530,7 @@ export const createBookmarkCommand = (
 		"main": "./out/extension.js",
 		"repository": {
 			"type": "git",
-			"url": "https://github.com/JUNGHO-GIT/JEXPLORER.git"
+			"url": "https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK.git"
 		},
 		"engines": {
 			"vscode": "^1.104.0",
@@ -1550,23 +1550,23 @@ export const createBookmarkCommand = (
 			"watcher"
 		],
 		"activationEvents": [
-			"onView:JEXPLORER",
-			"onCommand:JEXPLORER.additem",
-			"onCommand:JEXPLORER.refreshentry",
-			"onCommand:JEXPLORER.copyitem",
-			"onCommand:JEXPLORER.pasteitem",
-			"onCommand:JEXPLORER.pasteroot",
-			"onCommand:JEXPLORER.removeitem",
-			"onCommand:JEXPLORER.removeallitems",
-			"onCommand:JEXPLORER.createfolder",
-			"onCommand:JEXPLORER.createfile",
-			"onCommand:JEXPLORER.renamebookmark"
+			"onView:SIMPLE-BOOKMARK",
+			"onCommand:SIMPLE-BOOKMARK.additem",
+			"onCommand:SIMPLE-BOOKMARK.refreshentry",
+			"onCommand:SIMPLE-BOOKMARK.copyitem",
+			"onCommand:SIMPLE-BOOKMARK.pasteitem",
+			"onCommand:SIMPLE-BOOKMARK.pasteroot",
+			"onCommand:SIMPLE-BOOKMARK.removeitem",
+			"onCommand:SIMPLE-BOOKMARK.removeallitems",
+			"onCommand:SIMPLE-BOOKMARK.createfolder",
+			"onCommand:SIMPLE-BOOKMARK.createfile",
+			"onCommand:SIMPLE-BOOKMARK.renamebookmark"
 		],
 		"contributes": {
 			"views": {
 				"explorer": [
 					{
-						"id": "JEXPLORER",
+						"id": "SIMPLE-BOOKMARK",
 						"name": "BOOKMARK",
 						"icon": "$(bookmark)",
 						"when": "workspaceFolderCount > 0"
@@ -1575,189 +1575,189 @@ export const createBookmarkCommand = (
 			},
 			"commands": [
 				{
-					"command": "JEXPLORER.additem",
+					"command": "SIMPLE-BOOKMARK.additem",
 					"title": "Add to Bookmarks",
-					"category": "JEXPLORER"
+					"category": "SIMPLE-BOOKMARK"
 				},
 				{
-					"command": "JEXPLORER.refreshentry",
+					"command": "SIMPLE-BOOKMARK.refreshentry",
 					"title": "Refresh Bookmarks",
-					"category": "JEXPLORER",
+					"category": "SIMPLE-BOOKMARK",
 					"icon": "$(refresh)"
 				},
 				{
-					"command": "JEXPLORER.copyitem",
+					"command": "SIMPLE-BOOKMARK.copyitem",
 					"title": "Copy",
-					"category": "JEXPLORER",
+					"category": "SIMPLE-BOOKMARK",
 					"icon": "$(copy)"
 				},
 				{
-					"command": "JEXPLORER.pasteitem",
+					"command": "SIMPLE-BOOKMARK.pasteitem",
 					"title": "Paste",
-					"category": "JEXPLORER",
+					"category": "SIMPLE-BOOKMARK",
 					"icon": "$(replace-all)"
 				},
 				{
-					"command": "JEXPLORER.pasteroot",
+					"command": "SIMPLE-BOOKMARK.pasteroot",
 					"title": "Paste to Root",
-					"category": "JEXPLORER",
+					"category": "SIMPLE-BOOKMARK",
 					"icon": "$(replace-all)"
 				},
 				{
-					"command": "JEXPLORER.createfolder",
+					"command": "SIMPLE-BOOKMARK.createfolder",
 					"title": "Create Folder",
-					"category": "JEXPLORER",
+					"category": "SIMPLE-BOOKMARK",
 					"icon": "$(new-folder)"
 				},
 				{
-					"command": "JEXPLORER.createfile",
+					"command": "SIMPLE-BOOKMARK.createfile",
 					"title": "Create File",
-					"category": "JEXPLORER",
+					"category": "SIMPLE-BOOKMARK",
 					"icon": "$(new-file)"
 				},
 				{
-					"command": "JEXPLORER.removeitem",
+					"command": "SIMPLE-BOOKMARK.removeitem",
 					"title": "Remove",
-					"category": "JEXPLORER",
+					"category": "SIMPLE-BOOKMARK",
 					"icon": "$(remove-close)"
 				},
 				{
-					"command": "JEXPLORER.removeallitems",
+					"command": "SIMPLE-BOOKMARK.removeallitems",
 					"title": "Remove All",
-					"category": "JEXPLORER",
+					"category": "SIMPLE-BOOKMARK",
 					"icon": "$(terminal-kill)"
 				},
 				{
-					"command": "JEXPLORER.renamebookmark",
+					"command": "SIMPLE-BOOKMARK.renamebookmark",
 					"title": "Rename",
-					"category": "JEXPLORER",
+					"category": "SIMPLE-BOOKMARK",
 					"icon": "$(edit)"
 				}
 			],
 			"keybindings": [
 				{
 					"key": "shift+alt+a",
-					"command": "JEXPLORER.additem",
-					"when": "focusedView == JEXPLORER"
+					"command": "SIMPLE-BOOKMARK.additem",
+					"when": "focusedView == SIMPLE-BOOKMARK"
 				},
 				{
 					"key": "shift+alt+a",
-					"command": "JEXPLORER.additem",
+					"command": "SIMPLE-BOOKMARK.additem",
 					"when": "explorerViewletVisible && filesExplorerFocus"
 				},
 				{
 					"key": "ctrl+c",
-					"command": "JEXPLORER.copyitem",
-					"when": "focusedView == JEXPLORER"
+					"command": "SIMPLE-BOOKMARK.copyitem",
+					"when": "focusedView == SIMPLE-BOOKMARK"
 				},
 				{
 					"key": "ctrl+v",
-					"command": "JEXPLORER.pasteitem",
-					"when": "focusedView == JEXPLORER"
+					"command": "SIMPLE-BOOKMARK.pasteitem",
+					"when": "focusedView == SIMPLE-BOOKMARK"
 				},
 				{
 					"key": "ctrl+d",
-					"command": "JEXPLORER.removeitem",
-					"when": "focusedView == JEXPLORER"
+					"command": "SIMPLE-BOOKMARK.removeitem",
+					"when": "focusedView == SIMPLE-BOOKMARK"
 				},
 				{
 					"key": "f2",
-					"command": "JEXPLORER.renamebookmark",
-					"when": "focusedView == JEXPLORER"
+					"command": "SIMPLE-BOOKMARK.renamebookmark",
+					"when": "focusedView == SIMPLE-BOOKMARK"
 				}
 			],
 			"menus": {
 				"view/title": [
 					{
-						"command": "JEXPLORER.refreshentry",
-						"when": "view == JEXPLORER",
+						"command": "SIMPLE-BOOKMARK.refreshentry",
+						"when": "view == SIMPLE-BOOKMARK",
 						"group": "navigation"
 					},
 					{
-						"command": "JEXPLORER.copyitem",
-						"when": "view == JEXPLORER",
+						"command": "SIMPLE-BOOKMARK.copyitem",
+						"when": "view == SIMPLE-BOOKMARK",
 						"group": "navigation"
 					},
 					{
-						"command": "JEXPLORER.pasteroot",
-						"when": "view == JEXPLORER",
+						"command": "SIMPLE-BOOKMARK.pasteroot",
+						"when": "view == SIMPLE-BOOKMARK",
 						"group": "navigation"
 					},
 					{
-						"command": "JEXPLORER.removeallitems",
-						"when": "view == JEXPLORER",
+						"command": "SIMPLE-BOOKMARK.removeallitems",
+						"when": "view == SIMPLE-BOOKMARK",
 						"group": "navigation"
 					}
 				],
 				"view/item/context": [
 					{
-						"command": "JEXPLORER.copyitem",
-						"when": "view == JEXPLORER",
+						"command": "SIMPLE-BOOKMARK.copyitem",
+						"when": "view == SIMPLE-BOOKMARK",
 						"group": "1_clipboard@1"
 					},
 					{
-						"command": "JEXPLORER.pasteitem",
-						"when": "view == JEXPLORER && viewItem == bookmarkFolder",
+						"command": "SIMPLE-BOOKMARK.pasteitem",
+						"when": "view == SIMPLE-BOOKMARK && viewItem == bookmarkFolder",
 						"group": "1_clipboard@2"
 					},
 					{
-						"command": "JEXPLORER.pasteitem",
-						"when": "view == JEXPLORER && viewItem == bookmarkFile",
+						"command": "SIMPLE-BOOKMARK.pasteitem",
+						"when": "view == SIMPLE-BOOKMARK && viewItem == bookmarkFile",
 						"group": "1_clipboard@3"
 					},
 					{
-						"command": "JEXPLORER.renamebookmark",
-						"when": "view == JEXPLORER && (viewItem == bookmarkFile || viewItem == bookmarkFolder)",
+						"command": "SIMPLE-BOOKMARK.renamebookmark",
+						"when": "view == SIMPLE-BOOKMARK && (viewItem == bookmarkFile || viewItem == bookmarkFolder)",
 						"group": "2_modification@0"
 					},
 					{
-						"command": "JEXPLORER.createfolder",
-						"when": "view == JEXPLORER && viewItem == bookmarkFolder",
+						"command": "SIMPLE-BOOKMARK.createfolder",
+						"when": "view == SIMPLE-BOOKMARK && viewItem == bookmarkFolder",
 						"group": "2_modification@1"
 					},
 					{
-						"command": "JEXPLORER.createfile",
-						"when": "view == JEXPLORER && viewItem == bookmarkFolder",
+						"command": "SIMPLE-BOOKMARK.createfile",
+						"when": "view == SIMPLE-BOOKMARK && viewItem == bookmarkFolder",
 						"group": "2_modification@2"
 					},
 					{
-						"command": "JEXPLORER.removeitem",
-						"when": "view == JEXPLORER",
+						"command": "SIMPLE-BOOKMARK.removeitem",
+						"when": "view == SIMPLE-BOOKMARK",
 						"group": "4_danger@1"
 					},
 					{
-						"command": "JEXPLORER.removeitem",
-						"when": "view == JEXPLORER",
+						"command": "SIMPLE-BOOKMARK.removeitem",
+						"when": "view == SIMPLE-BOOKMARK",
 						"group": "inline"
 					},
 					{
-						"command": "JEXPLORER.renamebookmark",
-						"when": "view == JEXPLORER",
+						"command": "SIMPLE-BOOKMARK.renamebookmark",
+						"when": "view == SIMPLE-BOOKMARK",
 						"group": "inline"
 					}
 				],
 				"explorer/context": [
 					{
-						"command": "JEXPLORER.additem",
+						"command": "SIMPLE-BOOKMARK.additem",
 						"when": "explorerResourceIsFolder || explorerResourceIsFile",
 						"group": "2_workspace@1"
 					}
 				]
 			},
 			"configuration": {
-				"title": "JEXPLORER",
+				"title": "SIMPLE-BOOKMARK",
 				"properties": {
-					"JEXPLORER.autoRefresh": {
+					"SIMPLE-BOOKMARK.autoRefresh": {
 						"type": "boolean",
 						"default": true,
 						"description": "Automatically refresh bookmarks when files change"
 					},
-					"JEXPLORER.showSyncStatus": {
+					"SIMPLE-BOOKMARK.showSyncStatus": {
 						"type": "boolean",
 						"default": true,
 						"description": "Show synchronization status in bookmark items"
 					},
-					"JEXPLORER.confirmDelete": {
+					"SIMPLE-BOOKMARK.confirmDelete": {
 						"type": "boolean",
 						"default": true,
 						"description": "Confirm before removing bookmarks"

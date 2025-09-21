@@ -15,28 +15,28 @@ const setupAdditionalListeners = (
 
 	// 선택 변경 → 캐시 동기화
 	const selListener = treeView.onDidChangeSelection(e => {
-		console.debug("[JEXPLORER.selectionChanged]", e.selection.length);
+		console.debug("[SIMPLE-BOOKMARK.selectionChanged]", e.selection.length);
 		commandManager.updateSelectedBookmark(e.selection as BookmarkSystemItem[]);
 	});
 
 	// 워크스페이스 폴더 변경 감지 → 북마크 갱신
 	const workspaceListener = vscode.workspace.onDidChangeWorkspaceFolders(() => {
-		console.debug("[JEXPLORER.workspaceChanged]");
-		vscode.window.showInformationMessage("Workspace changed. JEXPLORER bookmarks may need to be refreshed.");
+		console.debug("[SIMPLE-BOOKMARK.workspaceChanged]");
+		vscode.window.showInformationMessage("Workspace changed. SIMPLE-BOOKMARK bookmarks may need to be refreshed.");
 		provider.refresh();
 	});
 
 	// 확장 설정 변경 감지 → 북마크 갱신
 	const configListener = vscode.workspace.onDidChangeConfiguration(e => {
-		if (e.affectsConfiguration("JEXPLORER")) {
-			console.debug("[JEXPLORER.configChanged]");
+		if (e.affectsConfiguration("SIMPLE-BOOKMARK")) {
+			console.debug("[SIMPLE-BOOKMARK.configChanged]");
 			provider.refresh();
 		}
 	});
 
 	// 파일 저장 이벤트 감지 (로그)
 	const saveListener = vscode.workspace.onDidSaveTextDocument((doc) => {
-		console.debug("[JEXPLORER.savebookmark]", doc.uri.fsPath);
+		console.debug("[SIMPLE-BOOKMARK.savebookmark]", doc.uri.fsPath);
 	});
 
 	listeners.push(selListener, workspaceListener, configListener, saveListener);
@@ -47,7 +47,7 @@ const setupAdditionalListeners = (
 export const activate = (
 	context: vscode.ExtensionContext
 ): void => {
-	console.debug("[JEXPLORER.activate] start");
+	console.debug("[SIMPLE-BOOKMARK.activate] start");
 	const workspaceRoot = (
 		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
@@ -55,8 +55,8 @@ export const activate = (
 	);
 
 	if (!workspaceRoot) {
-		vscode.window.showWarningMessage("JEXPLORER requires an open workspace to function properly.");
-		console.debug("[JEXPLORER.activate] no workspace");
+		vscode.window.showWarningMessage("SIMPLE-BOOKMARK requires an open workspace to function properly.");
+		console.debug("[SIMPLE-BOOKMARK.activate] no workspace");
 		return;
 	}
 
@@ -64,7 +64,7 @@ export const activate = (
 	const commandManager = createBookmarkCommand(provider, context);
 	const commands = commandManager.registerCommands();
 
-	const treeView = vscode.window.createTreeView("JEXPLORER", {
+	const treeView = vscode.window.createTreeView("SIMPLE-BOOKMARK", {
 		treeDataProvider: provider,
 		canSelectMany: true,
 		showCollapseAll: true
@@ -78,10 +78,10 @@ export const activate = (
 		...additionalListeners,
 		{ dispose: () => provider.dispose() }
 	);
-	console.debug("[JEXPLORER.activate] ready");
+	console.debug("[SIMPLE-BOOKMARK.activate] ready");
 };
 
 // 비활성화 훅 ---------------------------------------------------------------------------------
 export const deactivate = (): void => {
-	console.debug("[JEXPLORER.deactivate]");
+	console.debug("[SIMPLE-BOOKMARK.deactivate]");
 };

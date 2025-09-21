@@ -171,7 +171,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 
 			await syncService.addBookmark(sourcePath, finalBookmarkName);
 			vscode.window.showInformationMessage(`Bookmark overwritten: ${finalBookmarkName}`);
-			console.debug("[JEXPLORER.provider.add]", sourcePath, "->", finalBookmarkName);
+			console.debug("[SIMPLE-BOOKMARK.provider.add]", sourcePath, "->", finalBookmarkName);
 		}
 		catch (error) {
 			vscode.window.showErrorMessage(`Failed to add bookmark: ${error}`);
@@ -187,7 +187,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 
 		try {
 			await syncService.removeBookmark(originalPath);
-			console.debug("[JEXPLORER.provider.remove]", originalPath);
+			console.debug("[SIMPLE-BOOKMARK.provider.remove]", originalPath);
 		}
 		catch (error) {
 			vscode.window.showErrorMessage(`Failed to remove bookmark: ${error}`);
@@ -207,7 +207,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 		if (meta) {
 			// 루트 북마크
 			await syncService.renameBookmark(originalPath, newName);
-			console.debug("[JEXPLORER.provider.rename.root]", originalPath, "->", newName);
+			console.debug("[SIMPLE-BOOKMARK.provider.rename.root]", originalPath, "->", newName);
 			return;
 		}
 
@@ -243,7 +243,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 			const newPath = path.join(dir, finalName);
 
 			await vscode.workspace.fs.rename(uri, vscode.Uri.file(newPath), { overwrite: false });
-			console.debug("[JEXPLORER.provider.rename.child]", originalPath, "->", newPath);
+			console.debug("[SIMPLE-BOOKMARK.provider.rename.child]", originalPath, "->", newPath);
 		}
 		catch (error) {
 			vscode.window.showErrorMessage(`Failed to rename item: ${error}`);
@@ -265,7 +265,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 			? `Copied: ${path.basename(copiedBookmarks[0].fsPath)}`
 			: `Copied ${copiedBookmarks.length} items`;
 		vscode.window.showInformationMessage(message);
-		console.debug("[JEXPLORER.provider.copy.len]", copiedBookmarks.length);
+		console.debug("[SIMPLE-BOOKMARK.provider.copy.len]", copiedBookmarks.length);
 	};
 
 	const pasteItems = async (targetPath: string): Promise<void> => {

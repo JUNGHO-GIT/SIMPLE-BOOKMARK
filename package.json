@@ -1,6 +1,6 @@
 {
-	"name": "JEXPLORER",
-	"displayName": "JEXPLORER",
+	"name": "SIMPLE-BOOKMARK",
+	"displayName": "SIMPLE-BOOKMARK",
 	"publisher": "JUNGHO",
 	"icon": "logo_image.png",
 	"license": "Apache-2.0",
@@ -10,7 +10,7 @@
 	"main": "./out/extension.js",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/JUNGHO-GIT/JEXPLORER.git"
+		"url": "https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK.git"
 	},
 	"engines": {
 		"vscode": "^1.104.0",
@@ -30,23 +30,23 @@
 		"watcher"
 	],
 	"activationEvents": [
-		"onView:JEXPLORER",
-		"onCommand:JEXPLORER.addbookmark",
-		"onCommand:JEXPLORER.refreshentry",
-		"onCommand:JEXPLORER.copybookmark",
-		"onCommand:JEXPLORER.pastebookmark",
-		"onCommand:JEXPLORER.pasterootbookmark",
-		"onCommand:JEXPLORER.renamebookmark",
-		"onCommand:JEXPLORER.removebookmark",
-		"onCommand:JEXPLORER.removeallbookmark",
-		"onCommand:JEXPLORER.createfolder",
-		"onCommand:JEXPLORER.createfile"
+		"onView:SIMPLE-BOOKMARK",
+		"onCommand:SIMPLE-BOOKMARK.addbookmark",
+		"onCommand:SIMPLE-BOOKMARK.refreshentry",
+		"onCommand:SIMPLE-BOOKMARK.copybookmark",
+		"onCommand:SIMPLE-BOOKMARK.pastebookmark",
+		"onCommand:SIMPLE-BOOKMARK.pasterootbookmark",
+		"onCommand:SIMPLE-BOOKMARK.renamebookmark",
+		"onCommand:SIMPLE-BOOKMARK.removebookmark",
+		"onCommand:SIMPLE-BOOKMARK.removeallbookmark",
+		"onCommand:SIMPLE-BOOKMARK.createfolder",
+		"onCommand:SIMPLE-BOOKMARK.createfile"
 	],
 	"contributes": {
 		"views": {
 			"explorer": [
 				{
-					"id": "JEXPLORER",
+					"id": "SIMPLE-BOOKMARK",
 					"name": "BOOKMARK",
 					"icon": "$(bookmark)",
 					"when": "workspaceFolderCount > 0"
@@ -55,189 +55,189 @@
 		},
 		"commands": [
 			{
-				"command": "JEXPLORER.addbookmark",
+				"command": "SIMPLE-BOOKMARK.addbookmark",
 				"title": "Add to Bookmarks",
-				"category": "JEXPLORER"
+				"category": "SIMPLE-BOOKMARK"
 			},
 			{
-				"command": "JEXPLORER.refreshentry",
+				"command": "SIMPLE-BOOKMARK.refreshentry",
 				"title": "Refresh Bookmarks",
-				"category": "JEXPLORER",
+				"category": "SIMPLE-BOOKMARK",
 				"icon": "$(refresh)"
 			},
 			{
-				"command": "JEXPLORER.copybookmark",
+				"command": "SIMPLE-BOOKMARK.copybookmark",
 				"title": "Copy",
-				"category": "JEXPLORER",
+				"category": "SIMPLE-BOOKMARK",
 				"icon": "$(copy)"
 			},
 			{
-				"command": "JEXPLORER.pastebookmark",
+				"command": "SIMPLE-BOOKMARK.pastebookmark",
 				"title": "Paste",
-				"category": "JEXPLORER",
+				"category": "SIMPLE-BOOKMARK",
 				"icon": "$(replace-all)"
 			},
 			{
-				"command": "JEXPLORER.pasterootbookmark",
+				"command": "SIMPLE-BOOKMARK.pasterootbookmark",
 				"title": "Paste to Root",
-				"category": "JEXPLORER",
+				"category": "SIMPLE-BOOKMARK",
 				"icon": "$(replace-all)"
 			},
 			{
-				"command": "JEXPLORER.createfolder",
+				"command": "SIMPLE-BOOKMARK.createfolder",
 				"title": "Create Folder",
-				"category": "JEXPLORER",
+				"category": "SIMPLE-BOOKMARK",
 				"icon": "$(new-folder)"
 			},
 			{
-				"command": "JEXPLORER.createfile",
+				"command": "SIMPLE-BOOKMARK.createfile",
 				"title": "Create File",
-				"category": "JEXPLORER",
+				"category": "SIMPLE-BOOKMARK",
 				"icon": "$(new-file)"
 			},
 			{
-				"command": "JEXPLORER.removebookmark",
+				"command": "SIMPLE-BOOKMARK.removebookmark",
 				"title": "Remove",
-				"category": "JEXPLORER",
+				"category": "SIMPLE-BOOKMARK",
 				"icon": "$(remove-close)"
 			},
 			{
-				"command": "JEXPLORER.removeallbookmark",
+				"command": "SIMPLE-BOOKMARK.removeallbookmark",
 				"title": "Remove All",
-				"category": "JEXPLORER",
+				"category": "SIMPLE-BOOKMARK",
 				"icon": "$(terminal-kill)"
 			},
 			{
-				"command": "JEXPLORER.renamebookmark",
+				"command": "SIMPLE-BOOKMARK.renamebookmark",
 				"title": "Rename",
-				"category": "JEXPLORER",
+				"category": "SIMPLE-BOOKMARK",
 				"icon": "$(edit)"
 			}
 		],
 		"keybindings": [
 			{
 				"key": "shift+alt+a",
-				"command": "JEXPLORER.addbookmark",
-				"when": "focusedView == JEXPLORER"
+				"command": "SIMPLE-BOOKMARK.addbookmark",
+				"when": "focusedView == SIMPLE-BOOKMARK"
 			},
 			{
 				"key": "shift+alt+a",
-				"command": "JEXPLORER.addbookmark",
+				"command": "SIMPLE-BOOKMARK.addbookmark",
 				"when": "explorerViewletVisible && filesExplorerFocus"
 			},
 			{
 				"key": "ctrl+c",
-				"command": "JEXPLORER.copybookmark",
-				"when": "focusedView == JEXPLORER"
+				"command": "SIMPLE-BOOKMARK.copybookmark",
+				"when": "focusedView == SIMPLE-BOOKMARK"
 			},
 			{
 				"key": "ctrl+v",
-				"command": "JEXPLORER.pastebookmark",
-				"when": "focusedView == JEXPLORER"
+				"command": "SIMPLE-BOOKMARK.pastebookmark",
+				"when": "focusedView == SIMPLE-BOOKMARK"
 			},
 			{
 				"key": "ctrl+d",
-				"command": "JEXPLORER.removebookmark",
-				"when": "focusedView == JEXPLORER"
+				"command": "SIMPLE-BOOKMARK.removebookmark",
+				"when": "focusedView == SIMPLE-BOOKMARK"
 			},
 			{
 				"key": "f2",
-				"command": "JEXPLORER.renamebookmark",
-				"when": "focusedView == JEXPLORER"
+				"command": "SIMPLE-BOOKMARK.renamebookmark",
+				"when": "focusedView == SIMPLE-BOOKMARK"
 			}
 		],
 		"menus": {
 			"view/title": [
 				{
-					"command": "JEXPLORER.refreshentry",
-					"when": "view == JEXPLORER",
+					"command": "SIMPLE-BOOKMARK.refreshentry",
+					"when": "view == SIMPLE-BOOKMARK",
 					"group": "navigation"
 				},
 				{
-					"command": "JEXPLORER.copybookmark",
-					"when": "view == JEXPLORER",
+					"command": "SIMPLE-BOOKMARK.copybookmark",
+					"when": "view == SIMPLE-BOOKMARK",
 					"group": "navigation"
 				},
 				{
-					"command": "JEXPLORER.pasterootbookmark",
-					"when": "view == JEXPLORER",
+					"command": "SIMPLE-BOOKMARK.pasterootbookmark",
+					"when": "view == SIMPLE-BOOKMARK",
 					"group": "navigation"
 				},
 				{
-					"command": "JEXPLORER.removeallbookmark",
-					"when": "view == JEXPLORER",
+					"command": "SIMPLE-BOOKMARK.removeallbookmark",
+					"when": "view == SIMPLE-BOOKMARK",
 					"group": "navigation"
 				}
 			],
 			"view/item/context": [
 				{
-					"command": "JEXPLORER.copybookmark",
-					"when": "view == JEXPLORER",
+					"command": "SIMPLE-BOOKMARK.copybookmark",
+					"when": "view == SIMPLE-BOOKMARK",
 					"group": "1_clipboard@1"
 				},
 				{
-					"command": "JEXPLORER.pastebookmark",
-					"when": "view == JEXPLORER && viewItem == bookmarkFolder",
+					"command": "SIMPLE-BOOKMARK.pastebookmark",
+					"when": "view == SIMPLE-BOOKMARK && viewItem == bookmarkFolder",
 					"group": "1_clipboard@2"
 				},
 				{
-					"command": "JEXPLORER.pastebookmark",
-					"when": "view == JEXPLORER && viewItem == bookmarkFile",
+					"command": "SIMPLE-BOOKMARK.pastebookmark",
+					"when": "view == SIMPLE-BOOKMARK && viewItem == bookmarkFile",
 					"group": "1_clipboard@3"
 				},
 				{
-					"command": "JEXPLORER.renamebookmark",
-					"when": "view == JEXPLORER && (viewItem == bookmarkFile || viewItem == bookmarkFolder)",
+					"command": "SIMPLE-BOOKMARK.renamebookmark",
+					"when": "view == SIMPLE-BOOKMARK && (viewItem == bookmarkFile || viewItem == bookmarkFolder)",
 					"group": "2_modification@0"
 				},
 				{
-					"command": "JEXPLORER.createfolder",
-					"when": "view == JEXPLORER && viewItem == bookmarkFolder",
+					"command": "SIMPLE-BOOKMARK.createfolder",
+					"when": "view == SIMPLE-BOOKMARK && viewItem == bookmarkFolder",
 					"group": "2_modification@1"
 				},
 				{
-					"command": "JEXPLORER.createfile",
-					"when": "view == JEXPLORER && viewItem == bookmarkFolder",
+					"command": "SIMPLE-BOOKMARK.createfile",
+					"when": "view == SIMPLE-BOOKMARK && viewItem == bookmarkFolder",
 					"group": "2_modification@2"
 				},
 				{
-					"command": "JEXPLORER.removebookmark",
-					"when": "view == JEXPLORER",
+					"command": "SIMPLE-BOOKMARK.removebookmark",
+					"when": "view == SIMPLE-BOOKMARK",
 					"group": "4_danger@1"
 				},
 				{
-					"command": "JEXPLORER.removebookmark",
-					"when": "view == JEXPLORER",
+					"command": "SIMPLE-BOOKMARK.removebookmark",
+					"when": "view == SIMPLE-BOOKMARK",
 					"group": "inline"
 				},
 				{
-					"command": "JEXPLORER.renamebookmark",
-					"when": "view == JEXPLORER",
+					"command": "SIMPLE-BOOKMARK.renamebookmark",
+					"when": "view == SIMPLE-BOOKMARK",
 					"group": "inline"
 				}
 			],
 			"explorer/context": [
 				{
-					"command": "JEXPLORER.addbookmark",
+					"command": "SIMPLE-BOOKMARK.addbookmark",
 					"when": "explorerResourceIsFolder || explorerResourceIsFile",
 					"group": "2_workspace@1"
 				}
 			]
 		},
 		"configuration": {
-			"title": "JEXPLORER",
+			"title": "SIMPLE-BOOKMARK",
 			"properties": {
-				"JEXPLORER.autoRefresh": {
+				"SIMPLE-BOOKMARK.autoRefresh": {
 					"type": "boolean",
 					"default": true,
 					"description": "Automatically refresh bookmarks when files change"
 				},
-				"JEXPLORER.showSyncStatus": {
+				"SIMPLE-BOOKMARK.showSyncStatus": {
 					"type": "boolean",
 					"default": true,
 					"description": "Show synchronization status in bookmark items"
 				},
-				"JEXPLORER.confirmDelete": {
+				"SIMPLE-BOOKMARK.confirmDelete": {
 					"type": "boolean",
 					"default": true,
 					"description": "Confirm before removing bookmarks"
