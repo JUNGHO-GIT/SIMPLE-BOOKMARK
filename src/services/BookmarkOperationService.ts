@@ -79,7 +79,7 @@ export const createBookmarkOperationService = (
 
 			// 자기 자신에 대한 붙여넣기 방지 -----------------------------------------------------
 			if (path.resolve(item.fsPath) === path.resolve(targetFile)) {
-				console.debug("[SIMPLE-BOOKMARK.pasteItems]", item.fsPath);
+				console.debug("[Simple-Bookmark.pasteItems]", item.fsPath);
 				continue;
 			}
 
@@ -102,7 +102,7 @@ export const createBookmarkOperationService = (
 			? "Item pasted (overwritten)"
 			: `${pasteCount} items pasted (overwritten)`;
 		vscode.window.showInformationMessage(message);
-		console.debug("[SIMPLE-BOOKMARK.pasteItems.count]", pasteCount);
+		console.debug("[Simple-Bookmark.pasteItems.count]", pasteCount);
 	};
 
 	// 루트 붙여넣기: 파일명 매칭 → 각 북마크의 실제 경로에 덮어쓰기 ----------------------------
@@ -133,7 +133,7 @@ export const createBookmarkOperationService = (
 			}
 
 			if (path.resolve(src) === path.resolve(realTarget)) {
-				console.debug("[SIMPLE-BOOKMARK.pasteItemsToRoot]", src);
+				console.debug("[Simple-Bookmark.pasteItemsToRoot]", src);
 				continue;
 			}
 
@@ -159,7 +159,7 @@ export const createBookmarkOperationService = (
 			vscode.window.showInformationMessage(msg);
 		}
 		if (skipped.length > 0) {
-			console.debug("[SIMPLE-BOOKMARK skipped(non-matching names)]:", skipped);
+			console.debug("[Simple-Bookmark skipped(non-matching names)]:", skipped);
 		}
 	};
 
@@ -171,7 +171,7 @@ export const createBookmarkOperationService = (
 			try {
 				await vscode.workspace.fs.delete(item, { recursive: true });
 				deleteCount++;
-				console.debug("[SIMPLE-BOOKMARK.deleteOriginalFiles]", item.fsPath);
+				console.debug("[Simple-Bookmark.deleteOriginalFiles]", item.fsPath);
 			}
 			catch (error) {
 				console.error(`Failed to delete original file: ${item.fsPath}`, error);
@@ -203,7 +203,7 @@ export const createBookmarkOperationService = (
 		await vscode.workspace.fs.createDirectory(vscode.Uri.file(folderPath));
 
 		vscode.window.showInformationMessage(`Folder created in original location: ${folderName}`);
-		console.debug("[SIMPLE-BOOKMARK.createFolder]", folderPath);
+		console.debug("[Simple-Bookmark.createFolder]", folderPath);
 	};
 
 	// 실제 위치에 새 파일 생성 ---------------------------------------------------------------
@@ -219,7 +219,7 @@ export const createBookmarkOperationService = (
 		await vscode.workspace.fs.writeFile(vscode.Uri.file(filePath), new Uint8Array(0));
 
 		vscode.window.showInformationMessage(`File created in original location: ${fileName}`);
-		console.debug("[SIMPLE-BOOKMARK.createFile]", filePath);
+		console.debug("[Simple-Bookmark.createFile]", filePath);
 
 		try {
 			const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));

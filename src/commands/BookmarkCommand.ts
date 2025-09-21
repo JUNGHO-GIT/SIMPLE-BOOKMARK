@@ -36,14 +36,14 @@ export const createBookmarkCommand = (
 
 	// 북마크 새로고침 -------------------------------------------------------------------------
 	const registerRefreshCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("SIMPLE-BOOKMARK.refreshentry", () => {
-		console.debug("[SIMPLE-BOOKMARK.cmd.refresh]");
+	vscode.commands.registerCommand("Simple-Bookmark.refreshentry", () => {
+		console.debug("[Simple-Bookmark.cmd.refresh]");
 		provider.refresh();
 	});
 
 	// 북마크 추가 (Explorer 선택 기반) --------------------------------------------------------
 	const registerAddBookmarkCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("SIMPLE-BOOKMARK.addbookmark", async (uri?: vscode.Uri) => {
+	vscode.commands.registerCommand("Simple-Bookmark.addbookmark", async (uri?: vscode.Uri) => {
 		if (!uri) {
 			await vscode.commands.executeCommand("copyFilePath");
 			const copied = await vscode.env.clipboard.readText();
@@ -69,7 +69,7 @@ export const createBookmarkCommand = (
 
 	// 북마크 제거 (루트만) --------------------------------------------------------------------
 	const registerRemoveBookmarkCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("SIMPLE-BOOKMARK.removebookmark", async (item?: BookmarkSystemItem) => {
+	vscode.commands.registerCommand("Simple-Bookmark.removebookmark", async (item?: BookmarkSystemItem) => {
 		let itemsToRemove: string[];
 
 		if (item) {
@@ -101,7 +101,7 @@ export const createBookmarkCommand = (
 
 	// 북마크 이름 변경 (루트뿐 아니라 모든 상황에서 허용) -----------------------------------------
 	const registerRenameBookmarkCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("SIMPLE-BOOKMARK.renamebookmark", async (item?: BookmarkSystemItem) => {
+	vscode.commands.registerCommand("Simple-Bookmark.renamebookmark", async (item?: BookmarkSystemItem) => {
 		let target: BookmarkSystemItem | undefined = item || (selectedBookmarks.length > 0 ? selectedBookmarks[0] : undefined);
 
 		if (!target) {
@@ -126,7 +126,7 @@ export const createBookmarkCommand = (
 
 	// 복사 ----------------------------------------------------------------------------------
 	const registerCopyBookmarkCommand = (): vscode.Disposable =>
-		vscode.commands.registerCommand("SIMPLE-BOOKMARK.copybookmark", (item?: BookmarkSystemItem, selected?: BookmarkSystemItem[]) => {
+		vscode.commands.registerCommand("Simple-Bookmark.copybookmark", (item?: BookmarkSystemItem, selected?: BookmarkSystemItem[]) => {
 			let targets: BookmarkSystemItem[] = [];
 
 			if (Array.isArray(selected) && selected.length > 0) {
@@ -163,7 +163,7 @@ export const createBookmarkCommand = (
 
 	// 붙여넣기 -----------------------------------------------------------------------------
 	const registerPasteBookmarkCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("SIMPLE-BOOKMARK.pastebookmark", async (item?: BookmarkSystemItem) => {
+	vscode.commands.registerCommand("Simple-Bookmark.pastebookmark", async (item?: BookmarkSystemItem) => {
 		if (!provider.hasCopiedItems()) {
 			vscode.window.showErrorMessage("No items to paste.");
 			return;
@@ -192,7 +192,7 @@ export const createBookmarkCommand = (
 		}
 
 		if (targetPath) {
-			console.debug("[SIMPLE-BOOKMARK.pastebookmark]", targetPath);
+			console.debug("[Simple-Bookmark.pastebookmark]", targetPath);
 			await provider.pasteItems(targetPath);
 			provider.refresh();
 		}
@@ -203,7 +203,7 @@ export const createBookmarkCommand = (
 
 	// 붙여넣기(루트 전용) -----------------------------------------------------------------
 	const registerPasteToRootBookmarkCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("SIMPLE-BOOKMARK.pasterootbookmark", async () => {
+	vscode.commands.registerCommand("Simple-Bookmark.pasterootbookmark", async () => {
 		if (!provider.hasCopiedItems()) {
 			vscode.window.showErrorMessage("No items to paste.");
 			return;
@@ -214,7 +214,7 @@ export const createBookmarkCommand = (
 
 	// 모든 북마크 삭제 --------------------------------------------------------------------
 	const registerDeleteAllBookmarkCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("SIMPLE-BOOKMARK.removeallbookmark", async () => {
+	vscode.commands.registerCommand("Simple-Bookmark.removeallbookmark", async () => {
 		const allItems = await provider.getChildren();
 
 		if (allItems && allItems.length > 0) {
@@ -231,7 +231,7 @@ export const createBookmarkCommand = (
 
 	// 폴더 생성 --------------------------------------------------------------------------
 	const registerCreateFolderCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("SIMPLE-BOOKMARK.createfolder", async (item?: BookmarkSystemItem) => {
+	vscode.commands.registerCommand("Simple-Bookmark.createfolder", async (item?: BookmarkSystemItem) => {
 		const folderName = await vscode.window.showInputBox({
 			prompt: "Enter folder name (will be created in original location)",
 			validateInput: validateFileName
@@ -266,7 +266,7 @@ export const createBookmarkCommand = (
 
 	// 파일 생성 --------------------------------------------------------------------------
 	const registerCreateFileCommand = (): vscode.Disposable =>
-	vscode.commands.registerCommand("SIMPLE-BOOKMARK.createfile", async (item?: BookmarkSystemItem) => {
+	vscode.commands.registerCommand("Simple-Bookmark.createfile", async (item?: BookmarkSystemItem) => {
 		const fileName = await vscode.window.showInputBox({
 			prompt: "Enter file name (will be created in original location)",
 			validateInput: validateFileName

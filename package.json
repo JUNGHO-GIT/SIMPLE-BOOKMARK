@@ -1,11 +1,11 @@
 {
-	"name": "SIMPLE-BOOKMARK",
-	"displayName": "SIMPLE-BOOKMARK",
+	"name": "simple-bookmark",
+	"displayName": "Simple-Bookmark",
 	"publisher": "JUNGHO",
 	"icon": "logo_image.png",
 	"license": "Apache-2.0",
 	"type": "module",
-	"version": "2.1.2",
+	"version": "2.1.3",
 	"description": "Real-time synchronized bookmarks for VSCode with .bookmark folder-based organization",
 	"main": "./out/extension.js",
 	"repository": {
@@ -30,23 +30,23 @@
 		"watcher"
 	],
 	"activationEvents": [
-		"onView:SIMPLE-BOOKMARK",
-		"onCommand:SIMPLE-BOOKMARK.addbookmark",
-		"onCommand:SIMPLE-BOOKMARK.refreshentry",
-		"onCommand:SIMPLE-BOOKMARK.copybookmark",
-		"onCommand:SIMPLE-BOOKMARK.pastebookmark",
-		"onCommand:SIMPLE-BOOKMARK.pasterootbookmark",
-		"onCommand:SIMPLE-BOOKMARK.renamebookmark",
-		"onCommand:SIMPLE-BOOKMARK.removebookmark",
-		"onCommand:SIMPLE-BOOKMARK.removeallbookmark",
-		"onCommand:SIMPLE-BOOKMARK.createfolder",
-		"onCommand:SIMPLE-BOOKMARK.createfile"
+		"onView:Simple-Bookmark",
+		"onCommand:Simple-Bookmark.addbookmark",
+		"onCommand:Simple-Bookmark.refreshentry",
+		"onCommand:Simple-Bookmark.copybookmark",
+		"onCommand:Simple-Bookmark.pastebookmark",
+		"onCommand:Simple-Bookmark.pasterootbookmark",
+		"onCommand:Simple-Bookmark.renamebookmark",
+		"onCommand:Simple-Bookmark.removebookmark",
+		"onCommand:Simple-Bookmark.removeallbookmark",
+		"onCommand:Simple-Bookmark.createfolder",
+		"onCommand:Simple-Bookmark.createfile"
 	],
 	"contributes": {
 		"views": {
 			"explorer": [
 				{
-					"id": "SIMPLE-BOOKMARK",
+					"id": "Simple-Bookmark",
 					"name": "BOOKMARK",
 					"icon": "$(bookmark)",
 					"when": "workspaceFolderCount > 0"
@@ -55,189 +55,189 @@
 		},
 		"commands": [
 			{
-				"command": "SIMPLE-BOOKMARK.addbookmark",
+				"command": "Simple-Bookmark.addbookmark",
 				"title": "Add to Bookmarks",
-				"category": "SIMPLE-BOOKMARK"
+				"category": "Simple-Bookmark"
 			},
 			{
-				"command": "SIMPLE-BOOKMARK.refreshentry",
+				"command": "Simple-Bookmark.refreshentry",
 				"title": "Refresh Bookmarks",
-				"category": "SIMPLE-BOOKMARK",
+				"category": "Simple-Bookmark",
 				"icon": "$(refresh)"
 			},
 			{
-				"command": "SIMPLE-BOOKMARK.copybookmark",
+				"command": "Simple-Bookmark.copybookmark",
 				"title": "Copy",
-				"category": "SIMPLE-BOOKMARK",
+				"category": "Simple-Bookmark",
 				"icon": "$(copy)"
 			},
 			{
-				"command": "SIMPLE-BOOKMARK.pastebookmark",
+				"command": "Simple-Bookmark.pastebookmark",
 				"title": "Paste",
-				"category": "SIMPLE-BOOKMARK",
+				"category": "Simple-Bookmark",
 				"icon": "$(replace-all)"
 			},
 			{
-				"command": "SIMPLE-BOOKMARK.pasterootbookmark",
+				"command": "Simple-Bookmark.pasterootbookmark",
 				"title": "Paste to Root",
-				"category": "SIMPLE-BOOKMARK",
+				"category": "Simple-Bookmark",
 				"icon": "$(replace-all)"
 			},
 			{
-				"command": "SIMPLE-BOOKMARK.createfolder",
+				"command": "Simple-Bookmark.createfolder",
 				"title": "Create Folder",
-				"category": "SIMPLE-BOOKMARK",
+				"category": "Simple-Bookmark",
 				"icon": "$(new-folder)"
 			},
 			{
-				"command": "SIMPLE-BOOKMARK.createfile",
+				"command": "Simple-Bookmark.createfile",
 				"title": "Create File",
-				"category": "SIMPLE-BOOKMARK",
+				"category": "Simple-Bookmark",
 				"icon": "$(new-file)"
 			},
 			{
-				"command": "SIMPLE-BOOKMARK.removebookmark",
+				"command": "Simple-Bookmark.removebookmark",
 				"title": "Remove",
-				"category": "SIMPLE-BOOKMARK",
+				"category": "Simple-Bookmark",
 				"icon": "$(remove-close)"
 			},
 			{
-				"command": "SIMPLE-BOOKMARK.removeallbookmark",
+				"command": "Simple-Bookmark.removeallbookmark",
 				"title": "Remove All",
-				"category": "SIMPLE-BOOKMARK",
+				"category": "Simple-Bookmark",
 				"icon": "$(terminal-kill)"
 			},
 			{
-				"command": "SIMPLE-BOOKMARK.renamebookmark",
+				"command": "Simple-Bookmark.renamebookmark",
 				"title": "Rename",
-				"category": "SIMPLE-BOOKMARK",
+				"category": "Simple-Bookmark",
 				"icon": "$(edit)"
 			}
 		],
 		"keybindings": [
 			{
 				"key": "shift+alt+a",
-				"command": "SIMPLE-BOOKMARK.addbookmark",
-				"when": "focusedView == SIMPLE-BOOKMARK"
+				"command": "Simple-Bookmark.addbookmark",
+				"when": "focusedView == Simple-Bookmark"
 			},
 			{
 				"key": "shift+alt+a",
-				"command": "SIMPLE-BOOKMARK.addbookmark",
+				"command": "Simple-Bookmark.addbookmark",
 				"when": "explorerViewletVisible && filesExplorerFocus"
 			},
 			{
 				"key": "ctrl+c",
-				"command": "SIMPLE-BOOKMARK.copybookmark",
-				"when": "focusedView == SIMPLE-BOOKMARK"
+				"command": "Simple-Bookmark.copybookmark",
+				"when": "focusedView == Simple-Bookmark"
 			},
 			{
 				"key": "ctrl+v",
-				"command": "SIMPLE-BOOKMARK.pastebookmark",
-				"when": "focusedView == SIMPLE-BOOKMARK"
+				"command": "Simple-Bookmark.pastebookmark",
+				"when": "focusedView == Simple-Bookmark"
 			},
 			{
 				"key": "ctrl+d",
-				"command": "SIMPLE-BOOKMARK.removebookmark",
-				"when": "focusedView == SIMPLE-BOOKMARK"
+				"command": "Simple-Bookmark.removebookmark",
+				"when": "focusedView == Simple-Bookmark"
 			},
 			{
 				"key": "f2",
-				"command": "SIMPLE-BOOKMARK.renamebookmark",
-				"when": "focusedView == SIMPLE-BOOKMARK"
+				"command": "Simple-Bookmark.renamebookmark",
+				"when": "focusedView == Simple-Bookmark"
 			}
 		],
 		"menus": {
 			"view/title": [
 				{
-					"command": "SIMPLE-BOOKMARK.refreshentry",
-					"when": "view == SIMPLE-BOOKMARK",
+					"command": "Simple-Bookmark.refreshentry",
+					"when": "view == Simple-Bookmark",
 					"group": "navigation"
 				},
 				{
-					"command": "SIMPLE-BOOKMARK.copybookmark",
-					"when": "view == SIMPLE-BOOKMARK",
+					"command": "Simple-Bookmark.copybookmark",
+					"when": "view == Simple-Bookmark",
 					"group": "navigation"
 				},
 				{
-					"command": "SIMPLE-BOOKMARK.pasterootbookmark",
-					"when": "view == SIMPLE-BOOKMARK",
+					"command": "Simple-Bookmark.pasterootbookmark",
+					"when": "view == Simple-Bookmark",
 					"group": "navigation"
 				},
 				{
-					"command": "SIMPLE-BOOKMARK.removeallbookmark",
-					"when": "view == SIMPLE-BOOKMARK",
+					"command": "Simple-Bookmark.removeallbookmark",
+					"when": "view == Simple-Bookmark",
 					"group": "navigation"
 				}
 			],
 			"view/item/context": [
 				{
-					"command": "SIMPLE-BOOKMARK.copybookmark",
-					"when": "view == SIMPLE-BOOKMARK",
+					"command": "Simple-Bookmark.copybookmark",
+					"when": "view == Simple-Bookmark",
 					"group": "1_clipboard@1"
 				},
 				{
-					"command": "SIMPLE-BOOKMARK.pastebookmark",
-					"when": "view == SIMPLE-BOOKMARK && viewItem == bookmarkFolder",
+					"command": "Simple-Bookmark.pastebookmark",
+					"when": "view == Simple-Bookmark && viewItem == bookmarkFolder",
 					"group": "1_clipboard@2"
 				},
 				{
-					"command": "SIMPLE-BOOKMARK.pastebookmark",
-					"when": "view == SIMPLE-BOOKMARK && viewItem == bookmarkFile",
+					"command": "Simple-Bookmark.pastebookmark",
+					"when": "view == Simple-Bookmark && viewItem == bookmarkFile",
 					"group": "1_clipboard@3"
 				},
 				{
-					"command": "SIMPLE-BOOKMARK.renamebookmark",
-					"when": "view == SIMPLE-BOOKMARK && (viewItem == bookmarkFile || viewItem == bookmarkFolder)",
+					"command": "Simple-Bookmark.renamebookmark",
+					"when": "view == Simple-Bookmark && (viewItem == bookmarkFile || viewItem == bookmarkFolder)",
 					"group": "2_modification@0"
 				},
 				{
-					"command": "SIMPLE-BOOKMARK.createfolder",
-					"when": "view == SIMPLE-BOOKMARK && viewItem == bookmarkFolder",
+					"command": "Simple-Bookmark.createfolder",
+					"when": "view == Simple-Bookmark && viewItem == bookmarkFolder",
 					"group": "2_modification@1"
 				},
 				{
-					"command": "SIMPLE-BOOKMARK.createfile",
-					"when": "view == SIMPLE-BOOKMARK && viewItem == bookmarkFolder",
+					"command": "Simple-Bookmark.createfile",
+					"when": "view == Simple-Bookmark && viewItem == bookmarkFolder",
 					"group": "2_modification@2"
 				},
 				{
-					"command": "SIMPLE-BOOKMARK.removebookmark",
-					"when": "view == SIMPLE-BOOKMARK",
+					"command": "Simple-Bookmark.removebookmark",
+					"when": "view == Simple-Bookmark",
 					"group": "4_danger@1"
 				},
 				{
-					"command": "SIMPLE-BOOKMARK.removebookmark",
-					"when": "view == SIMPLE-BOOKMARK",
+					"command": "Simple-Bookmark.removebookmark",
+					"when": "view == Simple-Bookmark",
 					"group": "inline"
 				},
 				{
-					"command": "SIMPLE-BOOKMARK.renamebookmark",
-					"when": "view == SIMPLE-BOOKMARK",
+					"command": "Simple-Bookmark.renamebookmark",
+					"when": "view == Simple-Bookmark",
 					"group": "inline"
 				}
 			],
 			"explorer/context": [
 				{
-					"command": "SIMPLE-BOOKMARK.addbookmark",
+					"command": "Simple-Bookmark.addbookmark",
 					"when": "explorerResourceIsFolder || explorerResourceIsFile",
 					"group": "2_workspace@1"
 				}
 			]
 		},
 		"configuration": {
-			"title": "SIMPLE-BOOKMARK",
+			"title": "Simple-Bookmark",
 			"properties": {
-				"SIMPLE-BOOKMARK.autoRefresh": {
+				"Simple-Bookmark.autoRefresh": {
 					"type": "boolean",
 					"default": true,
 					"description": "Automatically refresh bookmarks when files change"
 				},
-				"SIMPLE-BOOKMARK.showSyncStatus": {
+				"Simple-Bookmark.showSyncStatus": {
 					"type": "boolean",
 					"default": true,
 					"description": "Show synchronization status in bookmark items"
 				},
-				"SIMPLE-BOOKMARK.confirmDelete": {
+				"Simple-Bookmark.confirmDelete": {
 					"type": "boolean",
 					"default": true,
 					"description": "Confirm before removing bookmarks"

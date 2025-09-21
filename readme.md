@@ -1,4 +1,4 @@
-# 🚀 SIMPLE-BOOKMARK - The Ultimate BookmarkExplorer for VSCode
+# 🚀 Simple-Bookmark - The Ultimate BookmarkExplorer for VSCode
 
 ![demo](logo_demonstration.gif)
 
@@ -16,7 +16,7 @@
 | Action                        | How To                                 |
 |-------------------------------|----------------------------------------|
 | Add bookmark                  | Right-click file/folder → **Add** or use `Shift+Alt+A` |
-| Remove bookmark               | Right-click bookmark → **Remove** or use `Shift+Alt+D` (*only inside SIMPLE-BOOKMARK view*) |
+| Remove bookmark               | Right-click bookmark → **Remove** or use `Shift+Alt+D` (*only inside Simple-Bookmark view*) |
 | Reveal file/folder in explorer| Click bookmark or `Shift+Alt+S`        |
 | Refresh list                  | Click **Refresh** (🔄) in sidebar      |
 | Remove all bookmarks          | Click **RemoveAll** (🗑️) in sidebar   |
@@ -24,8 +24,8 @@
 ## 💡 Tips
 
 - To avoid shortcut conflicts with VS Code or other extensions
-- SIMPLE-BOOKMARK’s shortcuts are context-aware and only active when the sidebar is visible.
-- Check your keybindings: `"when": "view.SIMPLE-BOOKMARK.visible"`
+- Simple-Bookmark’s shortcuts are context-aware and only active when the sidebar is visible.
+- Check your keybindings: `"when": "view.Simple-Bookmark.visible"`
 
 ## 🚧 Roadmap
 
@@ -43,4 +43,4 @@
 ## 📢 Contributing
 
 - Pull requests, feedback, and bug reports are always welcome!
-- Help make SIMPLE-BOOKMARK the best project explorer for real-world VS Code power users.
+- Help make Simple-Bookmark the best project explorer for real-world VS Code power users.
