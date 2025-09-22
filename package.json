@@ -5,7 +5,7 @@
 	"icon": "logo_image.png",
 	"license": "Apache-2.0",
 	"type": "module",
-	"version": "2.1.3",
+	"version": "2.1.4",
 	"description": "Real-time synchronized bookmarks for VSCode with .bookmark folder-based organization",
 	"main": "./out/extension.js",
 	"repository": {
@@ -47,7 +47,7 @@
 			"explorer": [
 				{
 					"id": "Simple-Bookmark",
-					"name": "BOOKMARK",
+					"name": "Simple-Bookmark",
 					"icon": "$(bookmark)",
 					"when": "workspaceFolderCount > 0"
 				}
@@ -240,7 +240,7 @@
 				"Simple-Bookmark.confirmDelete": {
 					"type": "boolean",
 					"default": true,
-					"description": "Confirm before removing bookmarks"
+					"description": "Confirm before removing bookmarks (originals always deleted together)"
 				}
 			}
 		}

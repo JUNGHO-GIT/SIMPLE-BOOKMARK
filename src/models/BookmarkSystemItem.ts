@@ -61,10 +61,7 @@ const setupDisplay = (item: BookmarkSystemItem): void => {
 
 // 상태 업데이트 (UI 재설정 포함) ---------------------------------------------------------
 const updateStatus = function (this: BookmarkSystemItem, newStatus: BookmarkStatus): void {
-	if (this.status !== newStatus) {
-		(this as any).status = newStatus;
-		setupDisplay(this);
-	}
+	(this.status !== newStatus) && ((this as any).status = newStatus, setupDisplay(this));
 };
 
 // 원본 파일 사용 가능 여부 확인 -----------------------------------------------------------

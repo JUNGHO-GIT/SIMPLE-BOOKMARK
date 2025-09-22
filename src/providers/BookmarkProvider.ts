@@ -7,6 +7,7 @@ import { createBookmarkOperationService, type BookmarkOperationService } from ".
 import { createBookmarkSyncService, type BookmarkSyncService } from "../services/BookmarkSyncService.js";
 import { getBookmarkPath } from "../utils/BookmarkPathUtil.js";
 import { BookmarkStatus } from "../types/BookmarkTypes.js";
+import { showInfoAuto, showWarnAuto, showErrorAuto } from "../utils/NotificationUtil.js";
 
 // -------------------------------------------------------------------------------
 export type BookmarkProvider = ReturnType<typeof createBookmarkProvider>;
@@ -29,9 +30,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 
 	// .bookmark 폴더 초기화 ---------------------------------------------------------
 	const initializeBookmarkFolder = async (): Promise<void> => {
-		if (!workspaceRoot) {
-			return;
-		}
+		if (!workspaceRoot) { return; }
 
 		bookmarkPath = getBookmarkPath(workspaceRoot);
 
@@ -41,10 +40,10 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 		catch {
 			try {
 				await vscode.workspace.fs.createDirectory(vscode.Uri.file(bookmarkPath));
-				vscode.window.showInformationMessage(`BOOKMARK folder created: ${bookmarkPath}`);
+				showInfoAuto(`Simple-Bookmark folder created: ${bookmarkPath}`);
 			}
 			catch (error) {
-				vscode.window.showErrorMessage(`Failed to create BOOKMARK folder: ${error}`);
+				showErrorAuto(`Failed to create Simple-Bookmark folder: ${error}`);
 				return;
 			}
 		}
@@ -67,7 +66,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 
 	// 트리 갱신(디바운스) --------------------------------------------------------------
 	const refresh = (): void => {
-		if (refreshTimer) clearTimeout(refreshTimer);
+		if (refreshTimer) { clearTimeout(refreshTimer); }
 		refreshTimer = setTimeout(() => {
 			_onDidChangeTreeData.fire();
 		}, refreshDebounceMs);
@@ -78,27 +77,24 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 
 	// 자식 항목 가져오기 --------------------------------------------------------------
 	// - 최상위: 실제 루트 북마크 목록만 반환(가짜 아이템 없음)
+	// - 폴더 내부 탐색 시 순환(심볼릭 링크 등)으로 동일 경로가 반복적으로 나타나는 문제 방지
 	const getChildren = async (element?: BookmarkSystemItem): Promise<BookmarkSystemItem[]> => {
-		if (!bookmarkPath || !syncService) {
-			return [];
-		}
+		if (!bookmarkPath || !syncService) { return []; }
 
-		if (!element) {
-			return getRootBookmarks();
-		}
+		if (!element) { return getRootBookmarks(); }
 
-		if (!element.bookmarkMetadata.isFile && element.isOriginalAvailable) {
-			return getFolderContents(element.originalPath);
-		}
+		// 이미 방문한 경로이면(사이클) 확장 중단
+		const ancestor: Set<string> | undefined = (element as any)._ancestorPaths;
+		if (ancestor && ancestor.has(element.originalPath)) { return []; }
+
+		if (!element.bookmarkMetadata.isFile && element.isOriginalAvailable) { return getFolderContents(element.originalPath, ancestor); }
 
 		return [];
 	};
 
 	// 루트 레벨 북마크 가져오기 ------------------------------------------------------
 	const getRootBookmarks = async (): Promise<BookmarkSystemItem[]> => {
-		if (!syncService) {
-			return [];
-		}
+		if (!syncService) { return []; }
 
 		const bookmarks = syncService.getAllBookmarks();
 		const items: BookmarkSystemItem[] = [];
@@ -119,7 +115,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 	};
 
 	// 실제 폴더의 하위 항목 가져오기 ---------------------------------------------------
-	const getFolderContents = async (folderPath: string): Promise<BookmarkSystemItem[]> => {
+	const getFolderContents = async (folderPath: string, ancestor?: Set<string>): Promise<BookmarkSystemItem[]> => {
 		try {
 			const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(folderPath));
 			const items: BookmarkSystemItem[] = [];
@@ -133,6 +129,11 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 			for (const [name, type] of sortedEntries) {
 				const itemPath = path.join(folderPath, name);
 
+				// 순환 구조(심볼릭 링크 등) 감지: 자신 혹은 조상 경로 재등장 시 스킵
+				if (ancestor && ancestor.has(itemPath)) {
+					continue;
+				}
+
 				const virtualMetadata = {
 					originalPath: itemPath,
 					bookmarkName: name,
@@ -142,7 +143,14 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 					originalExists: true
 				};
 
-				items.push(createBookmarkSystemItem(virtualMetadata, BookmarkStatus.SYNCED));
+				const sysItem = createBookmarkSystemItem(virtualMetadata, BookmarkStatus.SYNCED);
+				// 방문 경로 체인 주입(하위 확장 시 사이클 감지용)
+				if (type === vscode.FileType.Directory) {
+					const chain = new Set<string>(ancestor ? Array.from(ancestor) : []);
+					chain.add(folderPath);
+					(sysItem as any)._ancestorPaths = chain;
+				}
+				items.push(sysItem);
 			}
 
 			return items;
@@ -155,10 +163,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 
 	// 북마크 추가 --------------------------------------------------------------------
 	const addBookmark = async (sourcePath: string, bookmarkName?: string): Promise<void> => {
-		if (!syncService) {
-			vscode.window.showErrorMessage("Bookmark sync service not initialized.");
-			return;
-		}
+		if (!syncService) { showErrorAuto("Bookmark sync service not initialized."); return; }
 
 		try {
 			const finalBookmarkName = bookmarkName || path.basename(sourcePath);
@@ -170,27 +175,31 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 			}
 
 			await syncService.addBookmark(sourcePath, finalBookmarkName);
-			vscode.window.showInformationMessage(`Bookmark overwritten: ${finalBookmarkName}`);
+			showInfoAuto(`Bookmark overwritten: ${finalBookmarkName}`);
 			console.debug("[Simple-Bookmark.provider.add]", sourcePath, "->", finalBookmarkName);
 		}
 		catch (error) {
-			vscode.window.showErrorMessage(`Failed to add bookmark: ${error}`);
+			showErrorAuto(`Failed to add bookmark: ${error}`);
 		}
 	};
 
-	// 북마크 제거 (원본 파일은 유지) -------------------------------------------------
+	// 북마크 제거 (항상 원본 파일/폴더도 함께 삭제) ------------------------------------------
 	const removeBookmark = async (originalPath: string): Promise<void> => {
-		if (!syncService) {
-			vscode.window.showErrorMessage("Bookmark sync service not initialized.");
-			return;
-		}
+		if (!syncService) { showErrorAuto("Bookmark sync service not initialized."); return; }
 
 		try {
 			await syncService.removeBookmark(originalPath);
-			console.debug("[Simple-Bookmark.provider.remove]", originalPath);
+			try {
+				await vscode.workspace.fs.delete(vscode.Uri.file(originalPath), { recursive: true });
+				console.debug("[Simple-Bookmark.provider.remove.originalDeleted]", originalPath);
+			} catch (e) {
+				// 원본이 이미 없는 경우는 조용히 무시
+				console.debug("[Simple-Bookmark.provider.remove.originalMissing]", originalPath);
+			}
+			console.debug("[Simple-Bookmark.provider.remove]", originalPath, "(with original)");
 		}
 		catch (error) {
-			vscode.window.showErrorMessage(`Failed to remove bookmark: ${error}`);
+			showErrorAuto(`Failed to remove bookmark: ${error}`);
 		}
 	};
 
@@ -199,7 +208,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 	// - 비루트(가상 항목): 파일시스템 직접 rename
 	const renameBookmark = async (originalPath: string, newName: string): Promise<void> => {
 		if (!syncService) {
-			vscode.window.showErrorMessage("Bookmark sync service not initialized.");
+			showErrorAuto("Bookmark sync service not initialized.");
 			return;
 		}
 
@@ -246,7 +255,7 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 			console.debug("[Simple-Bookmark.provider.rename.child]", originalPath, "->", newPath);
 		}
 		catch (error) {
-			vscode.window.showErrorMessage(`Failed to rename item: ${error}`);
+			showErrorAuto(`Failed to rename item: ${error}`);
 		}
 	};
 
@@ -269,19 +278,13 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 	};
 
 	const pasteItems = async (targetPath: string): Promise<void> => {
-		if (!fileOperationService) {
-			vscode.window.showErrorMessage("File operation service not initialized.");
-			return;
-		}
+		if (!fileOperationService) { showErrorAuto("File operation service not initialized."); return; }
 		await fileOperationService.pasteItems(copiedBookmarks, targetPath);
 	};
 
 	// 루트 붙여넣기: 파일명 매칭 → 각 북마크의 실제 경로에 덮어쓰기 -------------------
 	const pasteItemsToRoot = async (): Promise<void> => {
-		if (!fileOperationService || !syncService) {
-			vscode.window.showErrorMessage("File operation service not initialized.");
-			return;
-		}
+		if (!fileOperationService || !syncService) { showErrorAuto("File operation service not initialized."); return; }
 		const all = syncService.getAllBookmarks();
 
 		const nameToOriginalPath = new Map<string, string>();
@@ -289,28 +292,19 @@ export const createBookmarkProvider = (workspaceRoot: string | undefined) => {
 			m.isFile && nameToOriginalPath.set(m.bookmarkName, m.originalPath);
 		}
 
-		if (nameToOriginalPath.size === 0) {
-			vscode.window.showWarningMessage("No root file bookmarks to overwrite.");
-			return;
-		}
+		if (nameToOriginalPath.size === 0) { vscode.window.showWarningMessage("No root file bookmarks to overwrite."); return; }
 
 		await fileOperationService.pasteItemsToRoot(copiedBookmarks, nameToOriginalPath);
 	};
 
 	// 파일/폴더 생성 ------------------------------------------------------------------
 	const createFolder = async (parentPath: string, folderName: string): Promise<void> => {
-		if (!fileOperationService) {
-			vscode.window.showErrorMessage("File operation service not initialized.");
-			return;
-		}
+		if (!fileOperationService) { showErrorAuto("File operation service not initialized."); return; }
 		await fileOperationService.createFolder(parentPath, folderName);
 	};
 
 	const createFile = async (parentPath: string, fileName: string): Promise<void> => {
-		if (!fileOperationService) {
-			vscode.window.showErrorMessage("File operation service not initialized.");
-			return;
-		}
+		if (!fileOperationService) { showErrorAuto("File operation service not initialized."); return; }
 		await fileOperationService.createFile(parentPath, fileName);
 	};
 

@@ -1,4 +1,22 @@
-# 📝 Changelog
+<!-- Unreleased Section -->
+# Changelog
+
+## 2.1.5 (Unreleased)
+
+## Added
+
+- New command: Remove (Bookmark + Original) `Simple-Bookmark.removebookmarkWithOriginal`.
+- Config `Simple-Bookmark.confirmDeleteOriginal` to ask whether to delete originals when removing bookmarks.
+
+## Changed
+
+- Standard remove command now optionally prompts to delete original file/folder together.
+
+## Fixed
+
+- Infinite / recursively duplicating folder entries in tree view by adding cycle detection & ancestor path tracking when expanding folders.
+
+### 📝 Historic Versions
 
 ## \[ 1.0.1 \]
 
@@ -143,3 +161,7 @@
 ## \[ 1.0.36 \]
 
 - 2025-09-21 (16:34:12)
+
+## \[ 1.0.37 \]
+
+- 2025-09-22 (22:34:39)

@@ -1,6 +1,7 @@
 // extension.ts
 
 import * as vscode from "vscode";
+import { showInfoAuto, showWarnAuto } from "./utils/NotificationUtil.js";
 import { createBookmarkProvider } from "./providers/BookmarkProvider.js";
 import { createBookmarkCommand } from "./commands/BookmarkCommand.js";
 import type { BookmarkSystemItem } from "./models/BookmarkSystemItem.js";
@@ -22,16 +23,13 @@ const setupAdditionalListeners = (
 	// 워크스페이스 폴더 변경 감지 → 북마크 갱신
 	const workspaceListener = vscode.workspace.onDidChangeWorkspaceFolders(() => {
 		console.debug("[Simple-Bookmark.workspaceChanged]");
-		vscode.window.showInformationMessage("Workspace changed. Simple-Bookmark bookmarks may need to be refreshed.");
+		showInfoAuto("Workspace changed. Simple-Bookmark bookmarks may need to be refreshed.");
 		provider.refresh();
 	});
 
 	// 확장 설정 변경 감지 → 북마크 갱신
 	const configListener = vscode.workspace.onDidChangeConfiguration(e => {
-		if (e.affectsConfiguration("Simple-Bookmark")) {
-			console.debug("[Simple-Bookmark.configChanged]");
-			provider.refresh();
-		}
+		e.affectsConfiguration("Simple-Bookmark") && (console.debug("[Simple-Bookmark.configChanged]"), provider.refresh());
 	});
 
 	// 파일 저장 이벤트 감지 (로그)
@@ -54,11 +52,7 @@ export const activate = (
 		: undefined
 	);
 
-	if (!workspaceRoot) {
-		vscode.window.showWarningMessage("Simple-Bookmark requires an open workspace to function properly.");
-		console.debug("[Simple-Bookmark.activate] no workspace");
-		return;
-	}
+	if (!workspaceRoot) { showWarnAuto("Simple-Bookmark requires an open workspace to function properly."); console.debug("[Simple-Bookmark.activate] no workspace"); return; }
 
 	const provider = createBookmarkProvider(workspaceRoot);
 	const commandManager = createBookmarkCommand(provider, context);

@@ -20,13 +20,11 @@ export const isWithinBookmark = (itemPath: string, bookmarkPath: string): boolea
 
 // 파일명 유효성 검사 ---------------------------------------------------------------------
 export const validateFileName = (fileName: string): string | null => {
-	if (!fileName || !fileName.trim()) {
-		return "File name cannot be empty";
-	}
-	if (fileName.includes("/") || fileName.includes("\\")) {
-		return "Invalid characters in file name";
-	}
-	return null;
+	return (!fileName || !fileName.trim())
+		? "File name cannot be empty"
+		: ((fileName.includes("/") || fileName.includes("\\"))
+			? "Invalid characters in file name"
+			: null);
 };
 
 // 지정한 파일/폴더 경로가 실제로 존재하는지 확인 ------------------------------------------
