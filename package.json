@@ -5,7 +5,7 @@
 	"icon": "logo_image.png",
 	"license": "Apache-2.0",
 	"type": "module",
-	"version": "2.1.6",
+	"version": "2.1.8",
 	"description": "Real-time synchronized bookmarks for VSCode with .bookmark folder-based organization",
 	"main": "./out/extension.js",
 	"repository": {
@@ -40,7 +40,9 @@
 		"onCommand:Simple-Bookmark.removebookmark",
 		"onCommand:Simple-Bookmark.removeallbookmark",
 		"onCommand:Simple-Bookmark.createfolder",
-		"onCommand:Simple-Bookmark.createfile"
+		"onCommand:Simple-Bookmark.createfile",
+		"onCommand:Simple-Bookmark.expandexplorer",
+		"onCommand:Simple-Bookmark.expandfolder"
 	],
 	"contributes": {
 		"views": {
@@ -112,6 +114,18 @@
 				"title": "Rename",
 				"category": "Simple-Bookmark",
 				"icon": "$(edit)"
+			},
+			{
+				"command": "Simple-Bookmark.expandexplorer",
+				"title": "Expand Explorer Folders",
+				"category": "Simple-Bookmark",
+				"icon": "$(expand-all)"
+			},
+			{
+				"command": "Simple-Bookmark.expandfolder",
+				"title": "Expand This Folder",
+				"category": "Simple-Bookmark",
+				"icon": "$(expand-all)"
 			}
 		],
 		"keybindings": [
@@ -136,14 +150,24 @@
 				"when": "focusedView == Simple-Bookmark"
 			},
 			{
-				"key": "ctrl+d",
+				"key": "shift+alt+d",
 				"command": "Simple-Bookmark.removebookmark",
 				"when": "focusedView == Simple-Bookmark"
 			},
 			{
-				"key": "f2",
+				"key": "shift+alt+r",
 				"command": "Simple-Bookmark.renamebookmark",
 				"when": "focusedView == Simple-Bookmark"
+			},
+			{
+				"key": "shift+alt+y",
+				"command": "Simple-Bookmark.expandexplorer",
+				"when": "explorerViewletVisible && !explorerResourceIsFolder"
+			},
+			{
+				"key": "shift+alt+y",
+				"command": "Simple-Bookmark.expandfolder",
+				"when": "explorerViewletVisible && explorerResourceIsFolder && filesExplorerFocus"
 			}
 		],
 		"menus": {
@@ -221,6 +245,11 @@
 					"command": "Simple-Bookmark.addbookmark",
 					"when": "explorerResourceIsFolder || explorerResourceIsFile",
 					"group": "2_workspace@1"
+				},
+				{
+					"command": "Simple-Bookmark.expandfolder",
+					"when": "explorerResourceIsFolder",
+					"group": "2_workspace@2"
 				}
 			]
 		},
@@ -237,10 +266,16 @@
 					"default": true,
 					"description": "Show synchronization status in bookmark items"
 				},
-				"Simple-Bookmark.confirmDelete": {
-					"type": "boolean",
-					"default": true,
-					"description": "Confirm before removing bookmarks (originals always deleted together)"
+				"Simple-Bookmark.deleteMode": {
+					"type": "string",
+					"enum": ["ask", "bookmarkOnly", "bookmarkAndOriginal"],
+					"enumDescriptions": [
+						"Show selection dialog every time when deleting bookmarks",
+						"Always delete bookmark only (keep original files)",
+						"Always delete both bookmark and original files together"
+					],
+					"default": "ask",
+					"description": "Set the default behavior when deleting bookmarks"
 				}
 			}
 		}
@@ -255,6 +290,7 @@
 	"dependencies": {
 		"@babel/core": "^7.28.4",
 		"glob": "^11.0.3",
+		"minimatch": "^10.0.3",
 		"terser": "^5.44.0"
 	},
 	"devDependencies": {
@@ -262,12 +298,12 @@
 		"@types/mocha": "^10.0.10",
 		"@types/node": "^24.5.2",
 		"@types/vscode": "^1.104.0",
-		"@typescript-eslint/eslint-plugin": "^8.44.0",
-		"@typescript-eslint/parser": "^8.44.0",
-		"@vscode/vsce": "^3.6.0",
+		"@typescript-eslint/eslint-plugin": "^8.44.1",
+		"@typescript-eslint/parser": "^8.44.1",
+		"@vscode/test-electron": "^2.5.2",
+		"@vscode/vsce": "^3.6.2",
 		"eslint": "^9.36.0",
 		"mocha": "^11.7.2",
-		"typescript": "^5.9.2",
-		"@vscode/test-electron": "^2.5.2"
+		"typescript": "^5.9.2"
 	}
 }
