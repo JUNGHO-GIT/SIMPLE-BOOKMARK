@@ -2,29 +2,27 @@
 
 import * as vscode from "vscode";
 
-// 알림 표시 최적화 - 3초 대기 제거, 즉시 표시 -----------------------------------------------
-const showNotification = (
-	message: string,
-	type: "info" | "warn" | "error"
-): void => {
-	type === "info"
-	? vscode.window.showInformationMessage(message)
-	: type === "warn"
-	? vscode.window.showWarningMessage(message)
-	: vscode.window.showErrorMessage(message);
+// -----------------------------------------------
+const DELAY_MS = 3000;
+
+// -----------------------------------------------
+const fnShowNotification = (message: string, type: "info" | "warn" | "error"): void => {
+	const notification = (
+		type === "info" ? vscode.window.showInformationMessage(message, {modal: false}) :
+		type === "warn" ? vscode.window.showWarningMessage(message, {modal: false}) :
+		vscode.window.showErrorMessage(message, {modal: false})
+	);
+
+	setTimeout(() => {
+		notification.then(() => {});
+	}, DELAY_MS);
 };
 
-// info --------------------------------------------------------------------------------------------------
-export const showInfoAuto = (
-	msg: string
-): void => showNotification(msg, "info");
+// -----------------------------------------------
+export const showInfoAuto = (msg: string): void => fnShowNotification(msg, "info");
 
-// warn --------------------------------------------------------------------------------------------------
-export const showWarnAuto = (
-	msg: string
-): void => showNotification(msg, "warn");
+// -----------------------------------------------
+export const showWarnAuto = (msg: string): void => fnShowNotification(msg, "warn");
 
-// error -------------------------------------------------------------------------------------------------
-export const showErrorAuto = (
-	msg: string
-): void => showNotification(msg, "error");
+// -----------------------------------------------
+export const showErrorAuto = (msg: string): void => fnShowNotification(msg, "error");

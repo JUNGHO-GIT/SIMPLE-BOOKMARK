@@ -5,7 +5,7 @@
 	"icon": "logo_image.png",
 	"license": "Apache-2.0",
 	"type": "module",
-	"version": "2.1.8",
+	"version": "2.2.0",
 	"description": "Real-time synchronized bookmarks for VSCode with .bookmark folder-based organization",
 	"main": "./out/extension.js",
 	"repository": {
@@ -297,14 +297,14 @@
 	"devDependencies": {
 		"@types/glob": "^9.0.0",
 		"@types/mocha": "^10.0.10",
-		"@types/node": "^24.6.1",
+		"@types/node": "^24.7.0",
 		"@types/vscode": "^1.104.0",
 		"@typescript-eslint/eslint-plugin": "^8.45.0",
 		"@typescript-eslint/parser": "^8.45.0",
 		"@vscode/test-electron": "^2.5.2",
 		"@vscode/vsce": "^3.6.2",
-		"eslint": "^9.36.0",
-		"mocha": "^11.7.3",
+		"eslint": "^9.37.0",
+		"mocha": "^11.7.4",
 		"typescript": "^5.9.3"
 	}
 }

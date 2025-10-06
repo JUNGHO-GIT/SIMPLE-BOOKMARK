@@ -33,51 +33,42 @@ export const createBookmarkCommand = (
 	const excludeRuleCache = new LRUCache<string, ExcludeRule[]>(50);
 
 	// -----------------------------------------------------------------------------------------
-	const toPosixPath = (
-		value : string
-	) : string => value.replace(/\\/g, "/");
+	const fnToPosixPath = (value: string): string => value.replace(/\\/g, "/");
 
 	// -----------------------------------------------------------------------------------------
-	const getRelativePath = (
-		folder : vscode.WorkspaceFolder,
-		target : vscode.Uri
-	) : string => {
+	const fnGetRelativePath = (folder: vscode.WorkspaceFolder, target: vscode.Uri): string => {
 		const relative = path.relative(folder.uri.fsPath, target.fsPath);
-		return relative ? toPosixPath(relative) : "";
+		return relative ? fnToPosixPath(relative) : "";
 	};
 
 	// -----------------------------------------------------------------------------------------
-	const getExcludeRulesForFolder = (
-		folder : vscode.WorkspaceFolder
-	) : ExcludeRule[] => {
+	const fnGetExcludeRulesForFolder = (folder: vscode.WorkspaceFolder): ExcludeRule[] => {
 		const cacheKey = folder.uri.toString(true);
 		const cached = excludeRuleCache.get(cacheKey);
 
-		if (cached) {
-			return cached;
-		}
+		return cached ? cached : (() => {
+			const config = vscode.workspace.getConfiguration("files", folder.uri);
+			const raw = config.get<Record<string, boolean | {when?: string}>>("exclude") ?? {};
+			const rules: ExcludeRule[] = [];
 
-		const config = vscode.workspace.getConfiguration("files", folder.uri);
-		const raw = config.get<Record<string, boolean | {when? : string}>>("exclude") ?? {};
-		const rules : ExcludeRule[] = [];
+			for (const [pattern, value] of Object.entries(raw)) {
+				typeof value === "boolean"
+				? (value && rules.push({matcher: new Minimatch(pattern, minimatchOptions)}))
+				: (value && typeof value === "object" && typeof (value as any).when === "string"
+					&& rules.push({matcher: new Minimatch(pattern, minimatchOptions), when: (value as any).when}));
+			}
 
-		for (const [pattern, value] of Object.entries(raw)) {
-			typeof value === "boolean"
-			? (value && rules.push({matcher : new Minimatch(pattern, minimatchOptions)}))
-			: (value && typeof value === "object" && typeof (value as any).when === "string"
-				&& rules.push({matcher : new Minimatch(pattern, minimatchOptions), when : (value as any).when}));
-		}
-
-		excludeRuleCache.set(cacheKey, rules);
-		return rules;
+			excludeRuleCache.set(cacheKey, rules);
+			return rules;
+		})();
 	};
 
 	// -----------------------------------------------------------------------------------------
-	const evaluateWhenClause = async (
-		whenClause : string,
-		folder : vscode.WorkspaceFolder,
-		relativePath : string
-	) : Promise<boolean> => {
+	const fnEvaluateWhenClause = async (
+		whenClause: string,
+		folder: vscode.WorkspaceFolder,
+		relativePath: string
+	): Promise<boolean> => {
 		return whenClause.includes("$(basename)")
 		? await (async () => {
 			const fileName = path.posix.basename(relativePath);
@@ -110,7 +101,7 @@ export const createBookmarkCommand = (
 		return !folder
 		? false
 		: (() => {
-			const relative = getRelativePath(folder, uri);
+			const relative = fnGetRelativePath(folder, uri);
 			return relative.length === 0
 				? false
 				: (() => {
@@ -118,7 +109,7 @@ export const createBookmarkCommand = (
 					return name.startsWith(".")
 					? true
 					: (() => {
-						const rules = getExcludeRulesForFolder(folder);
+						const rules = fnGetExcludeRulesForFolder(folder);
 						return rules.length === 0
 						? false
 						: (async () => {
@@ -140,7 +131,7 @@ export const createBookmarkCommand = (
 								if (isDirectory) {
 									continue;
 								}
-								if (await evaluateWhenClause(rule.when, folder, relative)) {
+								if (await fnEvaluateWhenClause(rule.when, folder, relative)) {
 									return true;
 								}
 							}
@@ -152,15 +143,13 @@ export const createBookmarkCommand = (
 	};
 
 	// -----------------------------------------------------------------------------------------
-	const delay = async (
-		ms : number
-	) : Promise<void> => await new Promise((resolve) => setTimeout(resolve, ms));
+	const fnDelay = async (ms: number): Promise<void> => await new Promise((resolve) => setTimeout(resolve, ms));
 
 	// -----------------------------------------------------------------------------------------
 	const expandAllExplorerFolders = async () : Promise<void> => {
 		try {
 			await vscode.commands.executeCommand("workbench.view.explorer");
-			await delay(100);
+			await fnDelay(100);
 
 			const workspaceFolders = vscode.workspace.workspaceFolders;
 			if (!workspaceFolders || workspaceFolders.length === 0) {
@@ -183,9 +172,9 @@ export const createBookmarkCommand = (
 		try {
 			// 폴더를 Explorer에 표시하고 확장
 			await vscode.commands.executeCommand("revealInExplorer", folderUri);
-			await delay(10);
+			await fnDelay(10);
 			await vscode.commands.executeCommand("list.expand");
-			await delay(10);
+			await fnDelay(10);
 
 			// 하위 폴더 찾기
 			const entries = await vscode.workspace.fs.readDirectory(folderUri);
@@ -593,7 +582,7 @@ export const createBookmarkCommand = (
 
 				// Explorer 뷰로 이동
 				await vscode.commands.executeCommand("workbench.view.explorer");
-				await delay(100);
+				await fnDelay(100);
 
 				// 폴더와 모든 하위 폴더를 확장
 				console.debug(`[Simple-Bookmark.expandFolder] Expanding folder: ${uri.fsPath}`);

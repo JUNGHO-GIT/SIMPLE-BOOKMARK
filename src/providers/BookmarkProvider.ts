@@ -33,14 +33,14 @@ export const createBookmarkProvider = (
 	const refreshDebounceMs = 100;
 
 	setTimeout(
-		() => initializeBookmarkFolder().catch(
-			(err) => console.error(err)
+		() => fnInitializeBookmarkFolder().catch(
+			(err: any) => console.error(err)
 		),
 		0
 	);
 
-	// .bookmark 폴더 초기화 ---------------------------------------------------------
-	const initializeBookmarkFolder = async () : Promise<void> => {
+	// -----------------------------------------------------------------------------------------
+	const fnInitializeBookmarkFolder = async (): Promise<void> => {
 		const hasRoot = !!workspaceRoot;
 
 		return !hasRoot
@@ -49,23 +49,15 @@ export const createBookmarkProvider = (
 			bookmarkPath = getBookmarkPath(workspaceRoot as string);
 
 			try {
-				await vscode.workspace.fs.stat(
-					vscode.Uri.file(bookmarkPath)
-				);
+				await vscode.workspace.fs.stat(vscode.Uri.file(bookmarkPath));
 			}
 			catch {
 				try {
-					await vscode.workspace.fs.createDirectory(
-						vscode.Uri.file(bookmarkPath)
-					);
-					showInfoAuto(
-						`[Simple-Bookmark] Folder created: ${bookmarkPath}`
-					);
+					await vscode.workspace.fs.createDirectory(vscode.Uri.file(bookmarkPath));
+					showInfoAuto(`[Simple-Bookmark] Folder created: ${bookmarkPath}`);
 				}
 				catch (error) {
-					showErrorAuto(
-						`[Simple-Bookmark] Failed to create folder: ${error}`
-					);
+					showErrorAuto(`[Simple-Bookmark] Failed to create folder: ${error}`);
 					return;
 				}
 			}
@@ -73,34 +65,24 @@ export const createBookmarkProvider = (
 			bookmarkPath && (
 				syncService = createBookmarkSyncService(
 					bookmarkPath,
-					(p : string, status : BookmarkStatus) => {
+					(p: string, status: BookmarkStatus) => {
 						bookmarkStatusMap.set(p, status);
 					},
 					() => refresh()
 				),
-				fileOperationService = createBookmarkOperationService(
-					bookmarkPath,
-					syncService
-				)
+				fileOperationService = createBookmarkOperationService(bookmarkPath, syncService)
 			);
 		})();
 	};
 
-	// 트리 갱신(디바운스) --------------------------------------------------------------
-	const refresh = () : void => {
+	// -----------------------------------------------------------------------------------------
+	const refresh = (): void => {
 		refreshTimer && clearTimeout(refreshTimer);
-		refreshTimer = setTimeout(
-			() => {
-				_onDidChangeTreeData.fire();
-			},
-			refreshDebounceMs
-		);
+		refreshTimer = setTimeout(() => _onDidChangeTreeData.fire(), refreshDebounceMs);
 	};
 
-	// 트리 항목 반환 ------------------------------------------------------------------
-	const getTreeItem = (
-		element : BookmarkSystemItem
-	) : vscode.TreeItem => element;
+	// -----------------------------------------------------------------------------------------
+	const getTreeItem = (element: BookmarkSystemItem): vscode.TreeItem => element;
 
 	// 자식 항목 가져오기 --------------------------------------------------------------
 	// - 최상위: 실제 루트 북마크 목록만 반환(가짜 아이템 없음)
@@ -129,10 +111,8 @@ export const createBookmarkProvider = (
 		})();
 	};
 
-	// 루트 레벨 북마크 가져오기 ------------------------------------------------------
-	const normalizePath = (
-		p : string
-	) : string => process.platform === "win32" ? p.toLowerCase() : p;
+	// -----------------------------------------------------------------------------------------
+	const fnNormalizePath = (p: string): string => process.platform === "win32" ? p.toLowerCase() : p;
 
 	const getRootBookmarks = async () : Promise<BookmarkSystemItem[]> => {
 		return !syncService
@@ -148,7 +128,7 @@ export const createBookmarkProvider = (
 					status
 				);
 				!metadata.isFile && (() => {
-					const key = normalizePath(metadata.originalPath);
+					const key = fnNormalizePath(metadata.originalPath);
 					item.collapsibleState = expandedDirPaths.has(key)
 						? vscode.TreeItemCollapsibleState.Expanded
 						: vscode.TreeItemCollapsibleState.Collapsed;
@@ -212,7 +192,7 @@ export const createBookmarkProvider = (
 						BookmarkStatus.SYNCED
 					);
 					virtualMetadata.isFile || (() => {
-						const key = normalizePath(virtualMetadata.originalPath);
+						const key = fnNormalizePath(virtualMetadata.originalPath);
 						sysItem.collapsibleState = expandedDirPaths.has(key)
 							? vscode.TreeItemCollapsibleState.Expanded
 							: vscode.TreeItemCollapsibleState.Collapsed;
@@ -538,11 +518,11 @@ export const createBookmarkProvider = (
 		getChildren,
 		refresh,
 		markExpanded(path : string) {
-			const key = normalizePath(path);
+			const key = fnNormalizePath(path);
 			expandedDirPaths.add(key);
 		},
 		markCollapsed(path : string) {
-			const key = normalizePath(path);
+			const key = fnNormalizePath(path);
 			expandedDirPaths.delete(key);
 		},
 		addBookmark,

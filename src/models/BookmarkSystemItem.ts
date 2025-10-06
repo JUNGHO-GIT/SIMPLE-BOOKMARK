@@ -12,30 +12,21 @@ export type BookmarkSystemItem = vscode.TreeItem & {
 	updateStatus : (newStatus : BookmarkStatus) => void;
 };
 
-// 트리 항목 UI 설정 ------------------------------------------------------------------------
-const setupDisplay = (
-	item : BookmarkSystemItem
-) : void => {
+// -----------------------------------------------------------------------------------------
+const fnSetupDisplay = (item: BookmarkSystemItem): void => {
 	const baseName = item.bookmarkMetadata.bookmarkName;
 	item.label = baseName;
-	const [desc, colorId] = item.status === BookmarkStatus.SYNCED
-		? ["", "foreground"]
-		: item.status === BookmarkStatus.MISSING
-		? ["(missing)", "errorForeground"]
-		: item.status === BookmarkStatus.MODIFIED
-		? ["(modified)", "gitModified"]
-		: ["(error)", "errorForeground"];
+	const [desc, colorId] = (
+		item.status === BookmarkStatus.SYNCED ? ["", "foreground"] :
+		item.status === BookmarkStatus.MISSING ? ["(missing)", "errorForeground"] :
+		item.status === BookmarkStatus.MODIFIED ? ["(modified)", "gitModified"] :
+		["(error)", "errorForeground"]
+	);
 
 	item.description = desc;
 	item.iconPath = item.bookmarkMetadata.isFile
-	? new vscode.ThemeIcon(
-		"file",
-		new vscode.ThemeColor(colorId)
-	)
-	: new vscode.ThemeIcon(
-		"folder",
-		new vscode.ThemeColor(colorId)
-	);
+	? new vscode.ThemeIcon("file", new vscode.ThemeColor(colorId))
+	: new vscode.ThemeIcon("folder", new vscode.ThemeColor(colorId));
 
 	item.tooltip = new vscode.MarkdownString(
 		`**${item.bookmarkMetadata.bookmarkName}**\n\n**Original Path:** ${item.originalPath}`
@@ -43,25 +34,22 @@ const setupDisplay = (
 
 	item.command = item.bookmarkMetadata.isFile && item.status === BookmarkStatus.SYNCED
 		? {
-			command : "vscode.open",
-			title : "Open Original File",
-			arguments : [vscode.Uri.file(item.originalPath)]
+			command: "vscode.open",
+			title: "Open Original File",
+			arguments: [vscode.Uri.file(item.originalPath)]
 		}
 		: undefined;
 };
 
-// 상태 업데이트 (UI 재설정 포함) ---------------------------------------------------------
-const updateStatus = function (
-	this : BookmarkSystemItem,
-	newStatus : BookmarkStatus
-) : void {
-	this.status !== newStatus && ((this as any).status = newStatus, setupDisplay(this));
+// -----------------------------------------------------------------------------------------
+const fnUpdateStatus = function (this: BookmarkSystemItem, newStatus: BookmarkStatus): void {
+	this.status !== newStatus && ((this as any).status = newStatus, fnSetupDisplay(this));
 };
 
-// 원본 파일 사용 가능 여부 확인 -----------------------------------------------------------
-const computeIsOriginalAvailable = (
-	status : BookmarkStatus
-) : boolean => status === BookmarkStatus.SYNCED || status === BookmarkStatus.MODIFIED;
+// -----------------------------------------------------------------------------------------
+const fnComputeIsOriginalAvailable = (status: BookmarkStatus): boolean => (
+	status === BookmarkStatus.SYNCED || status === BookmarkStatus.MODIFIED
+);
 
 // 팩토리 ----------------------------------------------------------------------------------
 export const createBookmarkSystemItem = (
@@ -84,18 +72,18 @@ export const createBookmarkSystemItem = (
 	base.id = metadata.originalPath;
 	base.resourceUri = vscode.Uri.file(metadata.originalPath);
 	base.contextValue = options?.contextValueOverride || (metadata.isFile ? "bookmarkFile" : "bookmarkFolder");
-	(base as any).updateStatus = updateStatus.bind(base);
+	(base as any).updateStatus = fnUpdateStatus.bind(base);
 
 	Object.defineProperty(
 		base,
 		"isOriginalAvailable",
 		{
 			get() {
-				return computeIsOriginalAvailable(base.status);
+				return fnComputeIsOriginalAvailable(base.status);
 			}
 		}
 	);
 
-	setupDisplay(base);
+	fnSetupDisplay(base);
 	return base;
 };

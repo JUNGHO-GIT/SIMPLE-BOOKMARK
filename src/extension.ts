@@ -6,16 +6,17 @@ import { createBookmarkProvider } from "./providers/BookmarkProvider.js";
 import { createBookmarkCommand } from "./commands/BookmarkCommand.js";
 import type { BookmarkSystemItem } from "./models/BookmarkSystemItem.js";
 
-// 추가 리스너 설정 최적화 - 디바운싱 및 불필요한 이벤트 최소화 -------------------------
-const setupAdditionalListeners = (
+// -----------------------------------------------------------------------------------------
+const fnSetupAdditionalListeners = (
 	provider: ReturnType<typeof createBookmarkProvider>,
 	commandManager: ReturnType<typeof createBookmarkCommand>,
 	treeView: vscode.TreeView<BookmarkSystemItem>
 ): vscode.Disposable[] => {
 	const listeners: vscode.Disposable[] = [];
-
-	// 선택 변경 → 캐시 동기화 (디바운싱)
 	let selectionTimer: NodeJS.Timeout | null = null;
+	let workspaceTimer: NodeJS.Timeout | null = null;
+	let configTimer: NodeJS.Timeout | null = null;
+
 	const selListener = treeView.onDidChangeSelection(e => {
 		selectionTimer && clearTimeout(selectionTimer);
 		selectionTimer = setTimeout(() => {
@@ -24,8 +25,6 @@ const setupAdditionalListeners = (
 		}, 50);
 	});
 
-	// 워크스페이스 폴더 변경 감지 → 북마크 갱신 (디바운싱)
-	let workspaceTimer: NodeJS.Timeout | null = null;
 	const workspaceListener = vscode.workspace.onDidChangeWorkspaceFolders(() => {
 		workspaceTimer && clearTimeout(workspaceTimer);
 		workspaceTimer = setTimeout(() => {
@@ -35,26 +34,22 @@ const setupAdditionalListeners = (
 		}, 200);
 	});
 
-	// 확장 설정 변경 감지 → 북마크 갱신 (더 정확한 필터링)
-	let configTimer: NodeJS.Timeout | null = null;
 	const configListener = vscode.workspace.onDidChangeConfiguration(e => {
-		if (e.affectsConfiguration("Simple-Bookmark") || e.affectsConfiguration("files.exclude")) {
+		(e.affectsConfiguration("Simple-Bookmark") || e.affectsConfiguration("files.exclude")) && (() => {
 			configTimer && clearTimeout(configTimer);
 			configTimer = setTimeout(() => {
 				console.debug("[Simple-Bookmark.configChanged]");
 				provider.refresh();
 			}, 150);
-		}
+		})();
 	});
 
 	listeners.push(selListener, workspaceListener, configListener);
 	return listeners;
 };
 
-// 활성화 훅 --------------------------------------------------------------------------------
-export const activate = (
-	context: vscode.ExtensionContext
-): void => {
+// -----------------------------------------------------------------------------------------
+export const activate = (context: vscode.ExtensionContext): void => {
 	console.debug("[Simple-Bookmark.activate] start");
 	const workspaceRoot = (
 		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
@@ -62,8 +57,10 @@ export const activate = (
 		: undefined
 	);
 
-	!workspaceRoot && showWarnAuto("[Simple-Bookmark] requires an open workspace to function properly.");
-	console.debug("[Simple-Bookmark.activate] no workspace");
+	!workspaceRoot && (
+		showWarnAuto("[Simple-Bookmark] requires an open workspace to function properly."),
+		console.debug("[Simple-Bookmark.activate] no workspace")
+	);
 
 	const provider = createBookmarkProvider(workspaceRoot);
 	const commandManager = createBookmarkCommand(provider, context);
@@ -74,7 +71,6 @@ export const activate = (
 		showCollapseAll: true
 	});
 
-	// 확장/축소 상태 추적
 	treeView.onDidExpandElement(e => {
 		const p = (e.element as any).originalPath;
 		p && (provider as any).markExpanded(process.platform === "win32" ? p.toLowerCase() : p);
@@ -84,7 +80,7 @@ export const activate = (
 		p && (provider as any).markCollapsed(process.platform === "win32" ? p.toLowerCase() : p);
 	});
 
-	const additionalListeners = setupAdditionalListeners(provider, commandManager, treeView);
+	const additionalListeners = fnSetupAdditionalListeners(provider, commandManager, treeView);
 
 	context.subscriptions.push(
 		treeView,
@@ -94,8 +90,7 @@ export const activate = (
 	);
 };
 
-// 비활성화 훅 ---------------------------------------------------------------------------------
-export const deactivate = (
-): void => {
+// -----------------------------------------------------------------------------------------
+export const deactivate = (): void => {
 	console.debug("[Simple-Bookmark.deactivate]");
 };

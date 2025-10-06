@@ -23,10 +23,8 @@ export const createBookmarkSyncService = (
 	const METADATA_EXT = ".bookmark.json";
 	const disposables : vscode.Disposable[] = [];
 
-	// 유틸 -------------------------------------------------------------------------------
-	const fileExists = async (
-		p : string
-	) : Promise<boolean> => {
+	// -----------------------------------------------------------------------------------------
+	const fnFileExists = async (p: string): Promise<boolean> => {
 		try {
 			await vscode.workspace.fs.stat(vscode.Uri.file(p));
 			return true;
@@ -36,28 +34,17 @@ export const createBookmarkSyncService = (
 		}
 	};
 
-	// 확장자 유지 -------------------------------------------------------------------------
-	// - 파일인 경우에만 적용
-	const preserveExt = (
-		originalPath : string,
-		newNameRaw : string,
-		isFile : boolean
-	) : string => {
+	// -----------------------------------------------------------------------------------------
+	const fnPreserveExt = (originalPath: string, newNameRaw: string, isFile: boolean): string => {
 		const ext = path.extname(originalPath);
-		return isFile && !newNameRaw.includes(".") && ext
-			? `${newNameRaw}${ext}`
-			: newNameRaw;
+		return isFile && !newNameRaw.includes(".") && ext ? `${newNameRaw}${ext}` : newNameRaw;
 	};
 
-	// 파일명 중복 방지 ------------------------------------------------------------------------
-	// - 동일 디렉토리 내에서만 검사
-	const generateUniqueFsName = async (
-		dir : string,
-		baseName : string
-	) : Promise<string> => {
+	// -----------------------------------------------------------------------------------------
+	const fnGenerateUniqueFsName = async (dir: string, baseName: string): Promise<string> => {
 		let name = baseName;
 		let i = 1;
-		while (await fileExists(path.join(dir, name))) {
+		while (await fnFileExists(path.join(dir, name))) {
 			const ext = path.extname(baseName);
 			const stem = path.basename(baseName, ext);
 			name = `${stem}_${i}${ext}`;
@@ -235,8 +222,8 @@ export const createBookmarkSyncService = (
 
 		// 2) 실제 파일/폴더 rename 준비
 		const dir = path.dirname(metadata!.originalPath);
-		const desiredFsName = preserveExt(metadata!.originalPath, newNameRaw, metadata!.isFile);
-		const uniqueFsName = await generateUniqueFsName(dir, desiredFsName);
+		const desiredFsName = fnPreserveExt(metadata!.originalPath, newNameRaw, metadata!.isFile);
+		const uniqueFsName = await fnGenerateUniqueFsName(dir, desiredFsName);
 		const newOriginalPath = path.join(dir, uniqueFsName);
 
 		// 3) 파일시스템 rename

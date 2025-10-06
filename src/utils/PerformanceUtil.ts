@@ -1,32 +1,22 @@
 // utils/PerformanceUtil.ts
 
-// 디바운싱 유틸리티 ---------------------------------------------------------------------
-export const debounce = <T extends (...args: any[]) => void>(
-	func: T,
-	delay: number
-): ((...args: Parameters<T>) => void) => {
+// -----------------------------------------------------------------------------------------
+export const debounce = <T extends (...args: any[]) => void>(func: T, delay: number): ((...args: Parameters<T>) => void) => {
 	let timeoutId: NodeJS.Timeout | null = null;
-
 	return (...args: Parameters<T>) => {
 		timeoutId && clearTimeout(timeoutId);
 		timeoutId = setTimeout(() => func(...args), delay);
 	};
 };
 
-// 배치 처리 유틸리티 -------------------------------------------------------------------
-export const batchProcess = async <T, R>(
-	items: T[],
-	processor: (item: T) => Promise<R>,
-	batchSize: number = 10
-): Promise<R[]> => {
+// -----------------------------------------------------------------------------------------
+export const batchProcess = async <T, R>(items: T[], processor: (item: T) => Promise<R>, batchSize: number = 10): Promise<R[]> => {
 	const results: R[] = [];
-
 	for (let i = 0; i < items.length; i += batchSize) {
 		const batch = items.slice(i, i + batchSize);
 		const batchResults = await Promise.all(batch.map(processor));
 		results.push(...batchResults);
 	}
-
 	return results;
 };
 
@@ -68,10 +58,10 @@ export class LRUCache<K, V> {
 	}
 }
 
-// 파일 시스템 유틸리티 ------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------
 export const isFileType = (type: number, target: number): boolean => (type & target) === target;
 
-// 안전한 JSON 파싱 ---------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------
 export const safeJsonParse = <T>(jsonString: string): T | null => {
 	try {
 		return JSON.parse(jsonString) as T;

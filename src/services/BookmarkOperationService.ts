@@ -15,61 +15,52 @@ export const createBookmarkOperationService = (
 	syncService? : BookmarkSyncService
 ) => {
 
-	// 유틸: 폴더를 파일 목록으로 평탄화 -----------------------------------------------------
-	const flattenToFiles = async (
-		uri : vscode.Uri
-	) : Promise<string[]> => {
+	// -----------------------------------------------------------------------------------------
+	const fnFlattenToFiles = async (uri: vscode.Uri): Promise<string[]> => {
 		const stat = await vscode.workspace.fs.stat(uri);
 		return stat.type === vscode.FileType.File
 		? [uri.fsPath]
 		: await (async () => {
-			const out : string[] = [];
+			const out: string[] = [];
 			const entries = await vscode.workspace.fs.readDirectory(uri);
 			for (const [name] of entries) {
 				const child = vscode.Uri.file(path.join(uri.fsPath, name));
 				const childStat = await vscode.workspace.fs.stat(child);
 				childStat.type === vscode.FileType.File
 					? out.push(child.fsPath)
-					: (await flattenToFiles(child)).forEach((p) => out.push(p));
+					: (await fnFlattenToFiles(child)).forEach((p) => out.push(p));
 			}
 			return out;
 		})();
 	};
 
-	// 파일/폴더 재귀적 복사 최적화 - 병렬 처리 및 효율적인 디렉토리 관리 -------------------
-	const copyFileOrFolder = async (
-		source : string,
-		target : string
-	) : Promise<void> => {
+	// -----------------------------------------------------------------------------------------
+	const fnCopyFileOrFolder = async (source: string, target: string): Promise<void> => {
 		const srcUri = vscode.Uri.file(source);
 		const tgtUri = vscode.Uri.file(target);
 		const stat = await vscode.workspace.fs.stat(srcUri);
 
-		if (stat.type === vscode.FileType.File) {
+		stat.type === vscode.FileType.File ? await (async () => {
 			const content = await vscode.workspace.fs.readFile(srcUri);
 			await vscode.workspace.fs.writeFile(tgtUri, content);
-		}
-		else {
-			// 대상 폴더 효율적 관리
+		})() : await (async () => {
 			try {
-				await vscode.workspace.fs.delete(tgtUri, {recursive : true});
+				await vscode.workspace.fs.delete(tgtUri, {recursive: true});
 			}
 			catch {
-				// 대상이 없으면 무시
 			}
 
 			await vscode.workspace.fs.createDirectory(tgtUri);
 			const entries = await vscode.workspace.fs.readDirectory(srcUri);
 
-			// 병렬로 복사 처리 (성능 향상)
 			const copyPromises = entries.map(([name]) => {
 				const sourcePath = path.join(source, name);
 				const targetPath = path.join(target, name);
-				return copyFileOrFolder(sourcePath, targetPath);
+				return fnCopyFileOrFolder(sourcePath, targetPath);
 			});
 
 			await Promise.all(copyPromises);
-		}
+		})();
 	};
 
 	// 파일/폴더 붙여넣기 (강제 덮어쓰기) - 일반 폴더 대상 ---------------------------------------
@@ -95,7 +86,7 @@ export const createBookmarkOperationService = (
 					try {
 						await vscode.workspace.fs.stat(targetUri);
 						await vscode.workspace.fs.delete(targetUri, {recursive : true, useTrash : false});
-						await copyFileOrFolder(item.fsPath, targetFile);
+						await fnCopyFileOrFolder(item.fsPath, targetFile);
 						pasteCount++;
 					}
 					catch (error) {
@@ -123,10 +114,9 @@ export const createBookmarkOperationService = (
 		? showErrorAuto("[Simple-Bookmark] No items to paste.")
 		: await (async () => {
 
-			// 폴더가 포함되어도 파일 단위로 매칭되도록 평탄화
 			const srcFilesSet = new Set<string>();
 			for (const uri of copiedItems) {
-				(await flattenToFiles(uri)).forEach((f) => srcFilesSet.add(f));
+				(await fnFlattenToFiles(uri)).forEach((f: string) => srcFilesSet.add(f));
 			}
 			const srcFiles = Array.from(srcFilesSet.values());
 
@@ -145,7 +135,7 @@ export const createBookmarkOperationService = (
 						try {
 							await vscode.workspace.fs.stat(vscode.Uri.file(realTarget));
 							await vscode.workspace.fs.delete(vscode.Uri.file(realTarget), {recursive : true, useTrash : false});
-							await copyFileOrFolder(src, realTarget);
+							await fnCopyFileOrFolder(src, realTarget);
 							overwriteCount++;
 						}
 						catch (error) {
