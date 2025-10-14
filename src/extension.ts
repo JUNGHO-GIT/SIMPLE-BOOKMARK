@@ -22,6 +22,7 @@ const fnSetupAdditionalListeners = (
 		selectionTimer = setTimeout(() => {
 			console.debug("[Simple-Bookmark.selectionChanged]", e.selection.length);
 			commandManager.updateSelectedBookmark(e.selection as BookmarkSystemItem[]);
+			selectionTimer = null;
 		}, 50);
 	});
 
@@ -31,6 +32,7 @@ const fnSetupAdditionalListeners = (
 			console.debug("[Simple-Bookmark.workspaceChanged]");
 			showInfoAuto("Workspace changed. Simple-Bookmark bookmarks may need to be refreshed.");
 			provider.refresh();
+			workspaceTimer = null;
 		}, 200);
 	});
 
@@ -40,11 +42,21 @@ const fnSetupAdditionalListeners = (
 			configTimer = setTimeout(() => {
 				console.debug("[Simple-Bookmark.configChanged]");
 				provider.refresh();
+				configTimer = null;
 			}, 150);
 		})();
 	});
 
-	listeners.push(selListener, workspaceListener, configListener);
+	const timerCleanup: vscode.Disposable = {
+		dispose: () => {
+			selectionTimer && clearTimeout(selectionTimer);
+			workspaceTimer && clearTimeout(workspaceTimer);
+			configTimer && clearTimeout(configTimer);
+			selectionTimer = workspaceTimer = configTimer = null;
+		}
+	};
+
+	listeners.push(selListener, workspaceListener, configListener, timerCleanup);
 	return listeners;
 };
 

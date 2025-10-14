@@ -84,8 +84,16 @@ export const createBookmarkOperationService = (
 				? console.debug("[Simple-Bookmark.pasteItems]", item.fsPath)
 				: await (async () => {
 					try {
-						await vscode.workspace.fs.stat(targetUri);
-						await vscode.workspace.fs.delete(targetUri, {recursive : true, useTrash : false});
+						// 대상 파일이 존재하면 삭제
+						try {
+							await vscode.workspace.fs.stat(targetUri);
+							await vscode.workspace.fs.delete(targetUri, {recursive : true, useTrash : false});
+						}
+						catch {
+							// 파일이 없으면 무시하고 계속 진행
+						}
+
+						// 복사 실행
 						await fnCopyFileOrFolder(item.fsPath, targetFile);
 						pasteCount++;
 					}
@@ -133,8 +141,16 @@ export const createBookmarkOperationService = (
 					? console.debug("[Simple-Bookmark.pasteItemsToRoot]", src)
 					: await (async () => {
 						try {
-							await vscode.workspace.fs.stat(vscode.Uri.file(realTarget));
-							await vscode.workspace.fs.delete(vscode.Uri.file(realTarget), {recursive : true, useTrash : false});
+							// 대상 파일이 존재하면 삭제
+							try {
+								await vscode.workspace.fs.stat(vscode.Uri.file(realTarget));
+								await vscode.workspace.fs.delete(vscode.Uri.file(realTarget), {recursive : true, useTrash : false});
+							}
+							catch {
+								// 파일이 없으면 무시하고 계속 진행
+							}
+
+							// 복사 실행
 							await fnCopyFileOrFolder(src, realTarget);
 							overwriteCount++;
 						}

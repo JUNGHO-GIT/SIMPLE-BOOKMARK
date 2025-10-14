@@ -27,10 +27,12 @@ export const createBookmarkProvider = (
 	let syncService : BookmarkSyncService | undefined;
 	const bookmarkStatusMap : Map<string, BookmarkStatus> = new Map();
 	const expandedDirPaths : Set<string> = new Set();
+	const statusCache = new Map<string, {status: BookmarkStatus; timestamp: number}>();
+	const STATUS_CACHE_TTL = 5000;
 
 	// refresh 디바운스 최적화 - 더 빠른 응답성을 위해 감소 ----------------------------------
 	let refreshTimer : NodeJS.Timeout | null = null;
-	const refreshDebounceMs = 100;
+	const refreshDebounceMs = 50;
 
 	setTimeout(
 		() => fnInitializeBookmarkFolder().catch(
@@ -114,110 +116,88 @@ export const createBookmarkProvider = (
 	// -----------------------------------------------------------------------------------------
 	const fnNormalizePath = (p: string): string => process.platform === "win32" ? p.toLowerCase() : p;
 
+	const fnSortItems = (a: BookmarkSystemItem, b: BookmarkSystemItem): number => {
+		const aIsDir = !a.bookmarkMetadata.isFile;
+		const bIsDir = !b.bookmarkMetadata.isFile;
+		return aIsDir === bIsDir
+			? a.bookmarkMetadata.bookmarkName.localeCompare(b.bookmarkMetadata.bookmarkName)
+			: aIsDir ? -1 : 1;
+	};
+
 	const getRootBookmarks = async () : Promise<BookmarkSystemItem[]> => {
-		return !syncService
-		? []
-		: await (async () => {
-			const bookmarks = syncService.getAllBookmarks();
-			const items : BookmarkSystemItem[] = [];
+		!syncService && (void 0);
 
-			for (const metadata of bookmarks) {
-				const status = bookmarkStatusMap.get(metadata.originalPath) || BookmarkStatus.SYNCED;
-				const item = createBookmarkSystemItem(
-					metadata,
-					status
-				);
-				!metadata.isFile && (() => {
-					const key = fnNormalizePath(metadata.originalPath);
-					item.collapsibleState = expandedDirPaths.has(key)
-						? vscode.TreeItemCollapsibleState.Expanded
-						: vscode.TreeItemCollapsibleState.Collapsed;
-				})();
-				items.push(item);
-			}
+		const bookmarks = syncService!.getAllBookmarks();
+		const items : BookmarkSystemItem[] = [];
 
-			return items.sort(
-				(a, b) => {
-					const aIsDir = !a.bookmarkMetadata.isFile;
-					const bIsDir = !b.bookmarkMetadata.isFile;
-					return aIsDir && !bIsDir
-					? -1
-					: !aIsDir && bIsDir
-					? 1
-					: a.bookmarkMetadata.bookmarkName.localeCompare(
-						b.bookmarkMetadata.bookmarkName
-					);
-				}
-			);
-		})();
+		for (const metadata of bookmarks) {
+			const status = bookmarkStatusMap.get(metadata.originalPath) ?? BookmarkStatus.SYNCED;
+			const item = createBookmarkSystemItem(metadata, status);
+
+			!metadata.isFile && (() => {
+				const key = fnNormalizePath(metadata.originalPath);
+				item.collapsibleState = expandedDirPaths.has(key)
+					? vscode.TreeItemCollapsibleState.Expanded
+					: vscode.TreeItemCollapsibleState.Collapsed;
+			})();
+
+			items.push(item);
+		}
+
+		return items.sort(fnSortItems);
 	};
 
 	// 실제 폴더의 하위 항목 가져오기 ---------------------------------------------------
+	const fnSortEntries = (a: [string, vscode.FileType], b: [string, vscode.FileType]): number => {
+		const aIsDir = a[1] === vscode.FileType.Directory;
+		const bIsDir = b[1] === vscode.FileType.Directory;
+		return aIsDir === bIsDir ? a[0].localeCompare(b[0]) : aIsDir ? -1 : 1;
+	};
+
 	const getFolderContents = async (
 		folderPath : string,
 		ancestor? : Set<string>
 	) : Promise<BookmarkSystemItem[]> => {
 		try {
-			const entries = await vscode.workspace.fs.readDirectory(
-				vscode.Uri.file(folderPath)
-			);
+			const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(folderPath));
 			const items : BookmarkSystemItem[] = [];
-
-			const sortedEntries = entries.sort(
-				(a, b) => {
-				return a[1] === vscode.FileType.Directory && b[1] !== vscode.FileType.Directory
-					? -1
-					: a[1] !== vscode.FileType.Directory && b[1] === vscode.FileType.Directory
-					? 1
-					: a[0].localeCompare(b[0]);
-				}
-			);
+			const sortedEntries = entries.sort(fnSortEntries);
 
 			for (const [name, type] of sortedEntries) {
 				const itemPath = path.join(folderPath, name);
-				const skip = !!ancestor && ancestor.has(itemPath);
+				const skip = ancestor?.has(itemPath);
+				skip && (void 0);
 
-				!skip && (() => {
-					const virtualMetadata = {
-						originalPath : itemPath,
-						bookmarkName : name,
-						isFile : type === vscode.FileType.File,
-						createdAt : Date.now(),
-						lastSyncAt : Date.now(),
-						originalExists : true
-					};
+				const isFile = type === vscode.FileType.File;
+				const virtualMetadata = {
+					originalPath : itemPath,
+					bookmarkName : name,
+					isFile,
+					createdAt : Date.now(),
+					lastSyncAt : Date.now(),
+					originalExists : true
+				};
 
-					const sysItem = createBookmarkSystemItem(
-						virtualMetadata,
-						BookmarkStatus.SYNCED
-					);
-					virtualMetadata.isFile || (() => {
-						const key = fnNormalizePath(virtualMetadata.originalPath);
-						sysItem.collapsibleState = expandedDirPaths.has(key)
-							? vscode.TreeItemCollapsibleState.Expanded
-							: vscode.TreeItemCollapsibleState.Collapsed;
-					})();
+				const sysItem = createBookmarkSystemItem(virtualMetadata, BookmarkStatus.SYNCED);
 
-					// 방문 경로 체인 주입(하위 확장 시 사이클 감지용)
-					type === vscode.FileType.Directory && (() => {
-						const chain = new Set<string>(
-							ancestor ? Array.from(ancestor) : []
-						);
-						chain.add(folderPath);
-						(sysItem as any)._ancestorPaths = chain;
-					})();
+				!isFile && (() => {
+					const key = fnNormalizePath(itemPath);
+					sysItem.collapsibleState = expandedDirPaths.has(key)
+						? vscode.TreeItemCollapsibleState.Expanded
+						: vscode.TreeItemCollapsibleState.Collapsed;
 
-					items.push(sysItem);
+					const chain = new Set<string>(ancestor ?? []);
+					chain.add(folderPath);
+					(sysItem as any)._ancestorPaths = chain;
 				})();
+
+				items.push(sysItem);
 			}
 
 			return items;
 		}
 		catch (error) {
-			console.error(
-				`Error reading folder contents: ${folderPath}`,
-				error
-			);
+			console.error(`Error reading folder contents: ${folderPath}`, error);
 			return [];
 		}
 	};

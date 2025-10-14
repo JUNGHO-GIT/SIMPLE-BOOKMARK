@@ -3,7 +3,8 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import {TextEncoder} from "util";
-import {BookmarkMetadata, BookmarkStatus} from "../types/BookmarkType.js";
+import type {BookmarkMetadata} from "../types/BookmarkType.js";
+import {BookmarkStatus} from "../types/BookmarkType.js";
 import {validateFileName} from "../utils/BookmarkPathUtil.js";
 
 // -----------------------------------------------------------------------------------------
@@ -109,35 +110,37 @@ export const createBookmarkSyncService = (
 				.filter(([name]) => name.endsWith(METADATA_EXT))
 				.map(([name]) => path.join(bookmarkPath, name));
 
-			// 병렬로 메타데이터 로딩
-			const loadPromises = metaPaths.map(async (metadataPath) => {
-				try {
-					const metadata = await loadMetadata(metadataPath);
-					if (metadata) {
-						bookmarkedFiles.set(metadata.originalPath, metadata);
-						createWatcherFor(metadata.originalPath);
+			// 병렬로 메타데이터 로딩 - 최대 10개씩 배치 처리
+			const BATCH_SIZE = 10;
+			const loadedMetadata: BookmarkMetadata[] = [];
+
+			for (let i = 0; i < metaPaths.length; i += BATCH_SIZE) {
+				const batch = metaPaths.slice(i, i + BATCH_SIZE);
+				const batchPromises = batch.map(async (metadataPath) => {
+					try {
+						const metadata = await loadMetadata(metadataPath);
+						metadata && (bookmarkedFiles.set(metadata.originalPath, metadata), createWatcherFor(metadata.originalPath));
 						return metadata;
 					}
-				}
-				catch (error) {
-					console.error(`[Simple-Bookmark] Failed to load bookmark metadata: ${metadataPath}`, error);
-				}
-				return null;
-			});
-
-			const loadedMetadata = (await Promise.all(loadPromises)).filter(Boolean);
+					catch (error) {
+						console.error(`[Simple-Bookmark] Failed to load bookmark metadata: ${metadataPath}`, error);
+						return null;
+					}
+				});
+				const batchResults = await Promise.all(batchPromises);
+				batchResults.forEach((meta) => meta && loadedMetadata.push(meta));
+			}
 
 			// 배치로 상태 확인 후 한 번에 갱신
-			if (loadedMetadata.length > 0) {
+			loadedMetadata.length > 0 && await (async () => {
 				const statusPromises = loadedMetadata.map(async (metadata) => {
-					const status = await checkBookmarkStatus(metadata!);
-					onSyncUpdate && onSyncUpdate(metadata!.originalPath, status);
+					const status = await checkBookmarkStatus(metadata);
+					onSyncUpdate?.(metadata.originalPath, status);
 					return status;
 				});
-
 				await Promise.all(statusPromises);
-				onRefreshNeeded && onRefreshNeeded();
-			}
+				onRefreshNeeded?.();
+			})();
 		}
 		catch (error) {
 			console.error("[Simple-Bookmark] Failed to load existing bookmarks:", error);

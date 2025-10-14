@@ -1,7 +1,7 @@
 // models/BookmarkSystemItem.ts
 
 import * as vscode from "vscode";
-import {BookmarkMetadata, BookmarkStatus} from "../types/BookmarkType.js";
+import {type BookmarkMetadata, BookmarkStatus} from "../types/BookmarkType.js";
 
 // -----------------------------------------------------------------------------------------
 export type BookmarkSystemItem = vscode.TreeItem & {
