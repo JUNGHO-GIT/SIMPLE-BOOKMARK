@@ -1,55 +1,42 @@
-# 🚀 Simple-Bookmark - The Ultimate BookmarkExplorer for VSCode
+# 🚀 Simple-Bookmark
 
-- To avoid shortcut conflicts with VS Code or other extensions
-- Simple-Bookmark's shortcuts are context-aware and only active when the sidebar is visible.
-- Check your keybindings: `"when": "view.Simple-Bookmark.visible"`
-- Configure deletion behavior in settings: `Simple-Bookmark.deleteMode` (ask/bookmarkOnly/bookmarkAndOriginal)timate BookmarkExplorer for VSCode
+Simple-Bookmark is a lightweight VS Code extension that lets you bookmark files and folders in the Explorer sidebar for fast navigation and simple management.
 
-![demo](logo_demonstration.gif)
+## Features ✨
 
-## ⚡️ Features
+- 🔖 Add and remove bookmarks (files & folders) from the Explorer or the extension view
+- 📋 Copy & paste bookmarked items, rename bookmarks, and create files/folders in the original location
+- 📂 Expand all workspace folders or expand a specific folder in the Explorer
+- 🔁 Auto-refresh bookmarks on file changes and show per-item sync status
+- 🗑️ Configurable delete behavior: ask / bookmarkOnly / bookmarkAndOriginal
+- 💾 Session persistence and bulk operations (remove all, reset)
 
-- ***Add and remove bookmarks  :*** (folders & files) with a single click or keyboard shortcut
-- ***Lightning-fast navigation  :*** Instantly open, focus, or reveal any bookmarked path
-- ***Explorer folder expansion  :*** Expand all VS Code Explorer folders at once with performance optimization
-- ***Flexible deletion options  :*** Choose to delete bookmark only or bookmark + original files
-- ***Non-destructive by default  :*** Removing a bookmark keeps original files safe unless specified otherwise
-- ***Session persistence  :*** Your bookmarks are saved automatically and restored across VS Code restarts (by default)
-- ***Bulk management  :*** Quickly reset or clear all bookmarks in a single action
-- ***Zero scroll  :*** Perfect for giant repos, monorepos, or rapid project switching
+## Default shortcuts ⌨️
 
-## 🖱️ Quick Actions
+- Shift+Alt+A — ➕ Add bookmark
+- Shift+Alt+D — ➖ Remove bookmark
+- Shift+Alt+R — ✏️ Rename bookmark
+- Shift+Alt+Y — 📂 Expand Explorer or expand a folder (context-aware)
+- Ctrl+C / Ctrl+V — 📋 Copy / Paste inside the Simple-Bookmark view
 
-| Action                        | How To                                 |
-|-------------------------------|----------------------------------------|
-| Add bookmark                  | Right-click file/folder → **Add** or use `Shift+Alt+A` |
-| Remove bookmark               | Right-click bookmark → **Remove** or use `Shift+Alt+D` (*choose bookmark only or + original files*) |
-| Expand all Explorer folders   | Use `Shift+Alt+Y` or right-click folder → **Expand All** |
-| Expand specific folder        | Right-click folder → **Expand Folder** |
-| Reveal file/folder in explorer| Click bookmark or `Shift+Alt+S`        |
-| Refresh list                  | Click **Refresh** (🔄) in sidebar      |
-| Remove all bookmarks          | Click **RemoveAll** (🗑️) in sidebar (*with deletion options*) |
+Shortcuts are context-aware and active when the extension view is focused.
 
-## 💡 Tips
+## Settings ⚙️
 
-- To avoid shortcut conflicts with VS Code or other extensions
-- Simple-Bookmark’s shortcuts are context-aware and only active when the sidebar is visible.
-- Check your keybindings: `"when": "view.Simple-Bookmark.visible"`
+- 🔁 `simpleBookmark.autoRefresh` (boolean, default: `true`) — Auto-refresh on file changes
+- 🔄 `simpleBookmark.showSyncStatus` (boolean, default: `true`) — Show synchronization status per item
+- 🗑️ `simpleBookmark.deleteMode` (string, default: `"ask"`) — Default delete behavior: `"ask" | "bookmarkOnly" | "bookmarkAndOriginal"`
 
-## 🚧 Roadmap
+## Install ⬇️
 
-- Add filter/ignore rules by extension or filename pattern
-- Multi-select and bulk operations
-- Drag-and-drop reordering
-- Smart context actions (move/copy/open-in-terminal)
-- More keyboard shortcuts (configurable)
+- 📥 Install from the VS Code Marketplace by searching for "Simple-Bookmark".
+- 🛠️ Local development: Node.js 18+, run `npm install` then `npm run compile` or `npm run watch`. Use `npm run vsce` to create a package.
 
-## 🛠️ Under the Hood
+## Contributing 🤝
 
-- Built for maximum speed, clarity, and zero risk
-- Designed for large teams, polyrepo, monorepo, or any developer who hates scrolling
+- 📦 Repository: [Simple-Bookmark on GitHub](https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK)
+- ✉️ PRs, bug reports, and suggestions are welcome.
 
-## 📢 Contributing
+## License 📄
 
-- Pull requests, feedback, and bug reports are always welcome!
-- Help make Simple-Bookmark the best project explorer for real-world VS Code power users.
+- 🔓 Apache-2.0
