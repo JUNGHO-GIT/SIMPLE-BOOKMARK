@@ -37,7 +37,7 @@ const fnSetupAdditionalListeners = (
 	});
 
 	const configListener = vscode.workspace.onDidChangeConfiguration(e => {
-		(e.affectsConfiguration("Simple-Bookmark") || e.affectsConfiguration("files.exclude")) && (() => {
+		(e.affectsConfiguration("simpleBookmark") || e.affectsConfiguration("files.exclude")) && (() => {
 			configTimer && clearTimeout(configTimer);
 			configTimer = setTimeout(() => {
 				console.debug("[Simple-Bookmark.configChanged]");

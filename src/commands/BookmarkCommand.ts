@@ -264,7 +264,7 @@ export const createBookmarkCommand = (
 			return itemsToRemove.length === 0
 			? showErrorAuto("[Simple-Bookmark] No bookmarks selected to remove.")
 			: await (async () => {
-				const config = vscode.workspace.getConfiguration("Simple-Bookmark");
+				const config = vscode.workspace.getConfiguration("simpleBookmark");
 				const deleteMode = config.get<string>("deleteMode", "ask");
 
 				let deleteOriginal : boolean = false;
@@ -427,7 +427,7 @@ export const createBookmarkCommand = (
 			return !allItems || allItems.length === 0
 			? showInfoAuto("[Simple-Bookmark] No bookmarks to remove.")
 			: await (async () => {
-				const config = vscode.workspace.getConfiguration("Simple-Bookmark");
+				const config = vscode.workspace.getConfiguration("simpleBookmark");
 				const deleteMode = config.get<string>("deleteMode", "ask");
 
 				let deleteOriginal : boolean = false;

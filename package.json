@@ -5,7 +5,7 @@
 	"icon": "logo_image.png",
 	"license": "Apache-2.0",
 	"type": "module",
-	"version": "2.2.6",
+	"version": "2.2.7",
 	"description": "Real-time synchronized bookmarks for VSCode with .bookmark folder-based organization",
 	"main": "./out/extension.js",
 	"repository": {
@@ -256,17 +256,17 @@
 		"configuration": {
 			"title": "Simple-Bookmark",
 			"properties": {
-				"Simple-Bookmark.autoRefresh": {
+				"simpleBookmark.autoRefresh": {
 					"type": "boolean",
 					"default": true,
 					"description": "Automatically refresh bookmarks when files change"
 				},
-				"Simple-Bookmark.showSyncStatus": {
+				"simpleBookmark.showSyncStatus": {
 					"type": "boolean",
 					"default": true,
 					"description": "Show synchronization status in bookmark items"
 				},
-				"Simple-Bookmark.deleteMode": {
+				"simpleBookmark.deleteMode": {
 					"type": "string",
 					"enum": ["ask", "bookmarkOnly", "bookmarkAndOriginal"],
 					"enumDescriptions": [
@@ -297,13 +297,13 @@
 	"devDependencies": {
 		"@types/glob": "^9.0.0",
 		"@types/mocha": "^10.0.10",
-		"@types/node": "^24.7.2",
+		"@types/node": "^24.8.1",
 		"@types/vscode": "^1.105.0",
 		"@typescript-eslint/eslint-plugin": "^8.46.1",
 		"@typescript-eslint/parser": "^8.46.1",
 		"@vscode/test-electron": "^2.5.2",
 		"@vscode/vsce": "^3.6.2",
-		"eslint": "^9.37.0",
+		"eslint": "^9.38.0",
 		"mocha": "^11.7.4",
 		"typescript": "^5.9.3"
 	}
