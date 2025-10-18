@@ -102,14 +102,14 @@ export const createBookmarkProvider = (
 			const ancestor : Set<string> | undefined = (element as any)._ancestorPaths;
 			const isCycle = !!ancestor && ancestor.has(element.originalPath);
 
-						return isCycle
-							? []
-							: (!element.bookmarkMetadata.isFile)
-								? await getFolderContents(
-									element.originalPath,
-									ancestor
-								)
-								: [];
+			return isCycle
+				? []
+				: (!element.bookmarkMetadata.isFile)
+				? await getFolderContents(
+					element.originalPath,
+					ancestor
+				)
+				: [];
 		})();
 	};
 
@@ -339,9 +339,16 @@ export const createBookmarkProvider = (
 							let name = candidate;
 							let i = 1;
 							while (true) {
+								const candidatePath = path.join(dir, name);
+								// 동일한 원본 경로는 충돌로 간주하지 않음 (Windows 대소문자 처리 고려)
+								const resolvedCandidate = path.resolve(candidatePath);
+								const resolvedOriginal = path.resolve(originalPath);
+								if (resolvedCandidate === resolvedOriginal || (process.platform === "win32" && resolvedCandidate.toLowerCase() === resolvedOriginal.toLowerCase())) {
+									return name;
+								}
 								try {
 									await vscode.workspace.fs.stat(
-										vscode.Uri.file(path.join(dir, name))
+										vscode.Uri.file(candidatePath)
 									);
 									const e = path.extname(candidate);
 									const stem = path.basename(candidate, e);

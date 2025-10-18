@@ -5,7 +5,7 @@
 	"icon": "logo_image.png",
 	"license": "Apache-2.0",
 	"type": "module",
-	"version": "2.2.7",
+	"version": "2.2.8",
 	"description": "Real-time synchronized bookmarks for VSCode with .bookmark folder-based organization",
 	"main": "./out/extension.js",
 	"repository": {
@@ -268,7 +268,11 @@
 				},
 				"simpleBookmark.deleteMode": {
 					"type": "string",
-					"enum": ["ask", "bookmarkOnly", "bookmarkAndOriginal"],
+					"enum": [
+						"ask",
+						"bookmarkOnly",
+						"bookmarkAndOriginal"
+					],
 					"enumDescriptions": [
 						"Show selection dialog every time when deleting bookmarks",
 						"Always delete bookmark only (keep original files)",

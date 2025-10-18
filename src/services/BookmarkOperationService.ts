@@ -34,17 +34,36 @@ export const createBookmarkOperationService = (
 		})();
 	};
 
+	// 경로 비교/정규화 헬퍼들 -----------------------------------------------------
+	const fnNormalizeForCompare = (p: string): string => (
+		process.platform === "win32" ? path.resolve(p).toLowerCase() : path.resolve(p)
+	);
+
+	const fnIsSameFsPath = (a: string, b: string): boolean => fnNormalizeForCompare(a) === fnNormalizeForCompare(b);
+
+	const fnIsSubPath = (parent: string, child: string): boolean => {
+		const rel = path.relative(parent, child);
+		return rel.length > 0 && !rel.startsWith("..") && !path.isAbsolute(rel);
+	};
+
 	// -----------------------------------------------------------------------------------------
 	const fnCopyFileOrFolder = async (source: string, target: string): Promise<void> => {
 		const srcUri = vscode.Uri.file(source);
 		const tgtUri = vscode.Uri.file(target);
 		const stat = await vscode.workspace.fs.stat(srcUri);
 
+
+
 		stat.type === vscode.FileType.File ? await (async () => {
 			const content = await vscode.workspace.fs.readFile(srcUri);
 			await vscode.workspace.fs.writeFile(tgtUri, content);
 		})() : await (async () => {
 			try {
+					// 대상이 원본 내부일 경우 무한 루프 또는 손상 가능성 있으므로 차단
+					if (fnIsSameFsPath(source, target) || fnIsSubPath(source, target)) {
+					throw new Error(`Cannot copy folder into itself or its subfolder: ${source} -> ${target}`);
+				}
+
 				await vscode.workspace.fs.delete(tgtUri, {recursive: true});
 			}
 			catch {
@@ -80,10 +99,29 @@ export const createBookmarkOperationService = (
 				const targetFile = path.join(targetPath, fileName);
 				const targetUri = vscode.Uri.file(targetFile);
 
-				path.resolve(item.fsPath) === path.resolve(targetFile)
+				// 소스/대상 동일 여부 검사 (플랫폼별 정규화 포함)
+				const isSame = fnIsSameFsPath(item.fsPath, targetFile);
+
+				isSame
 				? console.debug("[Simple-Bookmark.pasteItems]", item.fsPath)
 				: await (async () => {
 					try {
+						// 소스 정보 확인
+						let srcStat: vscode.FileStat | undefined;
+						try {
+							srcStat = await vscode.workspace.fs.stat(item);
+						}
+						catch (e) {
+							showErrorAuto(`[Simple-Bookmark] Source missing or inaccessible: ${item.fsPath}`);
+							return;
+						}
+
+						// 폴더를 자기 자신 또는 하위 폴더로 붙여넣는 경우 차단
+						if (srcStat.type === vscode.FileType.Directory && fnIsSubPath(item.fsPath, targetFile)) {
+							showErrorAuto(`[Simple-Bookmark] Cannot paste folder into itself or its subfolder: ${fileName}`);
+							return;
+						}
+
 						// 대상 파일이 존재하면 삭제
 						try {
 							await vscode.workspace.fs.stat(targetUri);
@@ -137,7 +175,7 @@ export const createBookmarkOperationService = (
 
 				!realTarget
 				? skipped.push(fileName)
-				: (path.resolve(src) === path.resolve(realTarget)
+				: (fnIsSameFsPath(src, realTarget)
 					? console.debug("[Simple-Bookmark.pasteItemsToRoot]", src)
 					: await (async () => {
 						try {
@@ -166,7 +204,7 @@ export const createBookmarkOperationService = (
 				? "[Simple-Bookmark] 1 file overwritten to original targets"
 				: `[Simple-Bookmark] ${overwriteCount} files overwritten to original targets`
 			);
-			skipped.length > 0 && console.debug("[Simple-Bookmark] Skipped (non-matching names):", skipped);
+			skipped.length > 0 && showWarnAuto(`[Simple-Bookmark] ${skipped.length} files skipped (non-matching names)`);
 		})();
 	};
 
@@ -234,17 +272,29 @@ export const createBookmarkOperationService = (
 		? void showErrorAuto(`[Simple-Bookmark] ${error}`)
 		: await (async () => {
 			const filePath = path.join(parentPath, fileName);
-			await vscode.workspace.fs.writeFile(vscode.Uri.file(filePath), new Uint8Array(0));
-			showInfoAuto(`[Simple-Bookmark] File created in original location: ${fileName}`);
-			console.debug("[Simple-Bookmark.createFile]", filePath);
-
+			const fileUri = vscode.Uri.file(filePath);
+			let exists = true;
 			try {
-				const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
-				await vscode.window.showTextDocument(document);
+				await vscode.workspace.fs.stat(fileUri);
 			}
-			catch (e) {
-				console.error(`[Simple-Bookmark] Failed to open created file: ${e}`);
+			catch {
+				exists = false;
 			}
+			exists
+			? showWarnAuto(`[Simple-Bookmark] File already exists: ${fileName}`)
+			: await (async () => {
+				await vscode.workspace.fs.writeFile(fileUri, new Uint8Array(0));
+				showInfoAuto(`[Simple-Bookmark] File created in original location: ${fileName}`);
+				console.debug("[Simple-Bookmark.createFile]", filePath);
+
+				try {
+					const document = await vscode.workspace.openTextDocument(fileUri);
+					await vscode.window.showTextDocument(document);
+				}
+				catch (e) {
+					console.error(`[Simple-Bookmark] Failed to open created file: ${e}`);
+				}
+			})();
 		})();
 	};
 

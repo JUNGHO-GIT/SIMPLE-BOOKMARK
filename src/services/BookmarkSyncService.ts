@@ -226,20 +226,29 @@ export const createBookmarkSyncService = (
 		// 2) 실제 파일/폴더 rename 준비
 		const dir = path.dirname(metadata!.originalPath);
 		const desiredFsName = fnPreserveExt(metadata!.originalPath, newNameRaw, metadata!.isFile);
-		const uniqueFsName = await fnGenerateUniqueFsName(dir, desiredFsName);
-		const newOriginalPath = path.join(dir, uniqueFsName);
+		const candidateFsPath = path.join(dir, desiredFsName);
 
-		// 3) 파일시스템 rename
-		try {
-			console.debug("[Simple-Bookmark.sync.rename.fs] From:", metadata!.originalPath, "to:", newOriginalPath);
-			await vscode.workspace.fs.rename(
-				vscode.Uri.file(metadata!.originalPath),
-				vscode.Uri.file(newOriginalPath),
-				{overwrite : false}
-			);
+		// 대상 경로가 현재 경로와 동일하면 실제 파일시스템 rename은 생략
+		let newOriginalPath = metadata!.originalPath;
+		if (path.resolve(candidateFsPath) !== path.resolve(metadata!.originalPath)) {
+			const uniqueFsName = await fnGenerateUniqueFsName(dir, desiredFsName);
+			newOriginalPath = path.join(dir, uniqueFsName);
+
+			// 3) 파일시스템 rename
+			try {
+				console.debug("[Simple-Bookmark.sync.rename.fs] From:", metadata!.originalPath, "to:", newOriginalPath);
+				await vscode.workspace.fs.rename(
+					vscode.Uri.file(metadata!.originalPath),
+					vscode.Uri.file(newOriginalPath),
+					{overwrite : false}
+				);
+			}
+			catch (e) {
+				throw new Error(`[Simple-Bookmark] Failed to rename original item: ${e}`);
+			}
 		}
-		catch (e) {
-			throw new Error(`[Simple-Bookmark] Failed to rename original item: ${e}`);
+		else {
+			console.debug("[Simple-Bookmark.sync.rename.fs] FS rename skipped (same path):", metadata!.originalPath);
 		}
 
 		// 4) 메타데이터 파일 rename(이름 변경 반영)
@@ -251,13 +260,20 @@ export const createBookmarkSyncService = (
 		metadata!.lastSyncAt = Date.now();
 
 		await saveMetadata(newMetaPath, metadata!);
-		await vscode.workspace.fs.delete(vscode.Uri.file(oldMetaPath));
+		// 메타데이터 파일명이 변경되지 않은 경우 기존 파일 삭제는 하지 않음
+		oldMetaPath !== newMetaPath && await vscode.workspace.fs.delete(vscode.Uri.file(oldMetaPath));
 
 		// 5) 내부 맵과 워처 재바인딩
-		bookmarkedFiles.delete(originalPath);
-		bookmarkedFiles.set(newOriginalPath, metadata!);
-		disposeWatcherFor(originalPath);
-		createWatcherFor(newOriginalPath);
+		if (path.resolve(originalPath) !== path.resolve(newOriginalPath)) {
+			bookmarkedFiles.delete(originalPath);
+			disposeWatcherFor(originalPath);
+			bookmarkedFiles.set(newOriginalPath, metadata!);
+			createWatcherFor(newOriginalPath);
+		}
+		else {
+			// 경로가 동일하면 맵에 메타데이터만 갱신
+			bookmarkedFiles.set(originalPath, metadata!);
+		}
 
 		onSyncUpdate && onSyncUpdate(newOriginalPath, BookmarkStatus.SYNCED);
 		onRefreshNeeded && onRefreshNeeded();
