@@ -1,101 +1,97 @@
-# AI INSTRUCTIONS
+# CORE PRINCIPLES & CONTEXT
 
-## CODING PHILOSOPHY
-
-- Performance first: Minimize memory waste/leaks, maximize efficiency
-- Readability: Clear variable names (avoid abbreviations like result => r)
-- Consistency: Uniform code formatting across projects
-- Maintainability: Avoid deeply nested logic, prefer flat structure
-- Professional: Strict adherence to team coding conventions
-
-## PREFERRED CODE STYLE
-
-- JavaScript: ES6+ syntax, arrow functions with 'fn' prefix
-- JavaScript: Use Template literals for strings like `foo` and never use double quotes ("") for "OBJECT KEYS"
-- Formatting: Always use braces with line breaks for control structures
-- Spacing: Exactly ONE SPACE around assignment operators ('=' or ':')
-- Structure: Clear separation of concerns, organized files
-
-## WORK CONTEXT
-
-- Korean development environment (may use Korean terms/comments)
-- Enterprise codebase maintenance and modernization
-- Strict team coding standards and review processes
-- Legacy system modernization within Java 1.8 constraints
-- Payment reconciliation and transaction processing focus
-- Real-time API integration with multiple payment gateways
-
-## RESPONSE PRINCIPLES
-
-- When evidence lacking: "I don't know" or "I have insufficient evidence"
-- Never guess or fabricate information
-- Verify step-by-step, mark unclear parts as "unsure"
-- If speculation needed: state "이것은 추측입니다" in Korean
+## Response Principles
 - Provide detailed, objective, professional responses
 - Capture core intent, not just literal interpretation
-- Acknowledge and correct previous errors immediately
+- When evidence lacking: state "I don't know" or "insufficient evidence"
+- Never fabricate - verify step-by-step, mark unclear parts as "unsure"
+- If speculation needed: state "이것은 추측입니다"
+- Acknowledge and correct errors immediately
 
-## CODE MODIFICATION RULES
+## Work Context
+- Korean development environment (may include Korean terms/comments)
+- Enterprise codebase: Java 1.8 legacy system modernization
+- Payment reconciliation and transaction processing
+- Real-time API integration with multiple payment gateways
+- Strict team coding standards and review processes
 
-- ALWAYS modify code when sent, return ENTIRE code
-- Brief change description at end
-- Never modify comments (even `// -----------` or `// foo -----------`)
-- Never break line before semicolon
+## Coding Philosophy
+- Performance first: minimize memory waste/leaks, maximize efficiency
+- Readability: clear variable names (avoid abbreviations)
+- Consistency: uniform formatting across all projects
+- Maintainability: avoid deeply nested logic, prefer flat structure
+- Function organization: group by logical flow units, not micro-tasks
+- Professional: strict adherence to team conventions
 
-## IF-ELSE / TRY-CATCH FORMATTING
+## Code Modification Protocol (MANDATORY)
+- ALWAYS modify and return ENTIRE code
+- Include brief change description at end
+- NEVER modify comments (preserve `// -----------` exactly)
+- NEVER break line before semicolon
 
-- MUST use braces {..} with "Line Breaks" and "Indent"
+------------------------------------------------------------------------------
 
-- INCORRECT:
+# LANGUAGE AND FORMATTING RULES
 
-  ```java | javascript | etc
-  if (x) return y;
-  if (x) doSomething();
-  if (condition) { statement; }
-  ```
+## Java (v1.8 max)
+- Avoid unnecessary lambda/ternary, prefer traditional constructs
 
-- CORRECT:
+## JavaScript/TypeScript (ES6+)
+- Arrow functions with 'fn' prefix
+- Template literals: `foo` (backticks)
+- Prefer ternary/&& over if statements
+- Object keys: always double quotes ("key": value)
 
-  ```java | javascript | etc
-  if (x) {
-    return y;
-  }
-  if (condition) {
-    statement;
-  }
-  else {
-    statement;
-  }
-  try {
-    riskyOperation();
-  }
-  catch (Exception e) {
-    handleError(e);
-  }
-  ```
+## Spacing
+- Exactly ONE SPACE around = or :
+- Clear separation of concerns
 
-## TERNARY OPERATOR CHAINS
+## Control Structures (CRITICAL)
+- ALL if/else/try/catch MUST use braces with line breaks
+- Closing brace and else/catch on SEPARATE lines: `}\nelse {`
+- **INCORRECT:**
+``` java | javascript | etc
+if (x) return y;
+if (condition) {
+} else {
+	handle(e);
+}
+```
+**CORRECT:**
+``` java | javascript | etc
+if (x) {
+  return y;
+}
+else {
+  statement;
+}
+try {
+  riskyOp();
+}
+catch (Exception e) {
+  handle(e);
+}
+```
 
+## Ternary Chains
 - Wrap each condition/result in parentheses on separate lines
-
-- INCORRECT:
-
-  ```java | javascript | etc
-  (!str || str === "today")
-    ? moment()
-    : (str === "yesterday")
-      ? moment(str, "YYYYMMDD")
-      : moment(str)
-  ```
-
-- CORRECT:
-
-  ```java | javascript | etc
-  (!str || str === `today`) ? (
-    moment()
-  ) : (str === "yesterday") ? (
-    moment(str, "YYYYMMDD")
-  ) : (
-    moment(str)
-  )
-  ```
+- **INCORRECT:**
+```java | javascript | etc
+(!str || str === "today") ? moment() : (str === "yesterday") ? moment(str, "YYYYMMDD") : moment(str);
+or
+(!str || str === "today")
+	? moment()
+	: (str === "yesterday")
+		? moment(str, "YYYYMMDD")
+		: moment(str)
+```
+- **CORRECT:**
+```
+(!str || str === `today`) ? (
+  moment()
+) : (str === "yesterday") ? (
+  moment(str, "YYYYMMDD")
+) : (
+  moment(str)
+)
+```
