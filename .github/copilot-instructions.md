@@ -29,8 +29,6 @@
 - NEVER modify comments (preserve `// -----------` exactly)
 - NEVER break line before semicolon
 
-------------------------------------------------------------------------------
-
 # LANGUAGE AND FORMATTING RULES
 
 ## Java (v1.8 max)
