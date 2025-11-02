@@ -290,7 +290,8 @@
 		"vsce": "tsc -p . && tsc-alias -p tsconfig.json -f && vsce package",
 		"reset": "node .node/reset.cjs --npm",
 		"autofix": "node .node/autofix.cjs",
-		"gcloud": "node .node/gcloud.cjs --only-git"
+		"gcloud": "node .node/gcloud.cjs --only-git",
+		"gcloud-full": "node .node/gcloud.cjs --full-deploy"
 	},
 	"dependencies": {
 		"@babel/core": "^7.28.5",
