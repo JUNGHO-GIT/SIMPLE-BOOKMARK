@@ -1,31 +1,27 @@
 // services/BookmarkSyncService.ts
 
-import * as vscode from "vscode";
-import * as path from "path";
-import {TextEncoder} from "util";
-import type {BookmarkMetadata} from "../types/BookmarkType.js";
-import {BookmarkStatus} from "../types/BookmarkType.js";
-import {validateFileName} from "../utils/BookmarkPathUtil.js";
+import { vscode, path, TextEncoder } from "@importLibs";
+import type { BookmarkMetadata } from "@importTypes";
+import { BookmarkStatus } from "@importTypes";
+import { fnValidateFileName, fnLogging } from "@importScripts";
 
 // -----------------------------------------------------------------------------------------
-export type BookmarkSyncService = ReturnType<typeof createBookmarkSyncService>;
-
-// -----------------------------------------------------------------------------------------
-export const createBookmarkSyncService = (
+export const BookmarkSyncService = (
 	bookmarkPath : string,
 	onSyncUpdate? : (p : string, status : BookmarkStatus) => void,
 	onRefreshNeeded? : () => void
 ) => {
 
-	console.debug("[Simple-Bookmark.sync] Init path =", bookmarkPath);
-
+	// 0. 변수 설정 ----------------------------------------------------------------------------
 	const bookmarkWatchers = new Map<string, vscode.FileSystemWatcher>();
 	const bookmarkedFiles = new Map<string, BookmarkMetadata>();
-	const METADATA_EXT = ".bookmark.json";
+	const METADATA_EXT = `.bookmark.json`;
 	const disposables : vscode.Disposable[] = [];
 
-	// -----------------------------------------------------------------------------------------
-	const fnFileExists = async (p: string): Promise<boolean> => {
+	// 파일/폴더 존재 여부를 확인 ---------------------------------------------------------------
+	const fileExists = async (
+		p: string
+	): Promise<boolean> => {
 		try {
 			await vscode.workspace.fs.stat(vscode.Uri.file(p));
 			return true;
@@ -35,17 +31,24 @@ export const createBookmarkSyncService = (
 		}
 	};
 
-	// -----------------------------------------------------------------------------------------
-	const fnPreserveExt = (originalPath: string, newNameRaw: string, isFile: boolean): string => {
+	// 파일의 확장자를 보존하여 새 이름을 생성 ------------------------------------------------
+	const preserveExt = (
+		originalPath: string,
+		newNameRaw: string,
+		isFile: boolean
+	): string => {
 		const ext = path.extname(originalPath);
 		return isFile && !newNameRaw.includes(".") && ext ? `${newNameRaw}${ext}` : newNameRaw;
 	};
 
-	// -----------------------------------------------------------------------------------------
-	const fnGenerateUniqueFsName = async (dir: string, baseName: string): Promise<string> => {
+	// 고유 파일/폴더명을 생성 -----------------------------------------------------------------
+	const generateUniqueFsName = async (
+		dir: string,
+		baseName: string
+	): Promise<string> => {
 		let name = baseName;
 		let i = 1;
-		while (await fnFileExists(path.join(dir, name))) {
+		while (await fileExists(path.join(dir, name))) {
 			const ext = path.extname(baseName);
 			const stem = path.basename(baseName, ext);
 			name = `${stem}_${i}${ext}`;
@@ -55,12 +58,15 @@ export const createBookmarkSyncService = (
 	};
 
 	// 이벤트 기반 동기화 설정 ----------------------------------------------------------------
-	// - 글로벌 워처 제거. 북마크별 워처만 등록.
-	const setupEventListeners = () : void => {
+	// - 글로벌 워처 제거
+	// - 북마크별 워처만 등록
+	// - 문서 저장/변경/삭제 이벤트를 구독하여 북마크 상태를 갱신
+	const setupEventListeners = (
+	) : void => {
 		const saveListener = vscode.workspace.onDidSaveTextDocument(async (document) => {
 			const filePath = document.uri.fsPath;
 			!isBookmarkedFile(filePath) || (
-				console.debug("[Simple-Bookmark.sync.save-hit]", filePath),
+				fnLogging(`save`, `${filePath}`, `debug`),
 				await syncBookmark(filePath)
 			);
 		});
@@ -68,6 +74,7 @@ export const createBookmarkSyncService = (
 	};
 
 	// 파일별 워처 생성 --------------------------------------------------------------------
+	// 특정 원본 경로에 대한 파일시스템 워처를 생성
 	const createWatcherFor = (
 		originalPath : string
 	) : void => {
@@ -80,7 +87,7 @@ export const createBookmarkSyncService = (
 
 			watcher.onDidChange(async (uri) => {
 				uri.fsPath === originalPath && (
-					console.debug("[Simple-Bookmark.sync.change]", originalPath),
+					fnLogging(`save`, `${originalPath}`, `debug`),
 					await syncBookmark(originalPath)
 				);
 			});
@@ -95,6 +102,7 @@ export const createBookmarkSyncService = (
 		})();
 	};
 
+	// 특정 원본 경로의 파일시스템 워처를 해제 -----------------------------------------------------
 	const disposeWatcherFor = (
 		originalPath : string
 	) : void => {
@@ -102,13 +110,13 @@ export const createBookmarkSyncService = (
 		w && (w.dispose(), bookmarkWatchers.delete(originalPath));
 	};
 
-	// 기존 북마크 로드 최적화 - 병렬 처리 및 배치 상태 업데이트 ----------------------------
+	// 병렬 처리 및 배치 상태 업데이트 -------------------------------------------------------------
 	const loadExistingBookmarks = async () : Promise<void> => {
 		try {
 			const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(bookmarkPath));
 			const metaPaths = entries
-				.filter(([name]) => name.endsWith(METADATA_EXT))
-				.map(([name]) => path.join(bookmarkPath, name));
+			.filter(([name]) => name.endsWith(METADATA_EXT))
+			.map(([name]) => path.join(bookmarkPath, name));
 
 			// 병렬로 메타데이터 로딩 - 최대 10개씩 배치 처리
 			const BATCH_SIZE = 10;
@@ -123,7 +131,7 @@ export const createBookmarkSyncService = (
 						return metadata;
 					}
 					catch (error) {
-						console.error(`[Simple-Bookmark] Failed to load bookmark metadata: ${metadataPath}`, error);
+						fnLogging(`activate`, error instanceof Error ? error.message : String(error), `error`);
 						return null;
 					}
 				});
@@ -143,7 +151,7 @@ export const createBookmarkSyncService = (
 			})();
 		}
 		catch (error) {
-			console.error("[Simple-Bookmark] Failed to load existing bookmarks:", error);
+			fnLogging(`activate`, `${error}`, `error`);
 		}
 	};
 
@@ -176,11 +184,10 @@ export const createBookmarkSyncService = (
 
 			onSyncUpdate && onSyncUpdate(originalPath, BookmarkStatus.SYNCED);
 			onRefreshNeeded && onRefreshNeeded();
-
-			console.debug("[Simple-Bookmark.sync.add]", uniqueBookmarkName);
+			fnLogging(`add`, `${uniqueBookmarkName}`, `debug`);
 		}
 		catch (error) {
-			throw new Error(`[Simple-Bookmark] Failed to add bookmark: ${error}`);
+			fnLogging(`add`, error instanceof Error ? error.message : String(error), `error`);
 		}
 	};
 
@@ -199,11 +206,15 @@ export const createBookmarkSyncService = (
 		return uniqueName;
 	};
 
+	// 동일한 북마크 이름이 이미 존재하는지 확인
 	const isBookmarkNameExists = (
 		name : string
-	) : boolean => Array.from(bookmarkedFiles.values()).some((m) => m.bookmarkName === name);
+	) : boolean => {
+		return Array.from(bookmarkedFiles.values()).some((m) => m.bookmarkName === name);
+	};
 
 	// 북마크 이름 변경 --------------------------------------------------------------------
+	// 북마크 이름 및 원본 파일/폴더 이름을 변경하고 메타데이터를 갱신
 	const renameBookmark = async (
 		originalPath : string,
 		newNameRaw : string
@@ -211,47 +222,45 @@ export const createBookmarkSyncService = (
 		const metadata = bookmarkedFiles.get(originalPath);
 
 		!metadata && (() => {
-			throw new Error("[Simple-Bookmark] Bookmark not found");
 		})();
 
-		const nameError = validateFileName(newNameRaw);
+		const nameError = fnValidateFileName(newNameRaw);
 		nameError && (() => {
-			throw new Error(`[Simple-Bookmark] ${nameError}`);
 		})();
 
-		// 1) 메타데이터 이름 중복 처리
+		// 메타데이터 이름 중복 처리
 		const existsOther = Array.from(bookmarkedFiles.values()).some((m) => m.originalPath !== originalPath && m.bookmarkName === newNameRaw);
 		const finalMetaName = existsOther ? generateUniqueBookmarkName(newNameRaw) : newNameRaw;
 
-		// 2) 실제 파일/폴더 rename 준비
+		// 실제 파일/폴더 rename 준비
 		const dir = path.dirname(metadata!.originalPath);
-		const desiredFsName = fnPreserveExt(metadata!.originalPath, newNameRaw, metadata!.isFile);
+		const desiredFsName = preserveExt(metadata!.originalPath, newNameRaw, metadata!.isFile);
 		const candidateFsPath = path.join(dir, desiredFsName);
 
 		// 대상 경로가 현재 경로와 동일하면 실제 파일시스템 rename은 생략
 		let newOriginalPath = metadata!.originalPath;
 		if (path.resolve(candidateFsPath) !== path.resolve(metadata!.originalPath)) {
-			const uniqueFsName = await fnGenerateUniqueFsName(dir, desiredFsName);
+			const uniqueFsName = await generateUniqueFsName(dir, desiredFsName);
 			newOriginalPath = path.join(dir, uniqueFsName);
 
-			// 3) 파일시스템 rename
+			// 파일시스템 rename
 			try {
-				console.debug("[Simple-Bookmark.sync.rename.fs] From:", metadata!.originalPath, "to:", newOriginalPath);
+				fnLogging(`rename`, `${metadata!.originalPath} -> ${newOriginalPath}`, `debug`);
 				await vscode.workspace.fs.rename(
 					vscode.Uri.file(metadata!.originalPath),
 					vscode.Uri.file(newOriginalPath),
 					{overwrite : false}
 				);
 			}
-			catch (e) {
-				throw new Error(`[Simple-Bookmark] Failed to rename original item: ${e}`);
+			catch (error) {
+				fnLogging(`rename`, error instanceof Error ? error.message : String(error), `error`);
 			}
 		}
 		else {
-			console.debug("[Simple-Bookmark.sync.rename.fs] FS rename skipped (same path):", metadata!.originalPath);
+			fnLogging(`rename`, `${metadata!.originalPath}`, `debug`);
 		}
 
-		// 4) 메타데이터 파일 rename(이름 변경 반영)
+		// 메타데이터 파일 rename(이름 변경 반영)
 		const oldMetaPath = path.join(bookmarkPath, `${metadata!.bookmarkName}${METADATA_EXT}`);
 		const newMetaPath = path.join(bookmarkPath, `${finalMetaName}${METADATA_EXT}`);
 
@@ -259,28 +268,29 @@ export const createBookmarkSyncService = (
 		metadata!.originalPath = newOriginalPath;
 		metadata!.lastSyncAt = Date.now();
 
-		await saveMetadata(newMetaPath, metadata!);
 		// 메타데이터 파일명이 변경되지 않은 경우 기존 파일 삭제는 하지 않음
+		await saveMetadata(newMetaPath, metadata!);
 		oldMetaPath !== newMetaPath && await vscode.workspace.fs.delete(vscode.Uri.file(oldMetaPath));
 
-		// 5) 내부 맵과 워처 재바인딩
+		// 내부 맵과 워처 재바인딩
 		if (path.resolve(originalPath) !== path.resolve(newOriginalPath)) {
 			bookmarkedFiles.delete(originalPath);
 			disposeWatcherFor(originalPath);
 			bookmarkedFiles.set(newOriginalPath, metadata!);
 			createWatcherFor(newOriginalPath);
 		}
+		// 경로가 동일하면 맵에 메타데이터만 갱신
 		else {
-			// 경로가 동일하면 맵에 메타데이터만 갱신
 			bookmarkedFiles.set(originalPath, metadata!);
 		}
 
 		onSyncUpdate && onSyncUpdate(newOriginalPath, BookmarkStatus.SYNCED);
 		onRefreshNeeded && onRefreshNeeded();
-		console.debug("[Simple-Bookmark.sync.rename] Meta:", finalMetaName, "path:", newOriginalPath);
+		fnLogging(`rename`, `${finalMetaName} / ${newOriginalPath}`, `debug`);
 	};
 
 	// 북마크 제거 ------------------------------------------------------------------------
+	// - 메타데이터 파일을 삭제하고 워처 및 내부 상태를 정리
 	const removeBookmark = async (
 		originalPath : string
 	) : Promise<void> => {
@@ -293,15 +303,16 @@ export const createBookmarkSyncService = (
 				bookmarkedFiles.delete(originalPath);
 				disposeWatcherFor(originalPath);
 				onRefreshNeeded && onRefreshNeeded();
-				console.debug("[Simple-Bookmark.sync.remove]", originalPath);
+				fnLogging(`remove`, `${originalPath}`, `debug`);
 			}
 			catch (error) {
-				console.error(`[Simple-Bookmark] Failed to remove bookmark: ${error}`);
+				fnLogging(`remove`, error instanceof Error ? error.message : String(error), `error`);
 			}
 		})();
 	};
 
 	// 특정 북마크 동기화 ----------------------------------------------------------------
+	// 원본 파일 상태에 따라 메타데이터를 갱신하고 상태를 반영
 	const syncBookmark = async (
 		originalPath : string
 	) : Promise<void> => {
@@ -327,6 +338,7 @@ export const createBookmarkSyncService = (
 	};
 
 	// 북마크 상태 갱신 ------------------------------------------------------------------
+	// - 외부에서 전달된 상태를 즉시 반영하고 새로고침 요청
 	const updateBookmarkStatus = async (
 		originalPath : string,
 		status : BookmarkStatus
@@ -335,7 +347,8 @@ export const createBookmarkSyncService = (
 		onRefreshNeeded && onRefreshNeeded();
 	};
 
-	// 북마크 상태 확인 (파일 존재 여부 검사) ---------------------------------------------
+	// 북마크 상태 확인 ----------------------------------------------------------------
+	// - 파일 존재 여부 검사
 	const checkBookmarkStatus = async (
 		metadata : BookmarkMetadata
 	) : Promise<BookmarkStatus> => {
@@ -354,7 +367,8 @@ export const createBookmarkSyncService = (
 	) : boolean => bookmarkedFiles.has(filePath);
 
 	// 메타데이터 조회 -----------------------------------------------------------------
-	const getAllBookmarks = () : BookmarkMetadata[] => Array.from(bookmarkedFiles.values());
+	const getAllBookmarks = (
+	) : BookmarkMetadata[] => Array.from(bookmarkedFiles.values());
 
 	// 특정 메타데이터 조회 --------------------------------------------------------------
 	const getBookmark = (
@@ -411,7 +425,8 @@ export const createBookmarkSyncService = (
 	};
 
 	// 리소스 정리 -------------------------------------------------------------------
-	const dispose = () : void => {
+	const dispose = (
+	) : void => {
 		disposables.forEach((d) => d.dispose());
 		bookmarkWatchers.forEach((watcher) => watcher.dispose());
 		bookmarkWatchers.clear();
@@ -420,9 +435,11 @@ export const createBookmarkSyncService = (
 
 	// 초기화 ----------------------------------------------------------------------------
 	setupEventListeners();
-	loadExistingBookmarks().catch((err) => console.error("[Simple-Bookmark]", err));
+	loadExistingBookmarks().catch((err) => {
+		fnLogging(`activate`, err instanceof Error ? err.message : String(err), `error`);
+	});
 
-	// 리턴 ----------------------------------------------------------------------------
+	// 99. return -----------------------------------------------------------------------------
 	return {
 		addBookmark,
 		renameBookmark,

@@ -1,55 +1,49 @@
 // commands/BookmarkCommand.ts
 
-import * as vscode from "vscode";
-import * as path from "path";
-import {Minimatch} from "minimatch";
-import type {BookmarkProvider} from "../providers/BookmarkProvider.js";
-import type {BookmarkSystemItem} from "../models/BookmarkSystemItem.js";
-import {validateFileName} from "../utils/BookmarkPathUtil.js";
-import {showInfoAuto, showWarnAuto, showErrorAuto} from "../utils/NotificationUtil.js";
-import {LRUCache, isFileType} from "../utils/PerformanceUtil.js";
+import { vscode, path, Minimatch } from "@importLibs";
+import { fnValidateFileName } from "@importScripts";
+import { fnNotification, fnLogging } from "@importScripts";
+import { LRUCache, fnIsFileType } from "@importScripts";
+import type { BookmarkProviderType, BookmarkModelType, ExcludeRuleType } from "@importTypes";
 
 // -----------------------------------------------------------------------------------------
-export type BookmarkCommand = ReturnType<typeof createBookmarkCommand>;
-
-// -----------------------------------------------------------------------------------------
-export const createBookmarkCommand = (
-	provider : BookmarkProvider,
-	context : vscode.ExtensionContext
+export const BookmarkCommand = (
+	provider : BookmarkProviderType,
+	_context : vscode.ExtensionContext
 ) => {
-	let selectedBookmarks : BookmarkSystemItem[] = [];
 
-	type ExcludeRule = {
-		matcher : Minimatch;
-		when? : string;
+	// 0. 변수 설정 ----------------------------------------------------------------------------
+	let excludeRuleCache = new LRUCache<string, ExcludeRuleType[]>(50);
+	let selectedBookmarks : BookmarkModelType[] = [];
+	let minimatchOptions = { dot : true, nocase : process.platform === "win32" } as const;
+
+	// 윈도우 경로 구분자를 POSIX 형식("/")으로 변환 --------------------------------------------
+	const toPosixPath = (
+		value: string
+	): string => {
+		return value.replace(/\\/g, "/");
 	};
 
-	const minimatchOptions = {
-		dot : true,
-		nocase : process.platform === "win32"
-	} as const;
-
-	// LRU 캐시로 메모리 사용량 최적화
-	const excludeRuleCache = new LRUCache<string, ExcludeRule[]>(50);
-
-	// -----------------------------------------------------------------------------------------
-	const fnToPosixPath = (value: string): string => value.replace(/\\/g, "/");
-
-	// -----------------------------------------------------------------------------------------
-	const fnGetRelativePath = (folder: vscode.WorkspaceFolder, target: vscode.Uri): string => {
+	// 워크스페이스 폴더 기준의 상대 경로를 구하고 POSIX 형식으로 반환 --------------------------
+	const getRelativePath = (
+		folder: vscode.WorkspaceFolder,
+		target: vscode.Uri
+	): string => {
 		const relative = path.relative(folder.uri.fsPath, target.fsPath);
-		return relative ? fnToPosixPath(relative) : "";
+		return relative ? toPosixPath(relative) : "";
 	};
 
-	// -----------------------------------------------------------------------------------------
-	const fnGetExcludeRulesForFolder = (folder: vscode.WorkspaceFolder): ExcludeRule[] => {
+	// files.exclude 설정을 읽어 Minimatch 규칙 목록을 생성/캐시 --------------------------------
+	const getExcludeRuleTypesForFolder = (
+		folder: vscode.WorkspaceFolder
+	): ExcludeRuleType[] => {
 		const cacheKey = folder.uri.toString(true);
 		const cached = excludeRuleCache.get(cacheKey);
 
 		return cached ? cached : (() => {
 			const config = vscode.workspace.getConfiguration("files", folder.uri);
 			const raw = config.get<Record<string, boolean | {when?: string}>>("exclude") ?? {};
-			const rules: ExcludeRule[] = [];
+			const rules: ExcludeRuleType[] = [];
 
 			for (const [pattern, value] of Object.entries(raw)) {
 				typeof value === "boolean"
@@ -63,8 +57,8 @@ export const createBookmarkCommand = (
 		})();
 	};
 
-	// -----------------------------------------------------------------------------------------
-	const fnEvaluateWhenClause = async (
+	// 조건부 숨김 여부를 결정 --------------------------------------------------------------------
+	const evaluateWhenClause = async (
 		whenClause: string,
 		folder: vscode.WorkspaceFolder,
 		relativePath: string
@@ -91,7 +85,7 @@ export const createBookmarkCommand = (
 		: false;
 	};
 
-	// -----------------------------------------------------------------------------------------
+	// 스킵할지 여부를 판단 -----------------------------------------------------------------------
 	const shouldSkipEntry = async (
 		uri : vscode.Uri,
 		folderHint? : vscode.WorkspaceFolder,
@@ -101,7 +95,7 @@ export const createBookmarkCommand = (
 		return !folder
 		? false
 		: (() => {
-			const relative = fnGetRelativePath(folder, uri);
+			const relative = getRelativePath(folder, uri);
 			return relative.length === 0
 				? false
 				: (() => {
@@ -109,7 +103,7 @@ export const createBookmarkCommand = (
 					return name.startsWith(".")
 					? true
 					: (() => {
-						const rules = fnGetExcludeRulesForFolder(folder);
+						const rules = getExcludeRuleTypesForFolder(folder);
 						return rules.length === 0
 						? false
 						: (async () => {
@@ -118,7 +112,7 @@ export const createBookmarkCommand = (
 							!relative.startsWith("./") && candidates.push(`./${relative}`);
 
 							const isDirectory = typeof kind !== "undefined"
-								&& isFileType(kind, vscode.FileType.Directory);
+								&& fnIsFileType(kind, vscode.FileType.Directory);
 
 							for (const rule of rules) {
 								const matched = candidates.some((candidate) => rule.matcher.match(candidate));
@@ -131,7 +125,7 @@ export const createBookmarkCommand = (
 								if (isDirectory) {
 									continue;
 								}
-								if (await fnEvaluateWhenClause(rule.when, folder, relative)) {
+								if (await evaluateWhenClause(rule.when, folder, relative)) {
 									return true;
 								}
 							}
@@ -142,39 +136,44 @@ export const createBookmarkCommand = (
 		})();
 	};
 
-	// -----------------------------------------------------------------------------------------
-	const fnDelay = async (ms: number): Promise<void> => await new Promise((resolve) => setTimeout(resolve, ms));
+	// 비동기 흐름 제어 -----------------------------------------------------------------------
+	const delay = async (
+		ms: number
+	): Promise<void> => {
+		await new Promise((resolve) => {
+			setTimeout(resolve, ms);
+		});
+	};
 
-	// -----------------------------------------------------------------------------------------
+	// Explorer 항목을 재귀적으로 확장 ------------------------------------------------------
 	const expandAllExplorerFolders = async () : Promise<void> => {
 		try {
 			await vscode.commands.executeCommand("workbench.view.explorer");
-			await fnDelay(100);
+			await delay(100);
 
 			const workspaceFolders = vscode.workspace.workspaceFolders;
 			if (!workspaceFolders || workspaceFolders.length === 0) {
 				return;
 			}
-
 			for (const folder of workspaceFolders) {
 				await expandFolderRecursively(folder.uri);
 			}
 		}
 		catch (error) {
-			console.debug("[Simple-Bookmark.expandAllExplorerFolders] Error:", error);
+			fnLogging(`select`, error instanceof Error ? error.message : String(error), `debug`);
 		}
 	};
 
-	// -----------------------------------------------------------------------------------------
+	// 지정된 폴더와 하위 폴더 순차적으로 확장 --------------------------------------------------
 	const expandFolderRecursively = async (
 		folderUri : vscode.Uri
 	) : Promise<void> => {
 		try {
 			// 폴더를 Explorer에 표시하고 확장
 			await vscode.commands.executeCommand("revealInExplorer", folderUri);
-			await fnDelay(10);
+			await delay(10);
 			await vscode.commands.executeCommand("list.expand");
-			await fnDelay(10);
+			await delay(10);
 
 			// 하위 폴더 찾기
 			const entries = await vscode.workspace.fs.readDirectory(folderUri);
@@ -182,15 +181,15 @@ export const createBookmarkCommand = (
 
 			const filteredEntries = await Promise.all(
 				entries
-					.filter(([name, type]) => isFileType(type, vscode.FileType.Directory))
-					.map(async ([name, type]) => {
+					.filter(([_name, type]: [string, vscode.FileType]) => fnIsFileType(type, vscode.FileType.Directory))
+					.map(async ([name, type]: [string, vscode.FileType]) => {
 						const childUri = vscode.Uri.joinPath(folderUri, name);
 						const shouldSkip = await shouldSkipEntry(childUri, folder, type);
 						return shouldSkip ? null : childUri;
 					})
 			);
 
-			const subDirectories = filteredEntries.filter((uri) => uri !== null) as vscode.Uri[];
+			const subDirectories = filteredEntries.filter((uri: vscode.Uri | null) => uri !== null) as vscode.Uri[];
 
 			// 하위 폴더들을 재귀적으로 확장
 			for (const subDir of subDirectories) {
@@ -198,13 +197,13 @@ export const createBookmarkCommand = (
 			}
 		}
 		catch (error) {
-			console.debug(`[Simple-Bookmark.expandFolderRecursively] Error: ${folderUri.fsPath}`, error);
+			fnLogging(`expand`, `${folderUri.fsPath} ${error instanceof Error ? error.message : String(error)}`, `debug`);
 		}
 	};
 
 	// 선택된 아이템 업데이트 -----------------------------------------------------------------
 	const updateSelectedBookmark = (
-		items : BookmarkSystemItem[]
+		items : BookmarkModelType[]
 	) : void => {
 		selectedBookmarks = items;
 	};
@@ -212,8 +211,8 @@ export const createBookmarkCommand = (
 	// 북마크 새로고침 -------------------------------------------------------------------------
 	const registerRefreshCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
-		"Simple-Bookmark.refreshentry", () => {
-			console.debug("[Simple-Bookmark.refresh]");
+		"simple-bookmark.refreshentry", () => {
+			fnLogging(`select`, `Refresh command executed`, `debug`);
 			provider.refresh();
 		}
 	);
@@ -221,28 +220,28 @@ export const createBookmarkCommand = (
 	// 북마크 추가 (Explorer 선택 기반) --------------------------------------------------------
 	const registerAddBookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
-		"Simple-Bookmark.addbookmark", async (uri? : vscode.Uri) => {
+		"simple-bookmark.addbookmark", async (uri? : vscode.Uri) => {
 			return uri
 			? await (async () => {
 				const stat = await vscode.workspace.fs.stat(uri);
 				const bookmarkName = path.basename(uri.fsPath);
 				return (stat.type === vscode.FileType.Directory || stat.type === vscode.FileType.File)
 					? (await provider.addBookmark(uri.fsPath, bookmarkName), provider.refresh())
-					: showErrorAuto("[Simple-Bookmark] Only files or folders can be added.");
+					: fnNotification(`add`, "Only files or folders can be added.", `error`);
 			})()
 			: await (async () => {
 				await vscode.commands.executeCommand("copyFilePath");
 				const copied = await vscode.env.clipboard.readText();
 				const picked = copied ? vscode.Uri.file(copied.split(/\r?\n/)[0]) : undefined;
-				return picked
-					? await (async () => {
+					return picked
+						? await (async () => {
 						const stat = await vscode.workspace.fs.stat(picked);
 						const bookmarkName = path.basename(picked.fsPath);
 						return (stat.type === vscode.FileType.Directory || stat.type === vscode.FileType.File)
-							? (await provider.addBookmark(picked.fsPath, bookmarkName), provider.refresh())
-							: showErrorAuto("[Simple-Bookmark] Only files or folders can be added.");
+								? (await provider.addBookmark(picked.fsPath, bookmarkName), provider.refresh())
+								: fnNotification(`add`, "Only files or folders can be added.", `error`);
 					})()
-					: showErrorAuto("[Simple-Bookmark] No file or folder selected in Explorer.");
+						: fnNotification(`add`, "No file or folder selected in Explorer.", `error`);
 			})();
 		}
 	);
@@ -250,8 +249,8 @@ export const createBookmarkCommand = (
 	// 북마크 제거 (북마크만 또는 북마크 + 원본 선택 삭제) -----------------------------------------------
 	const registerRemoveBookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
-		"Simple-Bookmark.removebookmark",
-		async (item? : BookmarkSystemItem) => {
+		"simple-bookmark.removebookmark",
+		async (item? : BookmarkModelType) => {
 			const itemsToRemove : string[] = item
 			? [item.originalPath]
 			: (selectedBookmarks.length > 0
@@ -262,9 +261,9 @@ export const createBookmarkCommand = (
 			);
 
 			return itemsToRemove.length === 0
-			? showErrorAuto("[Simple-Bookmark] No bookmarks selected to remove.")
+			? fnNotification(`remove`, "No bookmarks selected to remove.", `error`)
 			: await (async () => {
-				const config = vscode.workspace.getConfiguration("simpleBookmark");
+				const config = vscode.workspace.getConfiguration("simple-bookmark");
 				const deleteMode = config.get<string>("deleteMode", "ask");
 
 				let deleteOriginal : boolean = false;
@@ -301,7 +300,7 @@ export const createBookmarkCommand = (
 					? (deleteOriginal ? "Bookmark and original file deleted" : "Bookmark deleted")
 					: (deleteOriginal ? `${itemsToRemove.length} bookmarks and original files deleted` : `${itemsToRemove.length} bookmarks deleted`);
 
-				showInfoAuto(successMessage);
+				fnNotification(`remove`, successMessage, `info`);
 			})();
 		}
 	);
@@ -309,19 +308,19 @@ export const createBookmarkCommand = (
 	// 북마크 이름 변경 (루트뿐 아니라 모든 상황에서 허용) -----------------------------------------
 	const registerRenameBookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
-		"Simple-Bookmark.renamebookmark",
-		async (item? : BookmarkSystemItem) => {
-			const target : BookmarkSystemItem | undefined = item || (selectedBookmarks.length > 0 ? selectedBookmarks[0] : undefined);
+		"simple-bookmark.renamebookmark",
+		async (item? : BookmarkModelType) => {
+			const target : BookmarkModelType | undefined = item || (selectedBookmarks.length > 0 ? selectedBookmarks[0] : undefined);
 
 			return !target
-			? showErrorAuto("[Simple-Bookmark] No bookmark selected to rename.")
+			? fnNotification(`rename`, "No bookmark selected to rename.", `error`)
 			: await (async () => {
 				const currentName = target.bookmarkMetadata.bookmarkName;
 
 				const newName = await vscode.window.showInputBox({
-					prompt : "[Simple-Bookmark] Enter new bookmark name",
+					prompt : "[simple-bookmark] Enter new bookmark name",
 					value : currentName,
-					validateInput : (v : string) => validateFileName(v)
+					validateInput : (v : string) => fnValidateFileName(v)
 				});
 
 				return !newName
@@ -329,7 +328,7 @@ export const createBookmarkCommand = (
 					: await (async () => {
 						await provider.renameBookmark(target.originalPath, newName.trim());
 						provider.refresh();
-						showInfoAuto(`[Simple-Bookmark] Bookmark renamed: ${currentName} → ${newName.trim()}`);
+						fnNotification(`rename`, `renamed ${currentName} → ${newName.trim()}`, `info`);
 					})();
 			})();
 		}
@@ -338,9 +337,12 @@ export const createBookmarkCommand = (
 	// 복사 ----------------------------------------------------------------------------------
 	const registerCopyBookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
-		"Simple-Bookmark.copybookmark",
-		(item? : BookmarkSystemItem, selected? : BookmarkSystemItem[]) => {
-			let targets : BookmarkSystemItem[] = Array.isArray(selected) && selected.length > 0
+		"simple-bookmark.copybookmark",
+		(
+			item? : BookmarkModelType,
+			selected? : BookmarkModelType[]
+		) => {
+			let targets : BookmarkModelType[] = Array.isArray(selected) && selected.length > 0
 			? selected
 			: (selectedBookmarks.length > 0
 				? selectedBookmarks
@@ -348,9 +350,9 @@ export const createBookmarkCommand = (
 			);
 
 		return targets.length === 0
-		? showErrorAuto("[Simple-Bookmark] No items selected to copy.")
+			? fnNotification(`copy`, "No items selected to copy.", `error`)
 		: (() => {
-				const dedupMap = new Map<string, BookmarkSystemItem>();
+				const dedupMap = new Map<string, BookmarkModelType>();
 				for (const t of targets) {
 					!dedupMap.has(t.originalPath) && dedupMap.set(t.originalPath, t);
 				}
@@ -358,7 +360,7 @@ export const createBookmarkCommand = (
 
 				const available = targets.filter((t) => t.isOriginalAvailable);
 				return available.length === 0
-				? showWarnAuto("[Simple-Bookmark] No available original files to copy.")
+					? fnNotification(`copy`, "No available original files to copy.", `warn`)
 				: (() => {
 					updateSelectedBookmark(available);
 					provider.copyBookmarks(available);
@@ -371,9 +373,9 @@ export const createBookmarkCommand = (
 	// 붙여넣기 ---------------------------------------------------------------------------
 	const registerPasteBookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
-		"Simple-Bookmark.pastebookmark", async (item? : BookmarkSystemItem) => {
+		"simple-bookmark.pastebookmark", async (item? : BookmarkModelType) => {
 			return !provider.hasCopiedItems()
-			? showErrorAuto("[Simple-Bookmark] No items to paste.")
+				? fnNotification(`paste`, "No items to paste.", `error`)
 			: await (async () => {
 				return !item && selectedBookmarks.length === 0
 					? await (async () => {
@@ -393,11 +395,11 @@ export const createBookmarkCommand = (
 
 						return targetPath
 							? await (async () => {
-								console.debug("[Simple-Bookmark.pastebookmark]", targetPath as string);
+								fnLogging(`paste`, `${targetPath as string}`, `debug`);
 								await provider.pasteItems(targetPath as string);
 								provider.refresh();
 							})()
-							: showWarnAuto("[Simple-Bookmark] Select a valid target folder to paste into.");
+							: fnNotification(`paste`, "Select a valid target folder to paste into.", `warn`);
 					})();
 			})();
 		}
@@ -406,10 +408,10 @@ export const createBookmarkCommand = (
 	// 붙여넣기(루트 전용) -----------------------------------------------------------------
 	const registerPasteToRootBookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
-		"Simple-Bookmark.pasterootbookmark",
+		"simple-bookmark.pasterootbookmark",
 		async () => {
 			return !provider.hasCopiedItems()
-			? showErrorAuto("[Simple-Bookmark] No items to paste.")
+				? fnNotification(`paste`, "No items to paste.", `error`)
 			: await (async () => {
 				await provider.pasteItemsToRoot();
 				provider.refresh();
@@ -420,14 +422,14 @@ export const createBookmarkCommand = (
 	// 모든 북마크 삭제 --------------------------------------------------------------------
 	const registerDeleteAllBookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
-		"Simple-Bookmark.removeallbookmark",
+		"simple-bookmark.removeallbookmark",
 		async () => {
 			const allItems = await provider.getChildren();
 
 			return !allItems || allItems.length === 0
-			? showInfoAuto("[Simple-Bookmark] No bookmarks to remove.")
+				? fnNotification(`remove`, "No bookmarks to remove.", `info`)
 			: await (async () => {
-				const config = vscode.workspace.getConfiguration("simpleBookmark");
+				const config = vscode.workspace.getConfiguration("simple-bookmark");
 				const deleteMode = config.get<string>("deleteMode", "ask");
 
 				let deleteOriginal : boolean = false;
@@ -460,7 +462,7 @@ export const createBookmarkCommand = (
 					? `All ${allItems.length} bookmarks and original files deleted`
 					: `All ${allItems.length} bookmarks deleted`;
 
-				showInfoAuto(successMessage);
+				fnNotification(`remove`, successMessage, `info`);
 			})();
 		}
 	);
@@ -468,11 +470,11 @@ export const createBookmarkCommand = (
 	// 폴더 생성 --------------------------------------------------------------------------
 	const registerCreateFolderCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
-		"Simple-Bookmark.createfolder",
-		async (item? : BookmarkSystemItem) => {
+		"simple-bookmark.createfolder",
+		async (item? : BookmarkModelType) => {
 			const folderName = await vscode.window.showInputBox({
-				prompt : "[Simple-Bookmark] Enter folder name (will be created in original location)",
-				validateInput : validateFileName
+				prompt : "[simple-bookmark] Enter folder name (will be created in original location)",
+				validateInput : fnValidateFileName
 			});
 
 			return !folderName
@@ -484,12 +486,12 @@ export const createBookmarkCommand = (
 						canSelectFiles : false,
 						canSelectFolders : true,
 						canSelectMany : false,
-						openLabel : "[Simple-Bookmark] Select Parent Folder"
+						openLabel : "[simple-bookmark] Select Parent Folder"
 					}))?.[0]?.fsPath;
 
 				return parentPath
 					? (await provider.createFolder(parentPath, folderName.trim()), provider.refresh())
-					: showWarnAuto("[Simple-Bookmark] Please select a valid parent folder.");
+					: fnNotification(`create`, "Please select a valid parent folder.", `warn`);
 			})();
 		}
 	);
@@ -497,11 +499,11 @@ export const createBookmarkCommand = (
 	// 파일 생성 --------------------------------------------------------------------------
 	const registerCreateFileCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
-		"Simple-Bookmark.createfile",
-		async (item? : BookmarkSystemItem) => {
+		"simple-bookmark.createfile",
+		async (item? : BookmarkModelType) => {
 			const fileName = await vscode.window.showInputBox({
-				prompt : "[Simple-Bookmark] Enter file name (will be created in original location)",
-				validateInput : validateFileName
+				prompt : "[simple-bookmark] Enter file name (will be created in original location)",
+				validateInput : fnValidateFileName
 			});
 
 			return !fileName
@@ -513,12 +515,12 @@ export const createBookmarkCommand = (
 						canSelectFiles : false,
 						canSelectFolders : true,
 						canSelectMany : false,
-						openLabel : "[Simple-Bookmark] Select Parent Folder"
+						openLabel : "[simple-bookmark] Select Parent Folder"
 					}))?.[0]?.fsPath;
 
 				return parentPath
 					? (await provider.createFile(parentPath, fileName.trim()), provider.refresh())
-					: showWarnAuto("[Simple-Bookmark] Please select a valid parent folder.");
+					: fnNotification(`create`, "Please select a valid parent folder.", `warn`);
 			})();
 		}
 	);
@@ -526,21 +528,21 @@ export const createBookmarkCommand = (
 	// 탐색기 전체 확장 ------------------------------------------------------------------
 	const registerExpandExplorerCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
-		"Simple-Bookmark.expandexplorer",
+		"simple-bookmark.expandexplorer",
 		async () => {
-			console.debug("[Simple-Bookmark.expandExplorer]");
+				fnLogging(`select`, `registerExpandExplorerCommand`, `debug`);
 
 			const folders = vscode.workspace.workspaceFolders;
 
 			return !folders || folders.length === 0
-			? showWarnAuto("[Simple-Bookmark] No workspace folder available to expand.")
+					? fnNotification(`select`, "No workspace folder available to expand.", `warn`)
 			: await (async () => {
 				await vscode.commands.executeCommand("workbench.view.explorer");
 				excludeRuleCache.clear();
 
 				// 새로운 간소화된 전체 확장 방법 사용
 				await expandAllExplorerFolders();
-				showInfoAuto("[Simple-Bookmark] Explorer expanded for all workspace folders.");
+				fnNotification(`select`, "Explorer expanded for all workspace folders.", `info`);
 			})();
 		}
 	);
@@ -548,25 +550,25 @@ export const createBookmarkCommand = (
 	// 특정 폴더 확장 ---------------------------------------------------------------------
 	const registerExpandFolderCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
-		"Simple-Bookmark.expandfolder",
+		"simple-bookmark.expandfolder",
 		async (uri : vscode.Uri) => {
-			console.debug("[Simple-Bookmark.expandFolder]", uri?.fsPath);
+			fnLogging(`expand`, `${uri?.fsPath}`, `debug`);
 
 			// URI가 전달되지 않은 경우 (키보드 단축키로 실행한 경우) 현재 활성 편집기의 파일 사용
 			if (!uri) {
 				const activeEditor = vscode.window.activeTextEditor;
+				// 현재 열린 파일의 디렉토리 사용
 				if (activeEditor && activeEditor.document.uri.scheme === 'file') {
-					// 현재 열린 파일의 디렉토리 사용
 					uri = vscode.Uri.file(path.dirname(activeEditor.document.uri.fsPath));
 				}
+				// 활성 편집기가 없으면 첫 번째 워크스페이스 폴더 사용
 				else {
-					// 활성 편집기가 없으면 첫 번째 워크스페이스 폴더 사용
 					const workspaceFolders = vscode.workspace.workspaceFolders;
 					if (workspaceFolders && workspaceFolders.length > 0) {
 						uri = workspaceFolders[0].uri;
 					}
 					else {
-						showWarnAuto("[Simple-Bookmark] No folder available to expand.");
+						fnNotification(`select`, "No folder available to expand.", `warn`);
 						return;
 					}
 				}
@@ -576,47 +578,43 @@ export const createBookmarkCommand = (
 				// 폴더인지 확인
 				const stat = await vscode.workspace.fs.stat(uri);
 				if (!(stat.type & vscode.FileType.Directory)) {
-					showWarnAuto("[Simple-Bookmark] Selected item is not a folder.");
+					fnNotification(`select`, `selected item is not a folder ${uri.fsPath}`, `warn`);
 					return;
 				}
 
 				// Explorer 뷰로 이동
 				await vscode.commands.executeCommand("workbench.view.explorer");
-				await fnDelay(100);
+				await delay(100);
 
 				// 폴더와 모든 하위 폴더를 확장
-				console.debug(`[Simple-Bookmark.expandFolder] Expanding folder: ${uri.fsPath}`);
+				fnLogging(`expand`, `${uri.fsPath}`, `debug`);
 				await expandFolderRecursively(uri);
 
-				showInfoAuto(`[Simple-Bookmark] Expanded folder: ${path.basename(uri.fsPath)}`);
+				fnNotification(`expand`, `${path.basename(uri.fsPath)}`, `info`);
 			}
 			catch (error) {
-				console.debug("[Simple-Bookmark.expandFolder] Error:", error);
-				showErrorAuto(`[Simple-Bookmark] Failed to expand folder: ${error instanceof Error ? error.message : 'Unknown error'}`);
+				fnLogging(`expand`, `${error}`, `debug`);
+				fnNotification(`expand`, `${error}`, `error`);
 			}
 		}
 	);
 
-	// 모든 명령어 등록 -----------------------------------------------------------------------
-	const registerCommands = (
-	) : vscode.Disposable[] => ([
-		registerRefreshCommand(),
-		registerAddBookmarkCommand(),
-		registerRemoveBookmarkCommand(),
-		registerRenameBookmarkCommand(),
-		registerCopyBookmarkCommand(),
-		registerPasteBookmarkCommand(),
-		registerPasteToRootBookmarkCommand(),
-		registerDeleteAllBookmarkCommand(),
-		registerCreateFolderCommand(),
-		registerCreateFileCommand(),
-		registerExpandExplorerCommand(),
-		registerExpandFolderCommand()
-	]);
-
-	// -----------------------------------------------------------------------------------------
+	// 99. return -----------------------------------------------------------------------------
 	return {
 		updateSelectedBookmark,
-		registerCommands
+		registerCommands : () : vscode.Disposable[] => ([
+			registerRefreshCommand(),
+			registerAddBookmarkCommand(),
+			registerRemoveBookmarkCommand(),
+			registerRenameBookmarkCommand(),
+			registerCopyBookmarkCommand(),
+			registerPasteBookmarkCommand(),
+			registerPasteToRootBookmarkCommand(),
+			registerDeleteAllBookmarkCommand(),
+			registerCreateFolderCommand(),
+			registerCreateFileCommand(),
+			registerExpandExplorerCommand(),
+			registerExpandFolderCommand()
+		])
 	};
 };

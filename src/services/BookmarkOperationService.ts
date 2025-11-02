@@ -1,22 +1,21 @@
 // services/BookmarkOperationService.ts
 
-import * as vscode from "vscode";
-import * as path from "path";
-import {type BookmarkSyncService} from "./BookmarkSyncService.js";
-import {validateFileName} from "../utils/BookmarkPathUtil.js";
-import {showInfoAuto, showErrorAuto, showWarnAuto} from "../utils/NotificationUtil.js";
+import { vscode, path } from "@importLibs";
+import type { BookmarkSyncServiceType } from "@importTypes";
+import { fnValidateFileName, fnNotification, fnLogging } from "@importScripts";
 
 // -----------------------------------------------------------------------------------------
-export type BookmarkOperationService = ReturnType<typeof createBookmarkOperationService>;
-
-// -----------------------------------------------------------------------------------------
-export const createBookmarkOperationService = (
+export const BookmarkOperationService = (
 	bookmarkPath : string,
-	syncService? : BookmarkSyncService
+	syncService? : BookmarkSyncServiceType
 ) => {
 
 	// -----------------------------------------------------------------------------------------
-	const fnFlattenToFiles = async (uri: vscode.Uri): Promise<string[]> => {
+	fnLogging(`activate`, `${bookmarkPath}`, `debug`);
+	fnLogging(`activate`, `syncService initialized`, `debug`);
+
+	// 모든 파일 경로(flat) 목록을 반환 --------------------------------------------------------
+	const flattenToFiles = async (uri: vscode.Uri): Promise<string[]> => {
 		const stat = await vscode.workspace.fs.stat(uri);
 		return stat.type === vscode.FileType.File
 		? [uri.fsPath]
@@ -28,46 +27,51 @@ export const createBookmarkOperationService = (
 				const childStat = await vscode.workspace.fs.stat(child);
 				childStat.type === vscode.FileType.File
 					? out.push(child.fsPath)
-					: (await fnFlattenToFiles(child)).forEach((p) => out.push(p));
+					: (await flattenToFiles(child)).forEach((p) => out.push(p));
 			}
 			return out;
 		})();
 	};
 
-	// 경로 비교/정규화 헬퍼들 -----------------------------------------------------
-	const fnNormalizeForCompare = (p: string): string => (
-		process.platform === "win32" ? path.resolve(p).toLowerCase() : path.resolve(p)
-	);
-
-	const fnIsSameFsPath = (a: string, b: string): boolean => fnNormalizeForCompare(a) === fnNormalizeForCompare(b);
-
-	const fnIsSubPath = (parent: string, child: string): boolean => {
+	// 파일 경로 비교를 위해 정규화 -----------------------------------------------------
+	const normalizeForCompare = (
+		p: string
+	): string => {
+		return process.platform === `win32` ? path.resolve(p).toLowerCase() : path.resolve(p);
+	};
+	const isSameFsPath = (
+		a: string,
+		b: string
+	): boolean => {
+		return normalizeForCompare(a) === normalizeForCompare(b);
+	};
+	const isSubPath = (
+		parent: string,
+		child: string
+	): boolean => {
 		const rel = path.relative(parent, child);
-		return rel.length > 0 && !rel.startsWith("..") && !path.isAbsolute(rel);
+		return rel.length > 0 && !rel.startsWith(`..`) && !path.isAbsolute(rel);
 	};
 
-	// -----------------------------------------------------------------------------------------
-	const fnCopyFileOrFolder = async (source: string, target: string): Promise<void> => {
+	// 파일 또는 폴더를 대상 위치로 복사 ------------------------------------------------------
+	const copyFileOrFolder = async (
+		source: string,
+		target: string
+	): Promise<void> => {
 		const srcUri = vscode.Uri.file(source);
 		const tgtUri = vscode.Uri.file(target);
 		const stat = await vscode.workspace.fs.stat(srcUri);
-
-
 
 		stat.type === vscode.FileType.File ? await (async () => {
 			const content = await vscode.workspace.fs.readFile(srcUri);
 			await vscode.workspace.fs.writeFile(tgtUri, content);
 		})() : await (async () => {
-			try {
-					// 대상이 원본 내부일 경우 무한 루프 또는 손상 가능성 있으므로 차단
-					if (fnIsSameFsPath(source, target) || fnIsSubPath(source, target)) {
-					throw new Error(`Cannot copy folder into itself or its subfolder: ${source} -> ${target}`);
-				}
 
-				await vscode.workspace.fs.delete(tgtUri, {recursive: true});
+			// 대상이 원본 내부일 경우 무한 루프 또는 손상 가능성 있으므로 차단
+			if (isSameFsPath(source, target) || isSubPath(source, target)) {
+				fnLogging(`copy`, `${source} -> ${target}`, `error`);
 			}
-			catch {
-			}
+			await vscode.workspace.fs.delete(tgtUri, {recursive: true});
 
 			await vscode.workspace.fs.createDirectory(tgtUri);
 			const entries = await vscode.workspace.fs.readDirectory(srcUri);
@@ -75,7 +79,7 @@ export const createBookmarkOperationService = (
 			const copyPromises = entries.map(([name]) => {
 				const sourcePath = path.join(source, name);
 				const targetPath = path.join(target, name);
-				return fnCopyFileOrFolder(sourcePath, targetPath);
+				return copyFileOrFolder(sourcePath, targetPath);
 			});
 
 			await Promise.all(copyPromises);
@@ -90,7 +94,7 @@ export const createBookmarkOperationService = (
 		const proceed = copiedItems.length > 0;
 
 		return !proceed
-		? showErrorAuto("[Simple-Bookmark] No items to paste.")
+			? fnNotification(`paste`, "No items to paste.", `error`)
 		: await (async () => {
 			let pasteCount = 0;
 
@@ -100,10 +104,10 @@ export const createBookmarkOperationService = (
 				const targetUri = vscode.Uri.file(targetFile);
 
 				// 소스/대상 동일 여부 검사 (플랫폼별 정규화 포함)
-				const isSame = fnIsSameFsPath(item.fsPath, targetFile);
+				const isSame = isSameFsPath(item.fsPath, targetFile);
 
 				isSame
-				? console.debug("[Simple-Bookmark.pasteItems]", item.fsPath)
+				? fnLogging(`paste`, `${item.fsPath}`, `debug`)
 				: await (async () => {
 					try {
 						// 소스 정보 확인
@@ -112,13 +116,13 @@ export const createBookmarkOperationService = (
 							srcStat = await vscode.workspace.fs.stat(item);
 						}
 						catch (e) {
-							showErrorAuto(`[Simple-Bookmark] Source missing or inaccessible: ${item.fsPath}`);
+							fnNotification(`paste`, `source missing or inaccessible ${item.fsPath}`, `error`);
 							return;
 						}
 
 						// 폴더를 자기 자신 또는 하위 폴더로 붙여넣는 경우 차단
-						if (srcStat.type === vscode.FileType.Directory && fnIsSubPath(item.fsPath, targetFile)) {
-							showErrorAuto(`[Simple-Bookmark] Cannot paste folder into itself or its subfolder: ${fileName}`);
+						if (srcStat.type === vscode.FileType.Directory && isSubPath(item.fsPath, targetFile)) {
+							fnNotification(`paste`, `cannot paste folder into itself or its subfolder ${fileName}`, `error`);
 							return;
 						}
 
@@ -132,20 +136,20 @@ export const createBookmarkOperationService = (
 						}
 
 						// 복사 실행
-						await fnCopyFileOrFolder(item.fsPath, targetFile);
+						await copyFileOrFolder(item.fsPath, targetFile);
 						pasteCount++;
 					}
 					catch (error) {
-						showErrorAuto(`[Simple-Bookmark] Paste failed for ${fileName}: ${error}`);
+						fnNotification(`paste`, `paste failed for ${fileName} ${error}`, `error`);
 					}
 				})();
 			}
 
-			const message = pasteCount === 1
-			? "[Simple-Bookmark] Item pasted (overwritten)"
-			: `[Simple-Bookmark] ${pasteCount} items pasted (overwritten)`;
-			showInfoAuto(message);
-			console.debug("[Simple-Bookmark.pasteItems.count]", pasteCount);
+			const messageValue = pasteCount === 1
+			? "Item pasted (overwritten)"
+			: `${pasteCount} items pasted (overwritten)`;
+			fnNotification(`paste`, messageValue, `info`);
+			fnLogging(`paste`, `${pasteCount}`, `debug`);
 		})();
 	};
 
@@ -157,12 +161,12 @@ export const createBookmarkOperationService = (
 		const proceed = copiedItems.length > 0;
 
 		return !proceed
-		? showErrorAuto("[Simple-Bookmark] No items to paste.")
+			? fnNotification(`paste`, "No items to paste.", `error`)
 		: await (async () => {
 
 			const srcFilesSet = new Set<string>();
 			for (const uri of copiedItems) {
-				(await fnFlattenToFiles(uri)).forEach((f: string) => srcFilesSet.add(f));
+				(await flattenToFiles(uri)).forEach((f: string) => srcFilesSet.add(f));
 			}
 			const srcFiles = Array.from(srcFilesSet.values());
 
@@ -175,8 +179,8 @@ export const createBookmarkOperationService = (
 
 				!realTarget
 				? skipped.push(fileName)
-				: (fnIsSameFsPath(src, realTarget)
-					? console.debug("[Simple-Bookmark.pasteItemsToRoot]", src)
+				: (isSameFsPath(src, realTarget)
+					? fnLogging(`paste`, `${src}`, `debug`)
 					: await (async () => {
 						try {
 							// 대상 파일이 존재하면 삭제
@@ -184,27 +188,29 @@ export const createBookmarkOperationService = (
 								await vscode.workspace.fs.stat(vscode.Uri.file(realTarget));
 								await vscode.workspace.fs.delete(vscode.Uri.file(realTarget), {recursive : true, useTrash : false});
 							}
+							// 파일이 없으면 무시하고 계속 진행
 							catch {
-								// 파일이 없으면 무시하고 계속 진행
 							}
 
 							// 복사 실행
-							await fnCopyFileOrFolder(src, realTarget);
+							await copyFileOrFolder(src, realTarget);
 							overwriteCount++;
 						}
 						catch (error) {
-							showErrorAuto(`[Simple-Bookmark] Root overwrite failed for ${fileName}: ${error}`);
+							fnNotification(`paste`, `root overwrite failed for ${fileName} ${error}`, `error`);
 						}
 					})()
 				);
 			}
 
-			overwriteCount > 0 && showInfoAuto(
-				overwriteCount === 1
-				? "[Simple-Bookmark] 1 file overwritten to original targets"
-				: `[Simple-Bookmark] ${overwriteCount} files overwritten to original targets`
+			overwriteCount > 0 && (
+				overwriteCount === 1 ? (
+					fnNotification(`paste`, `1 file overwritten to original targets`, `info`)
+				) : (
+					fnNotification(`paste`, `${overwriteCount} files overwritten to original targets`, `info`)
+				)
 			);
-			skipped.length > 0 && showWarnAuto(`[Simple-Bookmark] ${skipped.length} files skipped (non-matching names)`);
+			skipped.length > 0 && fnNotification(`paste`, `${skipped.length} files skipped (non-matching names)`, `warn`);
 		})();
 	};
 
@@ -218,18 +224,18 @@ export const createBookmarkOperationService = (
 			try {
 				await vscode.workspace.fs.delete(item, {recursive : true});
 				deleteCount++;
-				console.debug("[Simple-Bookmark.deleteOriginalFiles]", item.fsPath);
+				fnLogging(`remove`, `${item.fsPath}`, `debug`);
 			}
 			catch (error) {
-				console.error(`[Simple-Bookmark] Failed to delete original file: ${item.fsPath}`, error);
+				fnLogging(`remove`, `${item.fsPath} ${error}`, `error`);
 			}
 		}
 
-		const successMessage = deleteCount === 1
-		? "[Simple-Bookmark] Original file deleted"
-		: `[Simple-Bookmark] ${deleteCount} original files deleted`;
+		const successValue = deleteCount === 1
+		? "Original file deleted"
+		: `${deleteCount}`;
 
-		showInfoAuto(successMessage);
+		fnNotification(`remove`, successValue, `info`);
 	};
 
 	// 실제 위치에 새 폴더 생성 -------------------------------------------------------------
@@ -237,10 +243,10 @@ export const createBookmarkOperationService = (
 		parentPath : string,
 		folderName : string
 	) : Promise<void> => {
-		const error = validateFileName(folderName);
+		const error = fnValidateFileName(folderName);
 
 		return error
-		? void showErrorAuto(`[Simple-Bookmark] ${error}`)
+			? void fnNotification(`create`, `${error}`, `error`)
 		: await (async () => {
 			const folderPath = path.join(parentPath, folderName);
 			const folderUri = vscode.Uri.file(folderPath);
@@ -252,11 +258,11 @@ export const createBookmarkOperationService = (
 				exists = false;
 			}
 			exists
-			? showWarnAuto(`[Simple-Bookmark] Folder already exists: ${folderName}`)
+					? fnNotification(`create`, `folder already exists ${folderName}`, `warn`)
 			: await (async () => {
 				await vscode.workspace.fs.createDirectory(folderUri);
-				showInfoAuto(`[Simple-Bookmark] Folder created in original location: ${folderName}`);
-				console.debug("[Simple-Bookmark.createFolder]", folderPath);
+						fnNotification(`create`, `folder created in original location ${folderName}`, `info`);
+						fnLogging(`create`, `${folderPath}`, `debug`);
 			})();
 		})();
 	};
@@ -266,10 +272,10 @@ export const createBookmarkOperationService = (
 		parentPath : string,
 		fileName : string
 	) : Promise<void> => {
-		const error = validateFileName(fileName);
+		const error = fnValidateFileName(fileName);
 
 		return error
-		? void showErrorAuto(`[Simple-Bookmark] ${error}`)
+			? void fnNotification(`create`, `${error}`, `error`)
 		: await (async () => {
 			const filePath = path.join(parentPath, fileName);
 			const fileUri = vscode.Uri.file(filePath);
@@ -281,18 +287,18 @@ export const createBookmarkOperationService = (
 				exists = false;
 			}
 			exists
-			? showWarnAuto(`[Simple-Bookmark] File already exists: ${fileName}`)
+						? fnNotification(`create`, `${fileName}`, `warn`)
 			: await (async () => {
 				await vscode.workspace.fs.writeFile(fileUri, new Uint8Array(0));
-				showInfoAuto(`[Simple-Bookmark] File created in original location: ${fileName}`);
-				console.debug("[Simple-Bookmark.createFile]", filePath);
+						fnNotification(`create`, `${fileName}`, `info`);
+						fnLogging(`create`, `${filePath}`, `debug`);
 
 				try {
 					const document = await vscode.workspace.openTextDocument(fileUri);
 					await vscode.window.showTextDocument(document);
 				}
-				catch (e) {
-					console.error(`[Simple-Bookmark] Failed to open created file: ${e}`);
+				catch (error) {
+					fnLogging(`create`, `${fileName} ${error}`, `error`);
 				}
 			})();
 		})();
@@ -323,7 +329,7 @@ export const createBookmarkOperationService = (
 		bookmarkPath = newPath;
 	};
 
-	// 리턴 ----------------------------------------------------------------------------
+	// 99. return -----------------------------------------------------------------------------
 	return {
 		pasteItems,
 		pasteItemsToRoot,
