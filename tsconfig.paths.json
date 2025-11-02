@@ -1,0 +1,41 @@
+{
+  "$schema": "https://www.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "rootDir": "src",
+    "outDir": "out",
+    "paths": {
+			"@scripts/*": ["src/assets/scripts/*"],
+			"@commands/*": ["src/commands/*"],
+			"@models/*": ["src/models/*"],
+			"@providers/*": ["src/providers/*"],
+			"@services/*": ["src/services/*"],
+			"@importCommands": ["src/imports/ImportCommands"],
+			"@importModels": ["src/imports/ImportModels"],
+			"@importProviders": ["src/imports/ImportProviders"],
+			"@importServices": ["src/imports/ImportServices"],
+			"@importTypes": ["src/imports/ImportTypes"],
+			"@importLibs": ["src/imports/ImportLibs"],
+			"@importScripts": ["src/imports/ImportScripts"]
+    },
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src/index.tsx",
+		"src/assets/types/*.d.ts",
+    "src/**/*",
+    "src/**/*.ts",
+		"src/**/*.tsx",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.d.ts",
+    "**/*.js",
+    "**/*.jsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts"
+  ]
+}
