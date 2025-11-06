@@ -23,11 +23,11 @@ export const BookmarkProvider = (
 	let bookmarkStatusMap : Map<string, BookmarkStatus> = new Map();
 	let expandedDirPaths : Set<string> = new Set();
 	let refreshTimer : NodeJS.Timeout | null = null;
-		setTimeout(() => (
-			initializeBookmarkFolder().catch(
-				(err: any) => fnLogging(`activate`, `${err}`, `error`)
-			), 0
-		));
+	setTimeout(() => (
+		initializeBookmarkFolder().catch(
+			(err: any) => fnLogging(`activate`, `${err}`, `error`)
+		), 0
+	));
 
 	// bookmark 폴더를 준비하고 서비스 초기화 -------------------------------------------------
 	const initializeBookmarkFolder = async (): Promise<void> => {
