@@ -1,18 +1,18 @@
 // services/BookmarkOperationService.ts
 
-import { vscode, path } from "@importLibs";
-import type { BookmarkSyncServiceType } from "@importTypes";
-import { fnValidateFileName, fnNotification, fnLogging } from "@importScripts";
+import { vscode, path } from "@exportLibs";
+import type { BookmarkSyncServiceType } from "@exportTypes";
+import { fnValidateFileName, fnNotification, fnLogging } from "@exportScripts";
 
 // -----------------------------------------------------------------------------------------
 export const BookmarkOperationService = (
 	bookmarkPath : string,
-	syncService? : BookmarkSyncServiceType
+	_syncService? : BookmarkSyncServiceType
 ) => {
 
 	// -----------------------------------------------------------------------------------------
-	fnLogging(`activate`, `${bookmarkPath}`, `debug`);
-	fnLogging(`activate`, `syncService initialized`, `debug`);
+	fnLogging(`debug`, `activate`, `${bookmarkPath}`);
+	fnLogging(`debug`, `activate`, `syncService initialized`);
 
 	// 모든 파일 경로(flat) 목록을 반환 --------------------------------------------------------
 	const flattenToFiles = async (uri: vscode.Uri): Promise<string[]> => {
@@ -69,7 +69,7 @@ export const BookmarkOperationService = (
 
 			// 대상이 원본 내부일 경우 무한 루프 또는 손상 가능성 있으므로 차단
 			if (isSameFsPath(source, target) || isSubPath(source, target)) {
-				fnLogging(`copy`, `${source} -> ${target}`, `error`);
+				fnLogging(`error`, `copy`, `${source} -> ${target}`);
 			}
 			await vscode.workspace.fs.delete(tgtUri, {recursive: true});
 
@@ -94,7 +94,7 @@ export const BookmarkOperationService = (
 		const proceed = copiedItems.length > 0;
 
 		return !proceed
-			? fnNotification(`paste`, "No items to paste.", `error`)
+			? fnNotification(`error`, `paste`, "No items to paste.")
 		: await (async () => {
 			let pasteCount = 0;
 
@@ -107,7 +107,7 @@ export const BookmarkOperationService = (
 				const isSame = isSameFsPath(item.fsPath, targetFile);
 
 				isSame
-				? fnLogging(`paste`, `${item.fsPath}`, `debug`)
+				? fnLogging(`debug`, `paste`, `${item.fsPath}`)
 				: await (async () => {
 					try {
 						// 소스 정보 확인
@@ -116,13 +116,13 @@ export const BookmarkOperationService = (
 							srcStat = await vscode.workspace.fs.stat(item);
 						}
 						catch (e) {
-							fnNotification(`paste`, `source missing or inaccessible ${item.fsPath}`, `error`);
+							fnNotification(`error`, `paste`, `source missing or inaccessible ${item.fsPath}`);
 							return;
 						}
 
 						// 폴더를 자기 자신 또는 하위 폴더로 붙여넣는 경우 차단
 						if (srcStat.type === vscode.FileType.Directory && isSubPath(item.fsPath, targetFile)) {
-							fnNotification(`paste`, `cannot paste folder into itself or its subfolder ${fileName}`, `error`);
+							fnNotification(`error`, `paste`, `cannot paste folder into itself or its subfolder ${fileName}`);
 							return;
 						}
 
@@ -140,7 +140,7 @@ export const BookmarkOperationService = (
 						pasteCount++;
 					}
 					catch (error) {
-						fnNotification(`paste`, `paste failed for ${fileName} ${error}`, `error`);
+						fnNotification(`error`, `paste`, `paste failed for ${fileName} ${error}`);
 					}
 				})();
 			}
@@ -148,8 +148,8 @@ export const BookmarkOperationService = (
 			const messageValue = pasteCount === 1
 			? "Item pasted (overwritten)"
 			: `${pasteCount} items pasted (overwritten)`;
-			fnNotification(`paste`, messageValue, `info`);
-			fnLogging(`paste`, `${pasteCount}`, `debug`);
+			fnNotification(`info`, `paste`, messageValue);
+			fnLogging(`debug`, `paste`, `${pasteCount}`);
 		})();
 	};
 
@@ -161,7 +161,7 @@ export const BookmarkOperationService = (
 		const proceed = copiedItems.length > 0;
 
 		return !proceed
-			? fnNotification(`paste`, "No items to paste.", `error`)
+			? fnNotification(`error`, `paste`, "No items to paste.")
 		: await (async () => {
 
 			const srcFilesSet = new Set<string>();
@@ -180,7 +180,7 @@ export const BookmarkOperationService = (
 				!realTarget
 				? skipped.push(fileName)
 				: (isSameFsPath(src, realTarget)
-					? fnLogging(`paste`, `${src}`, `debug`)
+					? fnLogging(`debug`, `paste`, `${src}`)
 					: await (async () => {
 						try {
 							// 대상 파일이 존재하면 삭제
@@ -197,7 +197,7 @@ export const BookmarkOperationService = (
 							overwriteCount++;
 						}
 						catch (error) {
-							fnNotification(`paste`, `root overwrite failed for ${fileName} ${error}`, `error`);
+							fnNotification(`error`, `paste`, `root overwrite failed for ${fileName} ${error}`);
 						}
 					})()
 				);
@@ -205,12 +205,12 @@ export const BookmarkOperationService = (
 
 			overwriteCount > 0 && (
 				overwriteCount === 1 ? (
-					fnNotification(`paste`, `1 file overwritten to original targets`, `info`)
+					fnNotification(`info`, `paste`, `1 file overwritten to original targets`)
 				) : (
-					fnNotification(`paste`, `${overwriteCount} files overwritten to original targets`, `info`)
+					fnNotification(`info`, `paste`, `${overwriteCount} files overwritten to original targets`)
 				)
 			);
-			skipped.length > 0 && fnNotification(`paste`, `${skipped.length} files skipped (non-matching names)`, `warn`);
+			skipped.length > 0 && fnNotification(`warn`, `paste`, `${skipped.length} files skipped (non-matching names)`);
 		})();
 	};
 
@@ -224,10 +224,10 @@ export const BookmarkOperationService = (
 			try {
 				await vscode.workspace.fs.delete(item, {recursive : true});
 				deleteCount++;
-				fnLogging(`remove`, `${item.fsPath}`, `debug`);
+				fnLogging(`debug`, `remove`, `${item.fsPath}`);
 			}
 			catch (error) {
-				fnLogging(`remove`, `${item.fsPath} ${error}`, `error`);
+				fnLogging(`error`, `remove`, `${item.fsPath} ${error}`);
 			}
 		}
 
@@ -235,7 +235,7 @@ export const BookmarkOperationService = (
 		? "Original file deleted"
 		: `${deleteCount}`;
 
-		fnNotification(`remove`, successValue, `info`);
+		fnNotification(`info`, `remove`, successValue);
 	};
 
 	// 실제 위치에 새 폴더 생성 -------------------------------------------------------------
@@ -246,7 +246,7 @@ export const BookmarkOperationService = (
 		const error = fnValidateFileName(folderName);
 
 		return error
-			? void fnNotification(`create`, `${error}`, `error`)
+			? void fnNotification(`error`, `create`, `${error}`)
 		: await (async () => {
 			const folderPath = path.join(parentPath, folderName);
 			const folderUri = vscode.Uri.file(folderPath);
@@ -258,11 +258,11 @@ export const BookmarkOperationService = (
 				exists = false;
 			}
 			exists
-					? fnNotification(`create`, `folder already exists ${folderName}`, `warn`)
+					? fnNotification(`warn`, `create`, `folder already exists ${folderName}`)
 			: await (async () => {
 				await vscode.workspace.fs.createDirectory(folderUri);
-						fnNotification(`create`, `folder created in original location ${folderName}`, `info`);
-						fnLogging(`create`, `${folderPath}`, `debug`);
+						fnNotification(`info`, `create`, `folder created in original location ${folderName}`);
+						fnLogging(`debug`, `create`, `${folderPath}`);
 			})();
 		})();
 	};
@@ -275,7 +275,7 @@ export const BookmarkOperationService = (
 		const error = fnValidateFileName(fileName);
 
 		return error
-			? void fnNotification(`create`, `${error}`, `error`)
+			? void fnNotification(`error`, `create`, `${error}`)
 		: await (async () => {
 			const filePath = path.join(parentPath, fileName);
 			const fileUri = vscode.Uri.file(filePath);
@@ -287,18 +287,18 @@ export const BookmarkOperationService = (
 				exists = false;
 			}
 			exists
-						? fnNotification(`create`, `${fileName}`, `warn`)
+						? fnNotification(`warn`, `create`, `${fileName}`)
 			: await (async () => {
 				await vscode.workspace.fs.writeFile(fileUri, new Uint8Array(0));
-						fnNotification(`create`, `${fileName}`, `info`);
-						fnLogging(`create`, `${filePath}`, `debug`);
+						fnNotification(`info`, `create`, `${fileName}`);
+						fnLogging(`debug`, `create`, `${filePath}`);
 
 				try {
 					const document = await vscode.workspace.openTextDocument(fileUri);
 					await vscode.window.showTextDocument(document);
 				}
 				catch (error) {
-					fnLogging(`create`, `${fileName} ${error}`, `error`);
+					fnLogging(`error`, `create`, `${fileName} ${error}`);
 				}
 			})();
 		})();

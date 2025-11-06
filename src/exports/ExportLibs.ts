@@ -1,4 +1,4 @@
-// imports/ImportLibs.ts
+// exports/ExportLibs.ts
 
 // -------------------------------------------------------------------------------
 import * as vscode from "vscode";

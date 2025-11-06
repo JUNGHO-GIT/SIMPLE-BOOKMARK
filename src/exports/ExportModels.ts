@@ -1,4 +1,4 @@
-// imports/ImportModels.ts
+// exports/ExportModels.ts
 
 // -------------------------------------------------------------------------------
 export { BookmarkModel } from "@models/BookmarkModel.js";

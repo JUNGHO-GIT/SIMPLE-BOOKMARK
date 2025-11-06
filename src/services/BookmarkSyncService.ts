@@ -1,9 +1,9 @@
 // services/BookmarkSyncService.ts
 
-import { vscode, path, TextEncoder } from "@importLibs";
-import type { BookmarkMetadata } from "@importTypes";
-import { BookmarkStatus } from "@importTypes";
-import { fnValidateFileName, fnLogging } from "@importScripts";
+import { vscode, path, TextEncoder } from "@exportLibs";
+import type { BookmarkMetadata } from "@exportTypes";
+import { BookmarkStatus } from "@exportTypes";
+import { fnValidateFileName, fnLogging } from "@exportScripts";
 
 // -----------------------------------------------------------------------------------------
 export const BookmarkSyncService = (
@@ -66,7 +66,7 @@ export const BookmarkSyncService = (
 		const saveListener = vscode.workspace.onDidSaveTextDocument(async (document) => {
 			const filePath = document.uri.fsPath;
 			!isBookmarkedFile(filePath) || (
-				fnLogging(`save`, `${filePath}`, `debug`),
+				fnLogging(`debug`, `save`, `${filePath}`),
 				await syncBookmark(filePath)
 			);
 		});
@@ -87,7 +87,7 @@ export const BookmarkSyncService = (
 
 			watcher.onDidChange(async (uri) => {
 				uri.fsPath === originalPath && (
-					fnLogging(`save`, `${originalPath}`, `debug`),
+					fnLogging(`debug`, `save`, `${originalPath}`),
 					await syncBookmark(originalPath)
 				);
 			});
@@ -131,7 +131,7 @@ export const BookmarkSyncService = (
 						return metadata;
 					}
 					catch (error) {
-						fnLogging(`activate`, error instanceof Error ? error.message : String(error), `error`);
+						fnLogging(`error`, `activate`, error instanceof Error ? error.message : String(error));
 						return null;
 					}
 				});
@@ -151,7 +151,7 @@ export const BookmarkSyncService = (
 			})();
 		}
 		catch (error) {
-			fnLogging(`activate`, `${error}`, `error`);
+			fnLogging(`error`, `activate`, `${error}`);
 		}
 	};
 
@@ -184,10 +184,10 @@ export const BookmarkSyncService = (
 
 			onSyncUpdate && onSyncUpdate(originalPath, BookmarkStatus.SYNCED);
 			onRefreshNeeded && onRefreshNeeded();
-			fnLogging(`add`, `${uniqueBookmarkName}`, `debug`);
+			fnLogging(`debug`, `add`, `${uniqueBookmarkName}`);
 		}
 		catch (error) {
-			fnLogging(`add`, error instanceof Error ? error.message : String(error), `error`);
+			fnLogging(`error`, `add`, error instanceof Error ? error.message : String(error));
 		}
 	};
 
@@ -245,7 +245,7 @@ export const BookmarkSyncService = (
 
 			// 파일시스템 rename
 			try {
-				fnLogging(`rename`, `${metadata!.originalPath} -> ${newOriginalPath}`, `debug`);
+				fnLogging(`debug`, `rename`, `${metadata!.originalPath} -> ${newOriginalPath}`);
 				await vscode.workspace.fs.rename(
 					vscode.Uri.file(metadata!.originalPath),
 					vscode.Uri.file(newOriginalPath),
@@ -253,11 +253,11 @@ export const BookmarkSyncService = (
 				);
 			}
 			catch (error) {
-				fnLogging(`rename`, error instanceof Error ? error.message : String(error), `error`);
+				fnLogging(`error`, `rename`, error instanceof Error ? error.message : String(error));
 			}
 		}
 		else {
-			fnLogging(`rename`, `${metadata!.originalPath}`, `debug`);
+			fnLogging(`debug`, `rename`, `${metadata!.originalPath}`);
 		}
 
 		// 메타데이터 파일 rename(이름 변경 반영)
@@ -286,7 +286,7 @@ export const BookmarkSyncService = (
 
 		onSyncUpdate && onSyncUpdate(newOriginalPath, BookmarkStatus.SYNCED);
 		onRefreshNeeded && onRefreshNeeded();
-		fnLogging(`rename`, `${finalMetaName} / ${newOriginalPath}`, `debug`);
+		fnLogging(`debug`, `rename`, `${finalMetaName} / ${newOriginalPath}`);
 	};
 
 	// 북마크 제거 ------------------------------------------------------------------------
@@ -303,10 +303,10 @@ export const BookmarkSyncService = (
 				bookmarkedFiles.delete(originalPath);
 				disposeWatcherFor(originalPath);
 				onRefreshNeeded && onRefreshNeeded();
-				fnLogging(`remove`, `${originalPath}`, `debug`);
+				fnLogging(`debug`, `remove`, `${originalPath}`);
 			}
 			catch (error) {
-				fnLogging(`remove`, error instanceof Error ? error.message : String(error), `error`);
+				fnLogging(`error`, `remove`, error instanceof Error ? error.message : String(error));
 			}
 		})();
 	};
@@ -436,7 +436,7 @@ export const BookmarkSyncService = (
 	// 초기화 ----------------------------------------------------------------------------
 	setupEventListeners();
 	loadExistingBookmarks().catch((err) => {
-		fnLogging(`activate`, err instanceof Error ? err.message : String(err), `error`);
+		fnLogging(`error`, `activate`, err instanceof Error ? err.message : String(err));
 	});
 
 	// 99. return -----------------------------------------------------------------------------

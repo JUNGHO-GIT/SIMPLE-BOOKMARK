@@ -1,9 +1,14 @@
-// assets/scripts/notificationUtil.ts
+// assets/scripts/notification.ts
 
-import { vscode } from "@importLibs";
+import { vscode } from "@exportLibs";
 
 // 콘솔 로깅 출력 ----------------------------------------------------------------------
 export const fnLogging = (
+	type:
+	`debug` |
+	`info` |
+	`warn` |
+	`error`,
 	key:
 	`activate` |
 	`deactivate` |
@@ -22,34 +27,37 @@ export const fnLogging = (
 	`expand` |
 	`collapse`,
 	value: string,
-	type:
-	`debug` |
-	`info` |
-	`warn` |
-	`error`,
 ): void => {
-	const loggers = {
-		debug: () => console.debug(
+	type === `debug` && (() => {
+		console.debug(
 			`[simple-bookmark] [${key}] ${value}`
-		),
-		info: () => console.info(
+		);
+	})();
+	type === `info` && (() => {
+		console.info(
 			`[simple-bookmark] [${key}] ${value}`
-		),
-		warn: () => console.warn(
+		);
+	})();
+	type === `warn` && (() => {
+		console.warn(
 			`[simple-bookmark] [${key}] ${value}`
-		),
-		error: () => {
-			console.error(
-				`[simple-bookmark] [${key}] ${value}`
-			);
-			throw new Error(`[simple-bookmark] [${key}] ${value}`);
-		},
-	};
-	loggers[type]();
+		);
+	})();
+	type === `error` && (() => {
+		console.error(
+			`[simple-bookmark] [${key}] ${value}`
+		);
+		throw new Error(`[simple-bookmark] [${key}] ${value}`);
+	})();
 };
 
 // VS Code 알림 센터 메시지 출력 -------------------------------------------------------
 export const fnNotification = (
+	type:
+	`debug` |
+	`info` |
+	`warn` |
+	`error`,
 	key:
 	`activate` |
 	`deactivate` |
@@ -68,32 +76,35 @@ export const fnNotification = (
 	`expand` |
 	`collapse`,
 	value: string,
-	type:
-	`debug` |
-	`info` |
-	`warn` |
-	`error`,
 ): void => {
-	const notifications = {
-		debug: () => vscode.window.showInformationMessage(
+	type === `debug` && (() => {
+		vscode.window.showInformationMessage(
 			`[simple-bookmark] [${key}] ${value}`, {
 			modal: false
-		}),
-		info: () => setTimeout(() => {
-			vscode.window.showInformationMessage(`[simple-bookmark] [${key}] ${value}`, {
+		});
+	})();
+	type === `info` && (() => {
+		setTimeout(() => {
+			vscode.window.showInformationMessage(
+				`[simple-bookmark] [${key}] ${value}`, {
 				modal: false
 			});
-		}, 2000),
-		warn: () => setTimeout(() => {
-			vscode.window.showWarningMessage(`[simple-bookmark] [${key}] ${value}`, {
+		}, 2000);
+	})();
+	type === `warn` && (() => {
+		setTimeout(() => {
+			vscode.window.showWarningMessage(
+				`[simple-bookmark] [${key}] ${value}`, {
 				modal: false
 			});
-		}, 2000),
-		error: () => setTimeout(() => {
-			vscode.window.showErrorMessage(`[simple-bookmark] [${key}] ${value}`, {
+		}, 2000);
+	})();
+	type === `error` && (() => {
+		setTimeout(() => {
+			vscode.window.showErrorMessage(
+				`[simple-bookmark] [${key}] ${value}`, {
 				modal: false
 			});
-		}, 2000)
-	};
-	notifications[type]();
+		}, 2000);
+	})();
 };

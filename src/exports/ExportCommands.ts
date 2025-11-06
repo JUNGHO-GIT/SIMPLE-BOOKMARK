@@ -1,4 +1,4 @@
-// imports/ImportCommands.ts
+// exports/ExportCommands.ts
 
 // -------------------------------------------------------------------------------
 export { BookmarkCommand } from "@commands/BookmarkCommand.js";

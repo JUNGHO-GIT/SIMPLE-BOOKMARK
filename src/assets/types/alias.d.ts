@@ -23,31 +23,31 @@ declare module "@services/*" {
 }
 
 // -------------------------------------------------------------------------------
-declare module "@importCommands/*" {
+declare module "@exportCommands/*" {
   const value: any;
   export default value;
 }
-declare module "@importModels/*" {
+declare module "@exportModels/*" {
 	const value: any;
 	export default value;
 }
-declare module "@importProviders/*" {
+declare module "@exportProviders/*" {
 	const value: any;
 	export default value;
 }
-declare module "@importServices/*" {
+declare module "@exportServices/*" {
 	const value: any;
 	export default value;
 }
-declare module "@importTypes/*" {
+declare module "@exportTypes/*" {
 	const value: any;
 	export default value;
 }
-declare module "@importScripts/*" {
+declare module "@exportScripts/*" {
 	const value: any;
 	export default value;
 }
-declare module "@importLibs/*" {
+declare module "@exportLibs/*" {
 	const value: any;
 	export default value;
 }

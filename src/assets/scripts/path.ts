@@ -1,6 +1,6 @@
-// assets/scripts/pathUtil.ts
+// assets/scripts/path.ts
 
-import { path, fs } from "@importLibs";
+import { path, fs } from "@exportLibs";
 
 // -----------------------------------------------------------------------------------------
 // 대상 파일명의 유효성을 검토하고(필요 시) 보정

@@ -1,10 +1,10 @@
-// imports/ImportTypes.ts
+// exports/ExportTypes.ts
 
 import type { Minimatch } from "minimatch";
 import type { TreeItem } from "vscode";
-import type { BookmarkCommand } from "@importCommands";
-import type { BookmarkProvider as BookmarkProviderFactory } from "@importProviders";
-import type { BookmarkOperationService as BookmarkOperationServiceFactory, BookmarkSyncService as BookmarkSyncServiceFactory } from "@importServices";
+import type { BookmarkCommand } from "@exportCommands";
+import type { BookmarkProvider as BookmarkProviderFactory } from "@exportProviders";
+import type { BookmarkOperationService as BookmarkOperationServiceFactory, BookmarkSyncService as BookmarkSyncServiceFactory } from "@exportServices";
 
 // 북마크 메타데이터 인터페이스 -------------------------------------------------
 export interface BookmarkMetadata {

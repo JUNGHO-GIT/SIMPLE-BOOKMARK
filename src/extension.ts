@@ -1,16 +1,16 @@
 // extension.ts
 
-import { vscode } from "@importLibs";
-import { fnNotification, fnLogging } from "@importScripts";
-import { BookmarkProvider } from "@importProviders";
-import { BookmarkCommand } from "@importCommands";
-import type { BookmarkProviderType, BookmarkCommandType, BookmarkModelType } from "@importTypes";
+import { vscode } from "@exportLibs";
+import { fnNotification, fnLogging } from "@exportScripts";
+import { BookmarkProvider } from "@exportProviders";
+import { BookmarkCommand } from "@exportCommands";
+import type { BookmarkProviderType, BookmarkCommandType, BookmarkModelType } from "@exportTypes";
 
 // 1. activate ---------------------------------------------------------------------------------
 export const activate = (
 	context: vscode.ExtensionContext
 ): void => {
-	fnLogging(`activate`, ``, `debug`);
+	fnLogging(`debug`, `activate`, ``);
 	const workspaceRoot = (
 		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
@@ -18,8 +18,8 @@ export const activate = (
 	);
 
 	!workspaceRoot && (
-		fnNotification(`activate`, `requires an open workspace to function properly.`, `warn`),
-		fnLogging(`activate`, `no workspace`, `debug`)
+		fnNotification(`warn`, `activate`, `requires an open workspace to function properly.`),
+		fnLogging(`debug`, `activate`, `no workspace`)
 	);
 
 	const provider = BookmarkProvider(workspaceRoot);
@@ -53,7 +53,7 @@ export const activate = (
 // 2. deactivate ---------------------------------------------------------------------------------
 export const deactivate = (
 ): void => {
-	fnLogging(`deactivate`, ``, `debug`);
+	fnLogging(`debug`, `deactivate`, ``);
 };
 
 // 3. setup ---------------------------------------------------------------------------------------
@@ -70,7 +70,7 @@ const setupAdditionalListeners = (
 	const selListener = treeView.onDidChangeSelection(e => {
 		selectionTimer && clearTimeout(selectionTimer);
 		selectionTimer = setTimeout(() => {
-			fnLogging(`select`, `${e.selection.length}`, `debug`);
+			fnLogging(`debug`, `select`, `${e.selection.length}`);
 			commandManager.updateSelectedBookmark(e.selection as BookmarkModelType[]);
 			selectionTimer = null;
 		}, 50);
@@ -79,8 +79,8 @@ const setupAdditionalListeners = (
 	const workspaceListener = vscode.workspace.onDidChangeWorkspaceFolders(() => {
 		workspaceTimer && clearTimeout(workspaceTimer);
 		workspaceTimer = setTimeout(() => {
-			fnLogging(`activate`, `workspace changed`, `debug`);
-			fnNotification(`activate`, `Bookmarks may need to be refreshed.`, `info`);
+			fnLogging(`debug`, `activate`, `workspace changed`);
+			fnNotification(`info`, `activate`, `Bookmarks may need to be refreshed.`);
 			provider.refresh();
 			workspaceTimer = null;
 		}, 200);
@@ -90,7 +90,7 @@ const setupAdditionalListeners = (
 		(e.affectsConfiguration("simple-bookmark") || e.affectsConfiguration("files.exclude")) && (() => {
 			configTimer && clearTimeout(configTimer);
 				configTimer = setTimeout(() => {
-					fnLogging(`activate`, `configuration changed`, `debug`);
+					fnLogging(`debug`, `activate`, `configuration changed`);
 				provider.refresh();
 				configTimer = null;
 			}, 150);

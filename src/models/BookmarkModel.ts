@@ -1,8 +1,8 @@
 // models/BookmarkModel.ts
 
-import { vscode } from "@importLibs";
-import type { BookmarkMetadata, BookmarkModelType } from "@importTypes";
-import { BookmarkStatus } from "@importTypes";
+import { vscode } from "@exportLibs";
+import type { BookmarkMetadata, BookmarkModelType } from "@exportTypes";
+import { BookmarkStatus } from "@exportTypes";
 
 // -------------------------------------------------------------------------------------------
 export const BookmarkModel = (

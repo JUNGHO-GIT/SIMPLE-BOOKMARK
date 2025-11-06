@@ -1,4 +1,4 @@
-// imports/ImportServices.ts
+// exports/ExportServices.ts
 
 // -------------------------------------------------------------------------------
 export { BookmarkOperationService } from "@services/BookmarkOperationService.js";

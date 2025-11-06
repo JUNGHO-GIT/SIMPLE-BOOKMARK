@@ -1,10 +1,10 @@
 // commands/BookmarkCommand.ts
 
-import { vscode, path, Minimatch } from "@importLibs";
-import { fnValidateFileName } from "@importScripts";
-import { fnNotification, fnLogging } from "@importScripts";
-import { LRUCache, fnIsFileType } from "@importScripts";
-import type { BookmarkProviderType, BookmarkModelType, ExcludeRuleType } from "@importTypes";
+import { vscode, path, Minimatch } from "@exportLibs";
+import { fnValidateFileName } from "@exportScripts";
+import { fnNotification, fnLogging } from "@exportScripts";
+import { LRUCache, fnIsFileType } from "@exportScripts";
+import type { BookmarkProviderType, BookmarkModelType, ExcludeRuleType } from "@exportTypes";
 
 // -----------------------------------------------------------------------------------------
 export const BookmarkCommand = (
@@ -160,7 +160,7 @@ export const BookmarkCommand = (
 			}
 		}
 		catch (error) {
-			fnLogging(`select`, error instanceof Error ? error.message : String(error), `debug`);
+			fnLogging(`debug`, `select`, error instanceof Error ? error.message : String(error));
 		}
 	};
 
@@ -197,7 +197,7 @@ export const BookmarkCommand = (
 			}
 		}
 		catch (error) {
-			fnLogging(`expand`, `${folderUri.fsPath} ${error instanceof Error ? error.message : String(error)}`, `debug`);
+			fnLogging(`debug`, `expand`, `${folderUri.fsPath} ${error instanceof Error ? error.message : String(error)}`);
 		}
 	};
 
@@ -212,7 +212,7 @@ export const BookmarkCommand = (
 	const registerRefreshCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"simple-bookmark.refreshentry", () => {
-			fnLogging(`select`, `Refresh command executed`, `debug`);
+			fnLogging(`debug`, `select`, `Refresh command executed`);
 			provider.refresh();
 		}
 	);
@@ -227,7 +227,7 @@ export const BookmarkCommand = (
 				const bookmarkName = path.basename(uri.fsPath);
 				return (stat.type === vscode.FileType.Directory || stat.type === vscode.FileType.File)
 					? (await provider.addBookmark(uri.fsPath, bookmarkName), provider.refresh())
-					: fnNotification(`add`, "Only files or folders can be added.", `error`);
+					: fnNotification(`error`, `add`, "Only files or folders can be added.");
 			})()
 			: await (async () => {
 				await vscode.commands.executeCommand("copyFilePath");
@@ -239,9 +239,9 @@ export const BookmarkCommand = (
 						const bookmarkName = path.basename(picked.fsPath);
 						return (stat.type === vscode.FileType.Directory || stat.type === vscode.FileType.File)
 								? (await provider.addBookmark(picked.fsPath, bookmarkName), provider.refresh())
-								: fnNotification(`add`, "Only files or folders can be added.", `error`);
+								: fnNotification(`error`, `add`, "Only files or folders can be added.");
 					})()
-						: fnNotification(`add`, "No file or folder selected in Explorer.", `error`);
+								: fnNotification(`error`, `add`, "No file or folder selected in Explorer.");
 			})();
 		}
 	);
@@ -261,7 +261,7 @@ export const BookmarkCommand = (
 			);
 
 			return itemsToRemove.length === 0
-			? fnNotification(`remove`, "No bookmarks selected to remove.", `error`)
+				? fnNotification(`error`, `remove`, "No bookmarks selected to remove.")
 			: await (async () => {
 				const config = vscode.workspace.getConfiguration("simple-bookmark");
 				const deleteMode = config.get<string>("deleteMode", "ask");
@@ -300,7 +300,7 @@ export const BookmarkCommand = (
 					? (deleteOriginal ? "Bookmark and original file deleted" : "Bookmark deleted")
 					: (deleteOriginal ? `${itemsToRemove.length} bookmarks and original files deleted` : `${itemsToRemove.length} bookmarks deleted`);
 
-				fnNotification(`remove`, successMessage, `info`);
+				fnNotification(`info`, `remove`, successMessage);
 			})();
 		}
 	);
@@ -313,7 +313,7 @@ export const BookmarkCommand = (
 			const target : BookmarkModelType | undefined = item || (selectedBookmarks.length > 0 ? selectedBookmarks[0] : undefined);
 
 			return !target
-			? fnNotification(`rename`, "No bookmark selected to rename.", `error`)
+				? fnNotification(`error`, `rename`, "No bookmark selected to rename.")
 			: await (async () => {
 				const currentName = target.bookmarkMetadata.bookmarkName;
 
@@ -328,7 +328,7 @@ export const BookmarkCommand = (
 					: await (async () => {
 						await provider.renameBookmark(target.originalPath, newName.trim());
 						provider.refresh();
-						fnNotification(`rename`, `renamed ${currentName} → ${newName.trim()}`, `info`);
+						fnNotification(`info`, `rename`, `renamed ${currentName} → ${newName.trim()}`);
 					})();
 			})();
 		}
@@ -350,7 +350,7 @@ export const BookmarkCommand = (
 			);
 
 		return targets.length === 0
-			? fnNotification(`copy`, "No items selected to copy.", `error`)
+				? fnNotification(`error`, `copy`, "No items selected to copy.")
 		: (() => {
 				const dedupMap = new Map<string, BookmarkModelType>();
 				for (const t of targets) {
@@ -360,7 +360,7 @@ export const BookmarkCommand = (
 
 				const available = targets.filter((t) => t.isOriginalAvailable);
 				return available.length === 0
-					? fnNotification(`copy`, "No available original files to copy.", `warn`)
+					? fnNotification(`warn`, `copy`, "No available original files to copy.")
 				: (() => {
 					updateSelectedBookmark(available);
 					provider.copyBookmarks(available);
@@ -375,7 +375,7 @@ export const BookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"simple-bookmark.pastebookmark", async (item? : BookmarkModelType) => {
 			return !provider.hasCopiedItems()
-				? fnNotification(`paste`, "No items to paste.", `error`)
+				? fnNotification(`error`, `paste`, "No items to paste.")
 			: await (async () => {
 				return !item && selectedBookmarks.length === 0
 					? await (async () => {
@@ -395,11 +395,11 @@ export const BookmarkCommand = (
 
 						return targetPath
 							? await (async () => {
-								fnLogging(`paste`, `${targetPath as string}`, `debug`);
+								fnLogging(`debug`, `paste`, `${targetPath as string}`);
 								await provider.pasteItems(targetPath as string);
 								provider.refresh();
 							})()
-							: fnNotification(`paste`, "Select a valid target folder to paste into.", `warn`);
+							: fnNotification(`warn`, `paste`, "Select a valid target folder to paste into.");
 					})();
 			})();
 		}
@@ -411,7 +411,7 @@ export const BookmarkCommand = (
 		"simple-bookmark.pasterootbookmark",
 		async () => {
 			return !provider.hasCopiedItems()
-				? fnNotification(`paste`, "No items to paste.", `error`)
+				? fnNotification(`error`, `paste`, "No items to paste.")
 			: await (async () => {
 				await provider.pasteItemsToRoot();
 				provider.refresh();
@@ -427,7 +427,7 @@ export const BookmarkCommand = (
 			const allItems = await provider.getChildren();
 
 			return !allItems || allItems.length === 0
-				? fnNotification(`remove`, "No bookmarks to remove.", `info`)
+				? fnNotification(`info`, `remove`, "No bookmarks to remove.")
 			: await (async () => {
 				const config = vscode.workspace.getConfiguration("simple-bookmark");
 				const deleteMode = config.get<string>("deleteMode", "ask");
@@ -462,7 +462,7 @@ export const BookmarkCommand = (
 					? `All ${allItems.length} bookmarks and original files deleted`
 					: `All ${allItems.length} bookmarks deleted`;
 
-				fnNotification(`remove`, successMessage, `info`);
+				fnNotification(`info`, `remove`, successMessage);
 			})();
 		}
 	);
@@ -491,7 +491,7 @@ export const BookmarkCommand = (
 
 				return parentPath
 					? (await provider.createFolder(parentPath, folderName.trim()), provider.refresh())
-					: fnNotification(`create`, "Please select a valid parent folder.", `warn`);
+					: fnNotification(`warn`, `create`, "Please select a valid parent folder.");
 			})();
 		}
 	);
@@ -520,7 +520,7 @@ export const BookmarkCommand = (
 
 				return parentPath
 					? (await provider.createFile(parentPath, fileName.trim()), provider.refresh())
-					: fnNotification(`create`, "Please select a valid parent folder.", `warn`);
+					: fnNotification(`warn`, `create`, "Please select a valid parent folder.");
 			})();
 		}
 	);
@@ -530,19 +530,19 @@ export const BookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"simple-bookmark.expandexplorer",
 		async () => {
-				fnLogging(`select`, `registerExpandExplorerCommand`, `debug`);
+				fnLogging(`debug`, `select`, `registerExpandExplorerCommand`);
 
 			const folders = vscode.workspace.workspaceFolders;
 
 			return !folders || folders.length === 0
-					? fnNotification(`select`, "No workspace folder available to expand.", `warn`)
+					? fnNotification(`warn`, `select`, "No workspace folder available to expand.")
 			: await (async () => {
 				await vscode.commands.executeCommand("workbench.view.explorer");
 				excludeRuleCache.clear();
 
 				// 새로운 간소화된 전체 확장 방법 사용
 				await expandAllExplorerFolders();
-				fnNotification(`select`, "Explorer expanded for all workspace folders.", `info`);
+				fnNotification(`info`, `select`, "Explorer expanded for all workspace folders.");
 			})();
 		}
 	);
@@ -552,7 +552,7 @@ export const BookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"simple-bookmark.expandfolder",
 		async (uri : vscode.Uri) => {
-			fnLogging(`expand`, `${uri?.fsPath}`, `debug`);
+			fnLogging(`debug`, `expand`, `${uri?.fsPath}`);
 
 			// URI가 전달되지 않은 경우 (키보드 단축키로 실행한 경우) 현재 활성 편집기의 파일 사용
 			if (!uri) {
@@ -568,7 +568,7 @@ export const BookmarkCommand = (
 						uri = workspaceFolders[0].uri;
 					}
 					else {
-						fnNotification(`select`, "No folder available to expand.", `warn`);
+						fnNotification(`warn`, `select`, "No folder available to expand.");
 						return;
 					}
 				}
@@ -578,7 +578,7 @@ export const BookmarkCommand = (
 				// 폴더인지 확인
 				const stat = await vscode.workspace.fs.stat(uri);
 				if (!(stat.type & vscode.FileType.Directory)) {
-					fnNotification(`select`, `selected item is not a folder ${uri.fsPath}`, `warn`);
+					fnNotification(`warn`, `select`, `selected item is not a folder ${uri.fsPath}`);
 					return;
 				}
 
@@ -587,14 +587,14 @@ export const BookmarkCommand = (
 				await delay(100);
 
 				// 폴더와 모든 하위 폴더를 확장
-				fnLogging(`expand`, `${uri.fsPath}`, `debug`);
+				fnLogging(`debug`, `expand`, `${uri.fsPath}`);
 				await expandFolderRecursively(uri);
 
-				fnNotification(`expand`, `${path.basename(uri.fsPath)}`, `info`);
+				fnNotification(`info`, `expand`, `${path.basename(uri.fsPath)}`);
 			}
 			catch (error) {
-				fnLogging(`expand`, `${error}`, `debug`);
-				fnNotification(`expand`, `${error}`, `error`);
+				fnLogging(`debug`, `expand`, `${error}`);
+				fnNotification(`error`, `expand`, `${error}`);
 			}
 		}
 	);

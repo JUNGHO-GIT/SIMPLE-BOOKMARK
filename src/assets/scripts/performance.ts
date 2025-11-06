@@ -1,4 +1,4 @@
-// assets/scripts/performanceUtil.ts
+// assets/scripts/performance.ts
 
 // LRU 캐시 클래스 ----------------------------------------------------------------------
 // 최근에 사용한 항목을 우선 보존하는 간단한 메모리 캐시입니다.

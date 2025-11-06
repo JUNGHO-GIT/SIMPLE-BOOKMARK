@@ -1,4 +1,4 @@
-// imports/ImportScripts.ts
+// exports/ExportScripts.ts
 
 // -------------------------------------------------------------------------------
 export {
