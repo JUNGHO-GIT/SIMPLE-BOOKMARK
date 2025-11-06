@@ -294,7 +294,6 @@
   },
   "dependencies": {
     "@babel/core": "^7.28.5",
-    "glob": "^11.0.3",
     "minimatch": "^10.1.1",
     "terser": "^5.44.1"
   },
