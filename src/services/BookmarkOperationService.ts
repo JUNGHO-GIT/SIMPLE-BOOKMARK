@@ -72,7 +72,14 @@ export const BookmarkOperationService = (
 				fnLogging(`error`, `copy`, `${source} -> ${target}`);
 				return;
 			}
-			await vscode.workspace.fs.delete(tgtUri, {recursive: true});
+
+			// 대상 폴더가 이미 존재하면 삭제
+			try {
+				await vscode.workspace.fs.delete(tgtUri, {recursive: true});
+			}
+			catch {
+				// 폴더가 없으면 무시하고 계속 진행
+			}
 
 			await vscode.workspace.fs.createDirectory(tgtUri);
 			const entries = await vscode.workspace.fs.readDirectory(srcUri);
