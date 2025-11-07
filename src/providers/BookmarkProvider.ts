@@ -403,11 +403,14 @@ export const BookmarkProvider = (
 			const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(folderPath));
 			for (const [name, type] of entries) {
 				const itemPath = path.join(folderPath, name);
-				type === vscode.FileType.File ? (
-					files.push(itemPath)
-				) : type === vscode.FileType.Directory && (
-					(await collectFilesFromFolder(itemPath)).forEach((f) => files.push(f))
-				);
+				type === vscode.FileType.File
+				? files.push(itemPath)
+				: type === vscode.FileType.Directory && await (async () => {
+					const subFiles = await collectFilesFromFolder(itemPath);
+					for (const f of subFiles) {
+						files.push(f);
+					}
+				})();
 			}
 		}
 		catch (error) {
@@ -425,14 +428,13 @@ export const BookmarkProvider = (
 		: await (async () => {
 			const all = syncService!.getAllBookmarks();
 
+			// 모든 북마크(파일 및 폴더 내 파일)를 파일명으로 매핑
+			// 참고: 동일 파일명이 여러 곳에 있을 경우 마지막 것이 사용됨
 			const nameToOriginalPath = new Map<string, string>();
 			for (const m of all) {
-				m.isFile ? (
-					nameToOriginalPath.set(
-						m.bookmarkName,
-						m.originalPath
-					)
-				) : await (async () => {
+				m.isFile
+				? nameToOriginalPath.set(m.bookmarkName, m.originalPath)
+				: await (async () => {
 					const folderFiles = await collectFilesFromFolder(m.originalPath);
 					for (const filePath of folderFiles) {
 						const fileName = path.basename(filePath);
