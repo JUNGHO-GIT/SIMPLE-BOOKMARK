@@ -396,27 +396,34 @@ export const BookmarkProvider = (
 
 	// 폴더 내 모든 파일 경로를 재귀적으로 수집 --------------------------------------------
 	const collectFilesFromFolder = async (
-		folderPath : string
+		folderPath : string,
+		visited : Set<string> = new Set()
 	) : Promise<string[]> => {
 		const files : string[] = [];
-		try {
-			const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(folderPath));
-			for (const [name, type] of entries) {
-				const itemPath = path.join(folderPath, name);
-				type === vscode.FileType.File
-				? files.push(itemPath)
-				: type === vscode.FileType.Directory && await (async () => {
-					const subFiles = await collectFilesFromFolder(itemPath);
-					for (const f of subFiles) {
-						files.push(f);
-					}
-				})();
+		const normalizedPath = path.resolve(folderPath);
+		
+		// 순환 참조 방지 (심볼릭 링크 등)
+		return visited.has(normalizedPath)
+		? files
+		: await (async () => {
+			try {
+				visited.add(normalizedPath);
+				const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(folderPath));
+				for (const [name, type] of entries) {
+					const itemPath = path.join(folderPath, name);
+					type === vscode.FileType.File
+					? files.push(itemPath)
+					: type === vscode.FileType.Directory && await (async () => {
+						const subFiles = await collectFilesFromFolder(itemPath, visited);
+						files.push(...subFiles);
+					})();
+				}
 			}
-		}
-		catch (error) {
-			fnLogging(`debug`, `paste`, `failed to collect files from ${folderPath} ${error}`);
-		}
-		return files;
+			catch (error) {
+				fnLogging(`debug`, `paste`, `failed to collect files from ${folderPath} ${error}`);
+			}
+			return files;
+		})();
 	};
 
 	// 루트 붙여넣기: 파일명 매칭 → 각 북마크의 실제 경로에 덮어쓰기 -------------------------
