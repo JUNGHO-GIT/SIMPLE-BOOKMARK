@@ -1,4 +1,4 @@
 // exports/ExportProviders.ts
 
 // -------------------------------------------------------------------------------
-export { BookmarkProvider } from "@providers/BookmarkProvider.js";
+export { BookmarkProvider } from "@providers/BookmarkProvider";

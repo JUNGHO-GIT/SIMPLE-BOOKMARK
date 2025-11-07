@@ -5,46 +5,50 @@ const fs = require(`fs`);
 const path = require(`path`);
 const process = require(`process`);
 
-// 상수 정의 ---------------------------------------------------------------------------------
-const PLATFORM_WIN32 = process.platform === `win32`;
-const PACKAGE_JSON_PATH = path.join(process.cwd(), `package.json`);
-const COMMANDS = {
-	pnpm: PLATFORM_WIN32 ? `pnpm.cmd` : `pnpm`,
-	tsc: PLATFORM_WIN32 ? `tsc.cmd` : `tsc`,
-	tscAlias: PLATFORM_WIN32 ? `tsc-alias.cmd` : `tsc-alias`,
-	esbuild: PLATFORM_WIN32 ? `esbuild.cmd` : `esbuild`,
-	vsce: PLATFORM_WIN32 ? `vsce.cmd` : `vsce`
-};
-
 // 로깅 함수 -----------------------------------------------------------------------------------
-const fnLogger = (type=``, ...args) => {
-	type === `info` && (() => {
-		console.log(`[INFO] ${args[0]}`);
-	})();
-	type === `success` && (() => {
-		console.log(`[SUCCESS] ${args[0]}`);
-	})();
-	type === `warn` && (() => {
-		console.warn(`[WARN] ${args[0]}`);
-	})();
-	type === `error` && (() => {
-		console.error(`[ERROR] ${args[0]}`);
-	})();
-	type === `step` && (() => {
-		console.log(`[STEP] ${args[0]} - ${args[1]}`);
-	})();
+const fnLogger = (type=``, message=``) => {
+	const fnFormat = (text=``) => text.trim().replace(/^\s+/gm, ``);
+	const line = `----------------------------------------`;
+	const colors = {
+		line: `\x1b[38;5;214m`,
+		info: `\x1b[36m`,
+		success: `\x1b[32m`,
+		warn: `\x1b[33m`,
+		error: `\x1b[31m`,
+		reset: `\x1b[0m`
+	};
+	const separator = `${colors.line}${line}${colors.reset}`;
+
+	type === `info` && console.log(fnFormat(`
+		${separator}
+		${colors.info}[INFO]${colors.reset} - ${message}
+	`));
+	type === `success` && console.log(fnFormat(`
+		${separator}
+		${colors.success}[SUCCESS]${colors.reset} - ${message}
+	`));
+	type === `warn` && console.log(fnFormat(`
+		${separator}
+		${colors.warn}[WARN]${colors.reset} - ${message}
+	`));
+	type === `error` && console.log(fnFormat(`
+		${separator}
+		${colors.error}[ERROR]${colors.reset} - ${message}
+	`));
 };
 
 // 버전 증가 함수 ------------------------------------------------------------------------------
 const fnIncrementVersion = () => {
-	fnLogger(`step`, `0. 버전 자동 증가`);
+	fnLogger(`info`, `버전 자동 증가 시작`);
 
-	!fs.existsSync(PACKAGE_JSON_PATH) && (() => {
-		fnLogger(`error`, `package.json 파일을 찾을 수 없습니다: ${PACKAGE_JSON_PATH}`);
+	const packageJsonPath = path.join(process.cwd(), `package.json`);
+
+	!fs.existsSync(packageJsonPath) && (() => {
+		fnLogger(`error`, `package.json 파일을 찾을 수 없습니다: ${packageJsonPath}`);
 		process.exit(1);
 	})();
 
-	const packageJson = JSON.parse(fs.readFileSync(PACKAGE_JSON_PATH, `utf8`));
+	const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, `utf8`));
 	const currentVersion = packageJson.version;
 
 	!currentVersion && (() => {
@@ -62,7 +66,7 @@ const fnIncrementVersion = () => {
 	const newVersion = `${major}.${minor}.${patch + 1}`;
 
 	packageJson.version = newVersion;
-	fs.writeFileSync(PACKAGE_JSON_PATH, JSON.stringify(packageJson, null, 2) + `\n`, `utf8`);
+	fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + `\n`, `utf8`);
 
 	fnLogger(`success`, `버전 업데이트: ${currentVersion} → ${newVersion}`);
 	return newVersion;
@@ -70,7 +74,7 @@ const fnIncrementVersion = () => {
 
 // 명령 실행 함수 ------------------------------------------------------------------------------
 const fnRunCommand = (cmd=``, args=[], stepName=``) => {
-	fnLogger(`step`, stepName);
+	fnLogger(`info`, `${stepName} 시작`);
 	fnLogger(`info`, `실행: ${cmd} ${args.join(` `)}`);
 
 	const result = spawnSync(cmd, args, {
@@ -89,31 +93,26 @@ const fnRunCommand = (cmd=``, args=[], stepName=``) => {
 };
 
 // 메인 실행 함수 ------------------------------------------------------------------------------
-const fnVsce = () => {
+(() => {
 	fnLogger(`info`, `VSCE 패키지 빌드 시작`);
-
 	fnIncrementVersion();
-
 	fnRunCommand(
-		COMMANDS.pnpm,
+		`pnpm`,
 		[`add`, `-D`, `esbuild`],
-		`1. esbuild 의존성 설치`
+		`esbuild 의존성 설치`
 	);
-
 	fnRunCommand(
-		COMMANDS.tsc,
+		`tsc`,
 		[`-p`, `.`],
-		`2. TypeScript 컴파일`
+		`TypeScript 컴파일`
 	);
-
 	fnRunCommand(
-		COMMANDS.tscAlias,
+		`tsc-alias`,
 		[`-p`, `tsconfig.json`, `-f`],
-		`3. TypeScript 경로 별칭 처리`
+		`TypeScript 경로 별칭 처리`
 	);
-
 	fnRunCommand(
-		COMMANDS.esbuild,
+		`esbuild`,
 		[
 			`src/extension.ts`,
 			`--bundle`,
@@ -123,19 +122,12 @@ const fnVsce = () => {
 			`--external:vscode`,
 			`--minify`
 		],
-		`4. esbuild 번들링`
+		`esbuild 번들링`
 	);
-
 	fnRunCommand(
-		COMMANDS.vsce,
+		`vsce`,
 		[`package`, `--no-dependencies`],
-		`5. VSCE 패키지 생성`
+		`VSCE 패키지 생성`
 	);
-
 	fnLogger(`success`, `VSCE 패키지 빌드 완료`);
-};
-
-// 실행 ---------------------------------------------------------------------------------------
-(() => {
-	fnVsce();
 })();

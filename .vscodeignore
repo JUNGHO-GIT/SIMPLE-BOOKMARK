@@ -69,3 +69,5 @@
 **/.editorconfig
 **/renovate.json
 **/.releaserc*
+**/pnpm-workspace.yaml
+**/.bookmark/

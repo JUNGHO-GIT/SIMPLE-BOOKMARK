@@ -153,7 +153,7 @@ export const BookmarkOperationService = (
 		})();
 	};
 
-	// 루트 붙여넣기: 파일명 매칭 → 각 북마크의 실제 경로에 덮어쓰기 ----------------------------
+	// 루트 붙여넣기 -------------------------------------------------------------
 	const pasteItemsToRoot = async (
 		copiedItems : vscode.Uri[],
 		nameToOriginalPath : Map<string, string>

@@ -1,5 +1,5 @@
 // exports/ExportServices.ts
 
 // -------------------------------------------------------------------------------
-export { BookmarkOperationService } from "@services/BookmarkOperationService.js";
-export { BookmarkSyncService } from "@services/BookmarkSyncService.js";
+export { BookmarkOperationService } from "@services/BookmarkOperationService";
+export { BookmarkSyncService } from "@services/BookmarkSyncService";

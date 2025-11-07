@@ -1,5 +1,3 @@
-// assets/scripts/notification.ts
-
 import { vscode } from "@exportLibs";
 
 // 콘솔 로깅 출력 ----------------------------------------------------------------------
@@ -28,27 +26,18 @@ export const fnLogging = (
 	`collapse`,
 	value: string,
 ): void => {
-	type === `debug` && (() => {
-		console.debug(
-			`[simple-bookmark] [${key}] ${value}`
-		);
-	})();
-	type === `info` && (() => {
-		console.info(
-			`[simple-bookmark] [${key}] ${value}`
-		);
-	})();
-	type === `warn` && (() => {
-		console.warn(
-			`[simple-bookmark] [${key}] ${value}`
-		);
-	})();
-	type === `error` && (() => {
-		console.error(
-			`[simple-bookmark] [${key}] ${value}`
-		);
-		throw new Error(`[simple-bookmark] [${key}] ${value}`);
-	})();
+	type === `debug` && console.debug(
+		`[simple-bookmark] [${key}] ${value}`
+	);
+	type === `info` && console.info(
+		`[simple-bookmark] [${key}] ${value}`
+	);
+	type === `warn` && console.warn(
+		`[simple-bookmark] [${key}] ${value}`
+	);
+	type === `error` && console.error(
+		`[simple-bookmark] [${key}] ${value}`
+	);
 };
 
 // VS Code 알림 센터 메시지 출력 -------------------------------------------------------
@@ -77,34 +66,47 @@ export const fnNotification = (
 	`collapse`,
 	value: string,
 ): void => {
-	type === `debug` && (() => {
-		vscode.window.showInformationMessage(
-			`[simple-bookmark] [${key}] ${value}`, {
-			modal: false
+	const text = `[simple-bookmark] [${key}] ${value}`;
+	const AUTO_CLOSE_MS = 1000;
+	if (type === `debug` || type === `info`) {
+		void vscode.window.withProgress({
+			location: vscode.ProgressLocation.Notification,
+			title: text,
+			cancellable: false
+		},
+		async (_) => {
+			await new Promise((res) => {
+				setTimeout(res, AUTO_CLOSE_MS);
+			});
 		});
-	})();
-	type === `info` && (() => {
-		setTimeout(() => {
-			vscode.window.showInformationMessage(
-				`[simple-bookmark] [${key}] ${value}`, {
-				modal: false
+		return;
+	}
+	if (type === `warn`) {
+		vscode.window.showWarningMessage(text, { modal: false });
+		void vscode.window.withProgress({
+			location: vscode.ProgressLocation.Notification,
+			title: text,
+			cancellable: false
+		},
+		async (_) => {
+			await new Promise((res) => {
+				setTimeout(res, AUTO_CLOSE_MS);
 			});
-		}, 2000);
-	})();
-	type === `warn` && (() => {
-		setTimeout(() => {
-			vscode.window.showWarningMessage(
-				`[simple-bookmark] [${key}] ${value}`, {
-				modal: false
+		});
+		return;
+	}
+	if (type === `error`) {
+		vscode.window.showErrorMessage(text, { modal: false });
+		void vscode.window.withProgress({
+			location: vscode.ProgressLocation.Notification,
+			title: text,
+			cancellable: false
+		},
+		async (_) => {
+			await new Promise((res) => {
+				setTimeout(res, AUTO_CLOSE_MS);
 			});
-		}, 2000);
-	})();
-	type === `error` && (() => {
-		setTimeout(() => {
-			vscode.window.showErrorMessage(
-				`[simple-bookmark] [${key}] ${value}`, {
-				modal: false
-			});
-		}, 2000);
-	})();
+		});
+		return;
+	}
 };

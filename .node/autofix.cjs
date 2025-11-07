@@ -224,14 +224,13 @@ const fnParseTsPruneOutput = (text=``) => {
 
 	for (const rawLine of lines) {
 		const line = rawLine.trim();
-		line.length === 0 && (() => {
-			continue;
-		})();
-
 		const match = LINE_REGEX.exec(line);
-		(!match || !match.groups) && (() => {
+		if (!match || !match.groups) {
 			continue;
-		})();
+		}
+		if (line.length === 0) {
+			continue;
+		}
 
 		const fileNormalized = path.normalize(match.groups.file);
 		const symbolName = match.groups.name.trim();
@@ -313,9 +312,9 @@ const fnRemoveNamesInExportDeclarations = (sourceFile, targetNames) => {
 
 	for (const exportDecl of exportDeclarations) {
 		const specifiers = exportDecl.getNamedExports();
-		specifiers.length === 0 && (() => {
+		if (specifiers.length === 0) {
 			continue;
-		})();
+		}
 
 		const toRemove = [];
 		for (const spec of specifiers) {
@@ -341,9 +340,9 @@ const fnRemoveLocalDeclarationsByNames = (sourceFile, targetNames) => {
 	for (const varStmt of variableStatements) {
 		const declarations = varStmt.getDeclarations();
 		const toRemove = declarations.filter((decl) => targetNames.has(decl.getName()));
-		toRemove.length === 0 && (() => {
+		if (toRemove.length === 0) {
 			continue;
-		})();
+		}
 
 		toRemove.length === declarations.length ? (
 			varStmt.remove()

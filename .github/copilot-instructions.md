@@ -7,32 +7,29 @@
 - Never fabricate - verify step-by-step, mark unclear parts as "unsure"
 - If speculation needed: state "이것은 추측입니다"
 - Acknowledge and correct errors immediately
-
-## Work Context
 - Korean development environment (may include Korean terms/comments)
-- Enterprise codebase: Java 1.8 legacy system modernization
-- Payment reconciliation and transaction processing
-- Real-time API integration with multiple payment gateways
-- Strict team coding standards and review processes
 
 ## Coding Philosophy
-- Performance first: minimize memory waste/leaks, maximize efficiency
+- PerformanceFirst: minimize memory waste/leaks, maximize efficiency
 - Readability: clear variable names (avoid abbreviations)
 - Consistency: uniform formatting across all projects
 - Maintainability: avoid deeply nested logic, prefer flat structure
-- Function organization: group by logical flow units, not micro-tasks
+- FunctionOrganization: group by logical flow units, not micro-tasks
 - Professional: strict adherence to team conventions
+- StyleGuide: i hate spagetti code like more over 4 pahse indentation etc
 
 ## Code Modification Protocol (MANDATORY)
-- ALWAYS modify and return ENTIRE code
-- Include brief change description at end
+- ALWAYS send it in "code format" so that I can "copy and paste" it
+- ALWAYS modify and return MIDOFIED code ONLY
+- SEND entire code when i request entire code specialiy
+- INCLUDE brief change description at end
 - NEVER modify comments (preserve `// -----------` exactly)
 - NEVER break line before semicolon
 
 # LANGUAGE AND FORMATTING RULES
 
-## Java (v1.8 max)
-- Avoid unnecessary lambda/ternary, prefer traditional constructs
+## Java ( max v1.8)
+- Instead of splitting it into a lot of useless methods, use function interfaces inside each block
 
 ## JavaScript/TypeScript (ES6+)
 - Arrow functions with 'fn' prefix
@@ -41,10 +38,11 @@
 - Object keys: always double quotes ("key": value)
 
 ## Spacing
-- Exactly ONE SPACE around = or :
+- Exactly ONE SPACE around "=" or ":"
 - Clear separation of concerns
 
 ## Control Structures (CRITICAL)
+- **PREFER ternary operators or IIFE over if-else statements** to reduce control flow complexity
 - ALL if/else/try/catch MUST use braces with line breaks
 - Closing brace and else/catch on SEPARATE lines: `}\nelse {`
 - **INCORRECT:**
@@ -84,7 +82,7 @@ or
 		: moment(str)
 ```
 - **CORRECT:**
-```
+```java | javascript | etc
 (!str || str === `today`) ? (
   moment()
 ) : (str === "yesterday") ? (

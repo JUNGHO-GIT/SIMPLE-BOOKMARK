@@ -394,6 +394,38 @@ export const BookmarkProvider = (
 			);
 	};
 
+	// 폴더 내 모든 파일 경로를 재귀적으로 수집 --------------------------------------------
+	const collectFilesFromFolder = async (
+		folderPath : string,
+		visited : Set<string> = new Set()
+	) : Promise<string[]> => {
+		const files : string[] = [];
+		const normalizedPath = path.resolve(folderPath);
+
+		// 순환 참조 방지 (심볼릭 링크 등)
+		return visited.has(normalizedPath)
+		? files
+		: await (async () => {
+			try {
+				visited.add(normalizedPath);
+				const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(folderPath));
+				for (const [name, type] of entries) {
+					const itemPath = path.join(folderPath, name);
+					type === vscode.FileType.File
+					? files.push(itemPath)
+					: type === vscode.FileType.Directory && await (async () => {
+						const subFiles = await collectFilesFromFolder(itemPath, visited);
+						files.push(...subFiles);
+					})();
+				}
+			}
+			catch (error) {
+				fnLogging(`debug`, `paste`, `failed to collect files from ${folderPath} ${error}`);
+			}
+			return files;
+		})();
+	};
+
 	// 루트 붙여넣기: 파일명 매칭 → 각 북마크의 실제 경로에 덮어쓰기 -------------------------
 	const pasteItemsToRoot = async () : Promise<void> => {
 		const ready = !!fileOperationService && !!syncService;
@@ -403,12 +435,19 @@ export const BookmarkProvider = (
 		: await (async () => {
 			const all = syncService!.getAllBookmarks();
 
+			// 모든 북마크(파일 및 폴더 내 파일)를 파일명으로 매핑
+			// 참고: 동일 파일명이 여러 곳에 있을 경우 마지막 것이 사용됨
 			const nameToOriginalPath = new Map<string, string>();
 			for (const m of all) {
-				m.isFile && nameToOriginalPath.set(
-					m.bookmarkName,
-					m.originalPath
-				);
+				m.isFile
+				? nameToOriginalPath.set(m.bookmarkName, m.originalPath)
+				: await (async () => {
+					const folderFiles = await collectFilesFromFolder(m.originalPath);
+					for (const filePath of folderFiles) {
+						const fileName = path.basename(filePath);
+						nameToOriginalPath.set(fileName, filePath);
+					}
+				})();
 			}
 
 			return nameToOriginalPath.size === 0
