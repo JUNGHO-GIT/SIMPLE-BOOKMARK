@@ -70,6 +70,7 @@ export const BookmarkOperationService = (
 			// 대상이 원본 내부일 경우 무한 루프 또는 손상 가능성 있으므로 차단
 			if (isSameFsPath(source, target) || isSubPath(source, target)) {
 				fnLogging(`error`, `copy`, `${source} -> ${target}`);
+				return;
 			}
 			await vscode.workspace.fs.delete(tgtUri, {recursive: true});
 
