@@ -2,7 +2,7 @@
 
 import { vscode, path, Minimatch } from "@exportLibs";
 import { validateFileName } from "@exportScripts";
-import { notify, log } from "@exportScripts";
+import { notify, logging } from "@exportScripts";
 import { LRUCache, isFileType } from "@exportScripts";
 import type { BookmarkProviderType, BookmarkModelType, ExcludeRuleType } from "@exportTypes";
 
@@ -160,7 +160,7 @@ export const BookmarkCommand = (
 			}
 		}
 		catch (error) {
-			log(`debug`, `select`, error instanceof Error ? error.message : String(error));
+			logging(`debug`, `select`, error instanceof Error ? error.message : String(error));
 		}
 	};
 
@@ -197,7 +197,7 @@ export const BookmarkCommand = (
 			}
 		}
 		catch (error) {
-			log(`debug`, `expand`, `${folderUri.fsPath} ${error instanceof Error ? error.message : String(error)}`);
+			logging(`debug`, `expand`, `${folderUri.fsPath} ${error instanceof Error ? error.message : String(error)}`);
 		}
 	};
 
@@ -212,7 +212,7 @@ export const BookmarkCommand = (
 	const registerRefreshCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"simple-bookmark.refreshentry", () => {
-			log(`debug`, `select`, `Refresh command executed`);
+			logging(`debug`, `select`, `Refresh command executed`);
 			provider.refresh();
 		}
 	);
@@ -261,7 +261,7 @@ export const BookmarkCommand = (
 			);
 
 			return itemsToRemove.length === 0
-				? notify(`error`, `remove`, "No bookmarks selected to remove.")
+						? notify(`error`, `remove`, "삭제할 북마크가 선택되지 않았습니다.")
 			: await (async () => {
 				const config = vscode.workspace.getConfiguration("simple-bookmark");
 				const deleteMode = config.get<string>("deleteMode", "ask");
@@ -328,7 +328,7 @@ export const BookmarkCommand = (
 					: await (async () => {
 						await provider.renameBookmark(target.originalPath, newName.trim());
 						provider.refresh();
-						notify(`info`, `rename`, `renamed ${currentName} → ${newName.trim()}`);
+						notify(`info`, `rename`, `Renamed: ${currentName} → ${newName.trim()}`);
 					})();
 			})();
 		}
@@ -375,7 +375,7 @@ export const BookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"simple-bookmark.pastebookmark", async (item? : BookmarkModelType) => {
 			return !provider.hasCopiedItems()
-				? notify(`error`, `paste`, "No items to paste.")
+					? notify(`error`, `paste`, "Nothing to paste: clipboard is empty.")
 			: await (async () => {
 				return !item && selectedBookmarks.length === 0
 					? await (async () => {
@@ -395,7 +395,7 @@ export const BookmarkCommand = (
 
 						return targetPath
 							? await (async () => {
-								log(`debug`, `paste`, `${targetPath as string}`);
+								logging(`debug`, `paste`, `${targetPath as string}`);
 								await provider.pasteItems(targetPath as string);
 								provider.refresh();
 							})()
@@ -411,7 +411,7 @@ export const BookmarkCommand = (
 		"simple-bookmark.pasterootbookmark",
 		async () => {
 			return !provider.hasCopiedItems()
-				? notify(`error`, `paste`, "No items to paste.")
+					? notify(`error`, `paste`, "Nothing to paste: clipboard is empty.")
 			: await (async () => {
 				await provider.pasteItemsToRoot();
 				provider.refresh();
@@ -427,7 +427,7 @@ export const BookmarkCommand = (
 			const allItems = await provider.getChildren();
 
 			return !allItems || allItems.length === 0
-				? notify(`info`, `remove`, "No bookmarks to remove.")
+						? notify(`info`, `remove`, "삭제할 북마크가 없습니다.")
 			: await (async () => {
 				const config = vscode.workspace.getConfiguration("simple-bookmark");
 				const deleteMode = config.get<string>("deleteMode", "ask");
@@ -490,8 +490,8 @@ export const BookmarkCommand = (
 					}))?.[0]?.fsPath;
 
 				return parentPath
-					? (await provider.createFolder(parentPath, folderName.trim()), provider.refresh())
-					: notify(`warn`, `create`, "Please select a valid parent folder.");
+						? (await provider.createFolder(parentPath, folderName.trim()), provider.refresh())
+						: notify(`warn`, `create`, "Select a valid parent folder.");
 			})();
 		}
 	);
@@ -519,8 +519,8 @@ export const BookmarkCommand = (
 					}))?.[0]?.fsPath;
 
 				return parentPath
-					? (await provider.createFile(parentPath, fileName.trim()), provider.refresh())
-					: notify(`warn`, `create`, "Please select a valid parent folder.");
+						? (await provider.createFile(parentPath, fileName.trim()), provider.refresh())
+						: notify(`warn`, `create`, "Select a valid parent folder.");
 			})();
 		}
 	);
@@ -530,19 +530,19 @@ export const BookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"simple-bookmark.expandexplorer",
 		async () => {
-				log(`debug`, `select`, `registerExpandExplorerCommand`);
+				logging(`debug`, `select`, `registerExpandExplorerCommand`);
 
 			const folders = vscode.workspace.workspaceFolders;
 
 			return !folders || folders.length === 0
-					? notify(`warn`, `select`, "No workspace folder available to expand.")
+						? notify(`warn`, `select`, "No workspace folder available to expand.")
 			: await (async () => {
 				await vscode.commands.executeCommand("workbench.view.explorer");
 				excludeRuleCache.clear();
 
 				// 새로운 간소화된 전체 확장 방법 사용
 				await expandAllExplorerFolders();
-				notify(`info`, `select`, "Explorer expanded for all workspace folders.");
+					notify(`info`, `select`, "Explorer expanded for all workspace folders.");
 			})();
 		}
 	);
@@ -552,7 +552,7 @@ export const BookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"simple-bookmark.expandfolder",
 		async (uri : vscode.Uri) => {
-			log(`debug`, `expand`, `${uri?.fsPath}`);
+			logging(`debug`, `expand`, `${uri?.fsPath}`);
 
 			// URI가 전달되지 않은 경우 (키보드 단축키로 실행한 경우) 현재 활성 편집기의 파일 사용
 			if (!uri) {
@@ -568,7 +568,7 @@ export const BookmarkCommand = (
 							uri = workspaceFolders[0].uri;
 						}
 						else {
-							notify(`warn`, `select`, "No folder available to expand.");
+								notify(`warn`, `select`, "No folder available to expand.");
 							return;
 						}
 					}
@@ -578,7 +578,7 @@ export const BookmarkCommand = (
 				// 폴더인지 확인
 				const stat = await vscode.workspace.fs.stat(uri);
 				if (!(stat.type & vscode.FileType.Directory)) {
-					notify(`warn`, `select`, `selected item is not a folder ${uri.fsPath}`);
+						notify(`warn`, `select`, `Selected item is not a folder: ${uri.fsPath}`);
 					return;
 				}
 
@@ -587,13 +587,13 @@ export const BookmarkCommand = (
 				await delay(100);
 
 				// 폴더와 모든 하위 폴더를 확장
-				log(`debug`, `expand`, `${uri.fsPath}`);
+				logging(`debug`, `expand`, `${uri.fsPath}`);
 				await expandFolderRecursively(uri);
 
-				notify(`info`, `expand`, `${path.basename(uri.fsPath)}`);
+					notify(`info`, `expand`, `Expanded: ${path.basename(uri.fsPath)}`);
 			}
 			catch (error) {
-				log(`debug`, `expand`, `${error}`);
+				logging(`debug`, `expand`, `${error}`);
 				notify(`error`, `expand`, `${error}`);
 			}
 		}

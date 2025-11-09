@@ -23,14 +23,11 @@ const logging = (type = ``, ...args) => {
 	type === `error` && (() => {
 		console.error(`[ERROR] ${args[0]}`);
 	})();
-	type === `step` && (() => {
-		console.log(`[STEP] ${args[0]} - ${args[1]}`);
-	})();
 };
 
 // 1. 명령행 인수 파싱 -------------------------------------------------------------------------
 const parseArgs = (argv = []) => {
-	logging(`step`, `1`, `명령행 인수 파싱 시작`);
+	logging(`info`, `1`, `명령행 인수 파싱 시작`);
 
 	const args = {
 		project: `tsconfig.json`,
@@ -126,7 +123,7 @@ const resolveTsPruneBinJs = () => {
 
 // 2. ts-prune 실행 ---------------------------------------------------------------------------
 const runTsPrune = (args = {}) => {
-	logging(`step`, `2`, `ts-prune 실행 시작`);
+	logging(`info`, `2`, `ts-prune 실행 시작`);
 
 	const cliArgs = [`-p`, args.project];
 	args.skipUsedInModule && cliArgs.push(`-u`);
@@ -217,7 +214,7 @@ const runTsPrune = (args = {}) => {
 
 // 3. ts-prune 출력 파싱 -----------------------------------------------------------------------
 const parseTsPruneOutput = (text = ``) => {
-	logging(`step`, `3`, `ts-prune 출력 파싱 시작`);
+	logging(`info`, `3`, `ts-prune 출력 파싱 시작`);
 
 	const output = [];
 	const lines = text.split(/\r?\n/);
@@ -244,7 +241,7 @@ const parseTsPruneOutput = (text = ``) => {
 
 // 4. 경로 필터링 ------------------------------------------------------------------------------
 const filterByPath = (items = [], include = [], exclude = []) => {
-	logging(`step`, `4`, `경로 필터링 시작`);
+	logging(`info`, `4`, `경로 필터링 시작`);
 
 	(include.length === 0 && exclude.length === 0) && (() => {
 		logging(`info`, `필터링 조건 없음, 모든 항목 유지`);
@@ -266,7 +263,7 @@ const filterByPath = (items = [], include = [], exclude = []) => {
 
 // 5. 파일별 그룹화 ----------------------------------------------------------------------------
 const groupByFile = (items = []) => {
-	logging(`step`, `5`, `파일별 그룹화 시작`);
+	logging(`info`, `5`, `파일별 그룹화 시작`);
 
 	const fileMap = new Map();
 	for (const item of items) {
@@ -446,13 +443,13 @@ const processFile = (project, filePath = ``, names, options = {}) => {
 	const filteredItems = filterByPath(parsedItems, args.include, args.exclude);
 	const groupedByFile = groupByFile(filteredItems);
 
-	logging(`step`, `6`, `TypeScript 프로젝트 로드`);
+	logging(`info`, `6`, `TypeScript 프로젝트 로드`);
 	const project = new Project({
 		tsConfigFilePath: path.resolve(process.cwd(), args.project),
 		skipAddingFilesFromTsConfig: false
 	});
 
-	logging(`step`, `7`, `파일 처리 시작`);
+	logging(`info`, `7`, `파일 처리 시작`);
 	const results = [];
 	for (const [file, items] of groupedByFile.entries()) {
 		const nameSet = new Set(items.map((item) => item.name));

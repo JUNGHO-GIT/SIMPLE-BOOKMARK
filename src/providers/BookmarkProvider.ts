@@ -3,7 +3,7 @@
 import { vscode, path } from "@exportLibs";
 import { BookmarkModel } from "@exportModels";
 import { BookmarkOperationService, BookmarkSyncService } from "@exportServices";
-import { notify, getBookmarkPath, log } from "@exportScripts";
+import { notify, getBookmarkPath, logging } from "@exportScripts";
 import { BookmarkStatus } from "@exportTypes";
 import type { BookmarkMetadata, BookmarkModelType } from "@exportTypes";
 import type { BookmarkOperationServiceType, BookmarkSyncServiceType } from "@exportTypes";
@@ -25,7 +25,7 @@ export const BookmarkProvider = (
 	let refreshTimer : NodeJS.Timeout | null = null;
 	setTimeout(() => (
 		initializeBookmarkFolder().catch(
-			(err: any) => log(`error`, `activate`, `${err}`)
+			(err: any) => logging(`error`, `activate`, `${err}`)
 		), 0
 	));
 
@@ -38,19 +38,19 @@ export const BookmarkProvider = (
 		: await (async () => {
 			bookmarkPath = getBookmarkPath(workspaceRoot as string);
 
+			try {
+				await vscode.workspace.fs.stat(vscode.Uri.file(bookmarkPath));
+			}
+			catch {
 				try {
-					await vscode.workspace.fs.stat(vscode.Uri.file(bookmarkPath));
+					await vscode.workspace.fs.createDirectory(vscode.Uri.file(bookmarkPath));
+					notify(`info`, `create`, `${bookmarkPath}`);
 				}
-				catch {
-					try {
-						await vscode.workspace.fs.createDirectory(vscode.Uri.file(bookmarkPath));
-						notify(`info`, `create`, `${bookmarkPath}`);
-					}
-					catch (error) {
-						notify(`error`, `create`, `${error}`);
-						return;
-					}
+				catch (error) {
+					notify(`error`, `create`, `${error}`);
+					return;
 				}
+			}
 
 			bookmarkPath && (
 				syncService = BookmarkSyncService(
@@ -187,6 +187,9 @@ export const BookmarkProvider = (
 				};
 
 				const sysItem = BookmarkModel(virtualMetadata, BookmarkStatus.SYNCED);
+				// 동일한 실제 경로가 트리의 여러 위치(루트 북마크/다른 폴더 하위)에서 동시에 노출될 수 있으므로
+				// TreeItem.id 를 부모 경로를 포함한 고유 값으로 재정의하여 "요소가 이미 등록" 오류를 방지
+				sysItem.id = `child:${folderPath}|${itemPath}`;
 
 				!isFile && (() => {
 					const key = normalizePath(itemPath);
@@ -204,7 +207,7 @@ export const BookmarkProvider = (
 			return items;
 		}
 		catch (error) {
-			log(`error`, `select`, `${folderPath} ${error}`);
+			logging(`error`, `select`, `${folderPath} ${error}`);
 			return [];
 		}
 	};
@@ -217,7 +220,7 @@ export const BookmarkProvider = (
 		const ready = !!syncService;
 
 		return !ready
-			? notify(`error`, `activate`, "service not initialized.")
+			? notify(`error`, `activate`, "Bookmark service is not initialized.")
 			: await (async () => {
 				try {
 					const finalBookmarkName = bookmarkName || path.basename(sourcePath);
@@ -235,7 +238,7 @@ export const BookmarkProvider = (
 						finalBookmarkName
 					);
 					notify(`info`, `overwrite`, `${finalBookmarkName}`);
-					log(`debug`, `add`, `${sourcePath} -> ${finalBookmarkName}`);
+					logging(`debug`, `add`, `${sourcePath} -> ${finalBookmarkName}`);
 				}
 				catch (error) {
 					notify(`error`, `add`, `${error}`);
@@ -251,7 +254,7 @@ export const BookmarkProvider = (
 		const ready = !!syncService;
 
 		return !ready
-			? notify(`error`, `activate`, `service not initialized.`)
+			? notify(`error`, `activate`, `Bookmark service is not initialized.`)
 		: await (async () => {
 			try {
 				await syncService!.removeBookmark(originalPath);
@@ -262,14 +265,14 @@ export const BookmarkProvider = (
 							vscode.Uri.file(originalPath),
 							{recursive : true}
 						);
-						log(`debug`, `remove`, `${originalPath}`);
+						logging(`debug`, `remove`, `${originalPath}`);
 					}
 					// 원본이 이미 없는 경우는 조용히 무시
 					catch {
-						log(`debug`, `remove`, `${originalPath}`);
+						logging(`debug`, `remove`, `${originalPath}`);
 					}
 				})();
-				log(`debug`, `remove`, `${originalPath} ${deleteOriginal ? "with original" : "bookmark only"}`);
+				logging(`debug`, `remove`, `${originalPath} ${deleteOriginal ? "with original" : "bookmark only"}`);
 			}
 			catch (error) {
 				notify(`error`, `remove`, `${error}`);
@@ -286,8 +289,8 @@ export const BookmarkProvider = (
 	) : Promise<void> => {
 		const ready = !!syncService;
 
-		return !ready
-		? notify(`error`, `activate`, `service not initialized.`)
+	return !ready
+	? notify(`error`, `activate`, `Bookmark service is not initialized.`)
 		: await (async () => {
 			const meta = syncService!.getBookmark(originalPath);
 
@@ -297,7 +300,7 @@ export const BookmarkProvider = (
 						originalPath,
 						newName
 					);
-					log(`debug`, `rename`, `${originalPath} -> ${newName}`);
+					logging(`debug`, `rename`, `${originalPath} -> ${newName}`);
 				})()
 				: await (async () => {
 					try {
@@ -349,7 +352,7 @@ export const BookmarkProvider = (
 							vscode.Uri.file(newPath),
 							{overwrite : false}
 						);
-						log(`debug`, `rename`, `${originalPath} -> ${newPath}`);
+						logging(`debug`, `rename`, `${originalPath} -> ${newPath}`);
 					}
 					catch (error) {
 						notify(`error`, `rename`, `${error}`);
@@ -373,10 +376,10 @@ export const BookmarkProvider = (
 		copiedBookmarks = Array.from(dedup.values());
 		copiedBookmarks.length === 1 ? (
 			notify(`info`, `copy`, `${path.basename(copiedBookmarks[0].fsPath)}`),
-			log(`debug`, `copy`, `${path.basename(copiedBookmarks[0].fsPath)}`)
+			logging(`debug`, `copy`, `${path.basename(copiedBookmarks[0].fsPath)}`)
 		) : (
 			notify(`info`, `copy`, `${copiedBookmarks.length}`),
-			log(`debug`, `copy`, `${copiedBookmarks.length}`)
+			logging(`debug`, `copy`, `${copiedBookmarks.length}`)
 		);
 	};
 
@@ -387,7 +390,7 @@ export const BookmarkProvider = (
 		const ready = !!fileOperationService;
 
 		return !ready
-				? notify(`error`, `activate`, "File operation service not initialized.")
+			? notify(`error`, `activate`, "File operation service is not initialized.")
 			: await fileOperationService!.pasteItems(
 				copiedBookmarks,
 				targetPath
@@ -420,7 +423,7 @@ export const BookmarkProvider = (
 				}
 			}
 			catch (error) {
-				log(`debug`, `paste`, `failed to collect files from ${folderPath} ${error}`);
+				logging(`debug`, `paste`, `failed to collect files from ${folderPath} ${error}`);
 			}
 			return files;
 		})();
@@ -430,8 +433,8 @@ export const BookmarkProvider = (
 	const pasteItemsToRoot = async () : Promise<void> => {
 		const ready = !!fileOperationService && !!syncService;
 
-		return !ready
-		? notify(`error`, `activate`, "File operation service not initialized.")
+	return !ready
+	? notify(`error`, `activate`, "File operation service is not initialized.")
 		: await (async () => {
 			const all = syncService!.getAllBookmarks();
 
@@ -468,8 +471,7 @@ export const BookmarkProvider = (
 	) : Promise<void> => {
 		const ready = !!fileOperationService;
 
-		return !ready
-				? notify(`error`, `activate`, "File operation service not initialized.")
+		return !ready ? notify(`error`, `activate`, "File operation service is not initialized.")
 		: await fileOperationService!.createFolder(
 			parentPath,
 			folderName
@@ -483,8 +485,7 @@ export const BookmarkProvider = (
 	) : Promise<void> => {
 		const ready = !!fileOperationService;
 
-		return !ready
-				? notify(`error`, `activate`, "File operation service not initialized.")
+		return !ready ? notify(`error`, `activate`, "File operation service is not initialized.")
 		: await fileOperationService!.createFile(
 			parentPath,
 			fileName

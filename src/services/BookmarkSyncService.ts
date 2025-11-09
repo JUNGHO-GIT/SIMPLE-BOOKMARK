@@ -3,7 +3,7 @@
 import { vscode, path, TextEncoder } from "@exportLibs";
 import type { BookmarkMetadata } from "@exportTypes";
 import { BookmarkStatus } from "@exportTypes";
-import { validateFileName, log } from "@exportScripts";
+import { validateFileName, logging } from "@exportScripts";
 
 // -----------------------------------------------------------------------------------------
 export const BookmarkSyncService = (
@@ -66,7 +66,7 @@ export const BookmarkSyncService = (
 		const saveListener = vscode.workspace.onDidSaveTextDocument(async (document) => {
 			const filePath = document.uri.fsPath;
 			!isBookmarkedFile(filePath) || (
-				log(`debug`, `save`, `${filePath}`),
+				logging(`debug`, `save`, `${filePath}`),
 				await syncBookmark(filePath)
 			);
 		});
@@ -87,7 +87,7 @@ export const BookmarkSyncService = (
 
 			watcher.onDidChange(async (uri) => {
 				uri.fsPath === originalPath && (
-					log(`debug`, `save`, `${originalPath}`),
+					logging(`debug`, `save`, `${originalPath}`),
 					await syncBookmark(originalPath)
 				);
 			});
@@ -131,7 +131,7 @@ export const BookmarkSyncService = (
 						return metadata;
 					}
 					catch (error) {
-						log(`error`, `activate`, error instanceof Error ? error.message : String(error));
+						logging(`error`, `activate`, error instanceof Error ? error.message : String(error));
 						return null;
 					}
 				});
@@ -151,7 +151,7 @@ export const BookmarkSyncService = (
 			})();
 		}
 		catch (error) {
-			log(`error`, `activate`, `${error}`);
+			logging(`error`, `activate`, `${error}`);
 		}
 	};
 
@@ -184,10 +184,10 @@ export const BookmarkSyncService = (
 
 			onSyncUpdate && onSyncUpdate(originalPath, BookmarkStatus.SYNCED);
 			onRefreshNeeded && onRefreshNeeded();
-			log(`debug`, `add`, `${uniqueBookmarkName}`);
+			logging(`debug`, `add`, `${uniqueBookmarkName}`);
 		}
 		catch (error) {
-			log(`error`, `add`, error instanceof Error ? error.message : String(error));
+			logging(`error`, `add`, error instanceof Error ? error.message : String(error));
 		}
 	};
 
@@ -245,7 +245,7 @@ export const BookmarkSyncService = (
 
 			// 파일시스템 rename
 			try {
-				log(`debug`, `rename`, `${metadata!.originalPath} -> ${newOriginalPath}`);
+				logging(`debug`, `rename`, `${metadata!.originalPath} -> ${newOriginalPath}`);
 				await vscode.workspace.fs.rename(
 					vscode.Uri.file(metadata!.originalPath),
 					vscode.Uri.file(newOriginalPath),
@@ -253,11 +253,11 @@ export const BookmarkSyncService = (
 				);
 			}
 			catch (error) {
-				log(`error`, `rename`, error instanceof Error ? error.message : String(error));
+				logging(`error`, `rename`, error instanceof Error ? error.message : String(error));
 			}
 		}
 		else {
-			log(`debug`, `rename`, `${metadata!.originalPath}`);
+			logging(`debug`, `rename`, `${metadata!.originalPath}`);
 		}
 
 		// 메타데이터 파일 rename(이름 변경 반영)
@@ -286,7 +286,7 @@ export const BookmarkSyncService = (
 
 		onSyncUpdate && onSyncUpdate(newOriginalPath, BookmarkStatus.SYNCED);
 		onRefreshNeeded && onRefreshNeeded();
-		log(`debug`, `rename`, `${finalMetaName} / ${newOriginalPath}`);
+		logging(`debug`, `rename`, `${finalMetaName} / ${newOriginalPath}`);
 	};
 
 	// 북마크 제거 ------------------------------------------------------------------------
@@ -303,10 +303,10 @@ export const BookmarkSyncService = (
 				bookmarkedFiles.delete(originalPath);
 				disposeWatcherFor(originalPath);
 				onRefreshNeeded && onRefreshNeeded();
-					log(`debug`, `remove`, `${originalPath}`);
+					logging(`debug`, `remove`, `${originalPath}`);
 			}
 			catch (error) {
-					log(`error`, `remove`, error instanceof Error ? error.message : String(error));
+					logging(`error`, `remove`, error instanceof Error ? error.message : String(error));
 			}
 		})();
 	};
@@ -436,7 +436,7 @@ export const BookmarkSyncService = (
 	// 초기화 ----------------------------------------------------------------------------
 	setupEventListeners();
 	loadExistingBookmarks().catch((err) => {
-		log(`error`, `activate`, err instanceof Error ? err.message : String(err));
+		logging(`error`, `activate`, err instanceof Error ? err.message : String(err));
 	});
 
 	// 99. return -----------------------------------------------------------------------------

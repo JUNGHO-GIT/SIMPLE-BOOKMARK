@@ -286,33 +286,34 @@
   "scripts": {
     "watch": "node .node/swc.cjs --watch",
     "compile": "node .node/swc.cjs --compile",
-    "vsce": "node .node/vsce.cjs",
     "reset": "node .node/reset.cjs --pnpm",
     "gcloud": "node .node/gcloud.cjs --only-git",
+    "vsce": "node .node/vsce.cjs",
     "autofix": "node .node/autofix.cjs"
   },
   "dependencies": {
     "@babel/core": "^7.28.5",
+    "@swc/helpers": "^0.5.17",
     "minimatch": "^10.1.1",
     "terser": "^5.44.1"
   },
   "devDependencies": {
+    "@swc/cli": "^0.7.9",
+    "@swc/core": "^1.15.1",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.10.0",
     "@types/vscode": "^1.105.0",
     "@typescript-eslint/eslint-plugin": "^8.46.3",
     "@typescript-eslint/parser": "^8.46.3",
     "@vscode/test-electron": "^2.5.2",
-    "@vscode/vsce": "^3.6.2",
-    "@swc/cli": "^0.7.9",
-    "@swc/core": "^1.15.0",
+    "@vscode/vsce": "^3.7.0",
     "concurrently": "^9.2.1",
-    "esbuild": "^0.25.12",
+    "esbuild": "^0.26.0",
     "eslint": "^9.39.1",
     "mocha": "^11.7.5",
     "ts-morph": "^27.0.2",
+    "ts-prune": "^0.10.3",
     "tsc-alias": "^1.8.16",
-    "typescript": "^5.9.3",
-    "ts-prune": "^0.10.3"
+    "typescript": "^5.9.3"
   }
 }
