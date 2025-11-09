@@ -4,7 +4,7 @@
   "publisher": "JUNGHO",
   "icon": "logo_image.png",
   "license": "Apache-2.0",
-  "version": "2.4.29",
+  "version": "2.4.30",
   "description": "Real-time synchronized bookmarks for VSCode",
   "main": "./out/extension.js",
   "repository": {
@@ -288,8 +288,8 @@
     "compile": "node .node/swc.cjs --compile",
     "reset": "node .node/reset.cjs --pnpm",
     "gcloud": "node .node/gcloud.cjs --only-git",
-    "vsce": "node .node/vsce.cjs",
-    "autofix": "node .node/autofix.cjs"
+    "autofix": "node .node/autofix.cjs",
+    "vsce": "node .node/vsce.cjs"
   },
   "dependencies": {
     "@babel/core": "^7.28.5",

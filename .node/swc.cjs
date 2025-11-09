@@ -11,7 +11,7 @@ const isCompile = argv.includes(`--compile`);
 const isWatch = argv.includes(`--watch`);
 
 // 로깅 함수 -----------------------------------------------------------------------------------
-const logging = (type=``, message=``) => {
+const logger = (type=``, message=``) => {
 	const format = (text=``) => text.trim().replace(/^\s+/gm, ``);
 	const line = `----------------------------------------`;
 	const colors = {
@@ -44,7 +44,7 @@ const logging = (type=``, message=``) => {
 
 // 명령 실행 함수 ------------------------------------------------------------------------------
 const run = (cmd=``, args=[]) => {
-	logging(`info`, `실행: ${cmd} ${args.join(` `)}`);
+	logger(`info`, `실행: ${cmd} ${args.join(` `)}`);
 
 	const result = spawnSync(cmd, args, {
 		stdio: `inherit`,
@@ -53,34 +53,34 @@ const run = (cmd=``, args=[]) => {
 	});
 
 	result.status !== 0 && (() => {
-		logging(`error`, `${cmd} 실패 (exit code: ${result.status})`);
+		logger(`error`, `${cmd} 실패 (exit code: ${result.status})`);
 		process.exit(result.status || 1);
 	})();
 
-	logging(`success`, `${cmd} 실행 완료`);
+	logger(`success`, `${cmd} 실행 완료`);
 };
 
 // 컴파일 실행 ----------------------------------------------------------------------------------
 const compile = () => {
-	logging(`info`, `컴파일 시작`);
+	logger(`info`, `컴파일 시작`);
 
 	(() => {
 		const outDir = path.join(process.cwd(), `out`);
 		fs.existsSync(outDir) && (() => {
 			fs.rmSync(outDir, { recursive: true, force: true });
-			logging(`info`, `기존 out 디렉토리 삭제 완료`);
+			logger(`info`, `기존 out 디렉토리 삭제 완료`);
 		})();
 	})();
 
 	run(`pnpm`, [`exec`, `swc`, `src`, `-d`, `out`, `--source-maps`, `--strip-leading-paths`]);
 	run(`pnpm`, [`exec`, `tsc-alias`, `-p`, `tsconfig.json`, `-f`]);
 
-	logging(`success`, `컴파일 완료`);
+	logger(`success`, `컴파일 완료`);
 };
 
 // 워치 모드 ----------------------------------------------------------------------------------
 const watch = () => {
-	logging(`info`, `워치 모드 시작`);
+	logger(`info`, `워치 모드 시작`);
 
 	const swcProc = spawn(`pnpm`, [`exec`, `swc`, `src`, `-d`, `out`, `--source-maps`, `--strip-leading-paths`, `--watch`], {
 		stdio: `inherit`,
@@ -95,7 +95,7 @@ const watch = () => {
 	});
 
 	const cleanup = () => {
-		logging(`info`, `워치 모드 종료 중...`);
+		logger(`info`, `워치 모드 종료 중...`);
 		swcProc.kill();
 		aliasProc.kill();
 		process.exit(0);
@@ -105,19 +105,19 @@ const watch = () => {
 	process.on(`SIGTERM`, cleanup);
 
 	swcProc.on(`close`, (code) => {
-		code !== 0 && logging(`warn`, `swc 종료 (exit code: ${code})`);
+		code !== 0 && logger(`warn`, `swc 종료 (exit code: ${code})`);
 	});
 
 	aliasProc.on(`close`, (code) => {
-		code !== 0 && logging(`warn`, `tsc-alias 종료 (exit code: ${code})`);
+		code !== 0 && logger(`warn`, `tsc-alias 종료 (exit code: ${code})`);
 	});
 
-	logging(`success`, `워치 모드 실행 중`);
+	logger(`success`, `워치 모드 실행 중`);
 };
 
 // 실행 ---------------------------------------------------------------------------------------
 (() => {
-	logging(`info`, `스크립트 실행: swc.cjs (인자: ${argv.join(` `) || `none`})`);
+	logger(`info`, `스크립트 실행: swc.cjs (인자: ${argv.join(` `) || `none`})`);
 
 	try {
 		isCompile ? (() => {
@@ -125,12 +125,12 @@ const watch = () => {
 		})() : isWatch ? (() => {
 			watch();
 		})() : (() => {
-			logging(`error`, `올바른 인자를 사용하세요: --compile 또는 --watch`);
+			logger(`error`, `올바른 인자를 사용하세요: --compile 또는 --watch`);
 			process.exit(1);
 		})();
 	}
 	catch (e) {
-		logging(`error`, `스크립트 실행 실패: ${e.message}`);
+		logger(`error`, `스크립트 실행 실패: ${e.message}`);
 		process.exit(1);
 	}
 })();

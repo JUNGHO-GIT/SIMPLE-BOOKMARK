@@ -1,7 +1,7 @@
 // extension.ts
 
 import { vscode } from "@exportLibs";
-import { notify, logging } from "@exportScripts";
+import { notify, logger } from "@exportScripts";
 import { BookmarkProvider } from "@exportProviders";
 import { BookmarkCommand } from "@exportCommands";
 import type { BookmarkProviderType, BookmarkCommandType, BookmarkModelType } from "@exportTypes";
@@ -10,7 +10,7 @@ import type { BookmarkProviderType, BookmarkCommandType, BookmarkModelType } fro
 export const activate = (
 	context: vscode.ExtensionContext
 ): void => {
-	logging(`debug`, `activate`, ``);
+	logger(`debug`, `activate`, ``);
 	const workspaceRoot = (
 		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
@@ -19,7 +19,7 @@ export const activate = (
 
 	!workspaceRoot && (
 		notify(`warn`, `activate`, `requires an open workspace to function properly.`),
-		logging(`debug`, `activate`, `no workspace`)
+		logger(`debug`, `activate`, `no workspace`)
 	);
 
 	const provider = BookmarkProvider(workspaceRoot);
@@ -53,7 +53,7 @@ export const activate = (
 // 2. deactivate ---------------------------------------------------------------------------------
 export const deactivate = (
 ): void => {
-	logging(`debug`, `deactivate`, ``);
+	logger(`debug`, `deactivate`, ``);
 };
 
 // 3. setup ---------------------------------------------------------------------------------------
@@ -70,7 +70,7 @@ const setupAdditionalListeners = (
 	const selListener = treeView.onDidChangeSelection(e => {
 		selectionTimer && clearTimeout(selectionTimer);
 		selectionTimer = setTimeout(() => {
-			logging(`debug`, `select`, `${e.selection.length}`);
+			logger(`debug`, `select`, `${e.selection.length}`);
 			commandManager.updateSelectedBookmark(e.selection as BookmarkModelType[]);
 			selectionTimer = null;
 		}, 50);
@@ -79,7 +79,7 @@ const setupAdditionalListeners = (
 	const workspaceListener = vscode.workspace.onDidChangeWorkspaceFolders(() => {
 		workspaceTimer && clearTimeout(workspaceTimer);
 		workspaceTimer = setTimeout(() => {
-			logging(`debug`, `activate`, `workspace changed`);
+			logger(`debug`, `activate`, `workspace changed`);
 			notify(`info`, `activate`, `Bookmarks may need to be refreshed.`);
 			provider.refresh();
 			workspaceTimer = null;
@@ -90,7 +90,7 @@ const setupAdditionalListeners = (
 		(e.affectsConfiguration("simple-bookmark") || e.affectsConfiguration("files.exclude")) && (() => {
 			configTimer && clearTimeout(configTimer);
 				configTimer = setTimeout(() => {
-					logging(`debug`, `activate`, `configuration changed`);
+					logger(`debug`, `activate`, `configuration changed`);
 				provider.refresh();
 				configTimer = null;
 			}, 150);

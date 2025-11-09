@@ -1,7 +1,7 @@
-// assets/scripts/logging.ts
+// assets/scripts/logger.ts
 
 // -----------------------------------------------------------------------------------------
-export const logging = (
+export const logger = (
 	type:
 	`debug` |
 	`info` |

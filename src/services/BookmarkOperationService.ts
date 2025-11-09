@@ -2,7 +2,7 @@
 
 import { vscode, path } from "@exportLibs";
 import type { BookmarkSyncServiceType } from "@exportTypes";
-import { validateFileName, notify, logging } from "@exportScripts";
+import { validateFileName, notify, logger } from "@exportScripts";
 
 // -----------------------------------------------------------------------------------------
 export const BookmarkOperationService = (
@@ -11,8 +11,8 @@ export const BookmarkOperationService = (
 ) => {
 
 	// -----------------------------------------------------------------------------------------
-	logging(`debug`, `activate`, `${bookmarkPath}`);
-	logging(`debug`, `activate`, `syncService initialized`);
+	logger(`debug`, `activate`, `${bookmarkPath}`);
+	logger(`debug`, `activate`, `syncService initialized`);
 
 	// 모든 파일 경로(flat) 목록을 반환 --------------------------------------------------------
 	const flattenToFiles = async (uri: vscode.Uri): Promise<string[]> => {
@@ -69,7 +69,7 @@ export const BookmarkOperationService = (
 
 			// 대상이 원본 내부일 경우 무한 루프 또는 손상 가능성 있으므로 차단
 			if (isSameFsPath(source, target) || isSubPath(source, target)) {
-				logging(`error`, `copy`, `${source} -> ${target}`);
+				logger(`error`, `copy`, `${source} -> ${target}`);
 			}
 			await vscode.workspace.fs.delete(tgtUri, {recursive: true});
 
@@ -107,7 +107,7 @@ export const BookmarkOperationService = (
 				const isSame = isSameFsPath(item.fsPath, targetFile);
 
 				isSame
-				? logging(`debug`, `paste`, `${item.fsPath}`)
+				? logger(`debug`, `paste`, `${item.fsPath}`)
 				: await (async () => {
 					try {
 						// 소스 정보 확인
@@ -149,7 +149,7 @@ export const BookmarkOperationService = (
 			? "1 item pasted (overwritten)"
 			: `${pasteCount} items pasted (overwritten)`;
 			notify(`info`, `paste`, messageValue);
-			logging(`debug`, `paste`, `${pasteCount}`);
+			logger(`debug`, `paste`, `${pasteCount}`);
 		})();
 	};
 
@@ -180,7 +180,7 @@ export const BookmarkOperationService = (
 				!realTarget
 				? skipped.push(fileName)
 				: (isSameFsPath(src, realTarget)
-					? logging(`debug`, `paste`, `${src}`)
+					? logger(`debug`, `paste`, `${src}`)
 					: await (async () => {
 						try {
 							// 대상 파일이 존재하면 삭제
@@ -224,10 +224,10 @@ export const BookmarkOperationService = (
 			try {
 				await vscode.workspace.fs.delete(item, {recursive : true});
 				deleteCount++;
-				logging(`debug`, `remove`, `${item.fsPath}`);
+				logger(`debug`, `remove`, `${item.fsPath}`);
 			}
 			catch (error) {
-				logging(`error`, `remove`, `${item.fsPath} ${error}`);
+				logger(`error`, `remove`, `${item.fsPath} ${error}`);
 			}
 		}
 
@@ -262,7 +262,7 @@ export const BookmarkOperationService = (
 			: await (async () => {
 				await vscode.workspace.fs.createDirectory(folderUri);
 						notify(`info`, `create`, `Folder created at original location: ${folderName}`);
-						logging(`debug`, `create`, `${folderPath}`);
+						logger(`debug`, `create`, `${folderPath}`);
 			})();
 		})();
 	};
@@ -291,14 +291,14 @@ export const BookmarkOperationService = (
 			: await (async () => {
 				await vscode.workspace.fs.writeFile(fileUri, new Uint8Array(0));
 						notify(`info`, `create`, `File created: ${fileName}`);
-						logging(`debug`, `create`, `${filePath}`);
+						logger(`debug`, `create`, `${filePath}`);
 
 				try {
 					const document = await vscode.workspace.openTextDocument(fileUri);
 					await vscode.window.showTextDocument(document);
 				}
 				catch (error) {
-					logging(`error`, `create`, `${fileName} ${error}`);
+					logger(`error`, `create`, `${fileName} ${error}`);
 				}
 			})();
 		})();

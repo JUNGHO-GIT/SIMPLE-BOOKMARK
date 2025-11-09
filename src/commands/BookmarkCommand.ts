@@ -2,7 +2,7 @@
 
 import { vscode, path, Minimatch } from "@exportLibs";
 import { validateFileName } from "@exportScripts";
-import { notify, logging } from "@exportScripts";
+import { notify, logger } from "@exportScripts";
 import { LRUCache, isFileType } from "@exportScripts";
 import type { BookmarkProviderType, BookmarkModelType, ExcludeRuleType } from "@exportTypes";
 
@@ -160,7 +160,7 @@ export const BookmarkCommand = (
 			}
 		}
 		catch (error) {
-			logging(`debug`, `select`, error instanceof Error ? error.message : String(error));
+			logger(`debug`, `select`, error instanceof Error ? error.message : String(error));
 		}
 	};
 
@@ -197,7 +197,7 @@ export const BookmarkCommand = (
 			}
 		}
 		catch (error) {
-			logging(`debug`, `expand`, `${folderUri.fsPath} ${error instanceof Error ? error.message : String(error)}`);
+			logger(`debug`, `expand`, `${folderUri.fsPath} ${error instanceof Error ? error.message : String(error)}`);
 		}
 	};
 
@@ -212,7 +212,7 @@ export const BookmarkCommand = (
 	const registerRefreshCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"simple-bookmark.refreshentry", () => {
-			logging(`debug`, `select`, `Refresh command executed`);
+			logger(`debug`, `select`, `Refresh command executed`);
 			provider.refresh();
 		}
 	);
@@ -395,7 +395,7 @@ export const BookmarkCommand = (
 
 						return targetPath
 							? await (async () => {
-								logging(`debug`, `paste`, `${targetPath as string}`);
+								logger(`debug`, `paste`, `${targetPath as string}`);
 								await provider.pasteItems(targetPath as string);
 								provider.refresh();
 							})()
@@ -530,7 +530,7 @@ export const BookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"simple-bookmark.expandexplorer",
 		async () => {
-				logging(`debug`, `select`, `registerExpandExplorerCommand`);
+				logger(`debug`, `select`, `registerExpandExplorerCommand`);
 
 			const folders = vscode.workspace.workspaceFolders;
 
@@ -552,7 +552,7 @@ export const BookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"simple-bookmark.expandfolder",
 		async (uri : vscode.Uri) => {
-			logging(`debug`, `expand`, `${uri?.fsPath}`);
+			logger(`debug`, `expand`, `${uri?.fsPath}`);
 
 			// URI가 전달되지 않은 경우 (키보드 단축키로 실행한 경우) 현재 활성 편집기의 파일 사용
 			if (!uri) {
@@ -587,13 +587,13 @@ export const BookmarkCommand = (
 				await delay(100);
 
 				// 폴더와 모든 하위 폴더를 확장
-				logging(`debug`, `expand`, `${uri.fsPath}`);
+				logger(`debug`, `expand`, `${uri.fsPath}`);
 				await expandFolderRecursively(uri);
 
 					notify(`info`, `expand`, `Expanded: ${path.basename(uri.fsPath)}`);
 			}
 			catch (error) {
-				logging(`debug`, `expand`, `${error}`);
+				logger(`debug`, `expand`, `${error}`);
 				notify(`error`, `expand`, `${error}`);
 			}
 		}

@@ -6,7 +6,7 @@ const path = require(`path`);
 const process = require(`process`);
 
 // 로깅 함수 -----------------------------------------------------------------------------------
-const logging = (type=``, message=``) => {
+const logger = (type=``, message=``) => {
 	const format = (text=``) => text.trim().replace(/^\s+/gm, ``);
 	const line = `----------------------------------------`;
 	const colors = {
@@ -39,12 +39,12 @@ const logging = (type=``, message=``) => {
 
 // 버전 증가 함수 ------------------------------------------------------------------------------
 const incrementVersion = () => {
-	logging(`info`, `버전 자동 증가 시작`);
+	logger(`info`, `버전 자동 증가 시작`);
 
 	const packageJsonPath = path.join(process.cwd(), `package.json`);
 
 	!fs.existsSync(packageJsonPath) && (() => {
-		logging(`error`, `package.json 파일을 찾을 수 없습니다: ${packageJsonPath}`);
+		logger(`error`, `package.json 파일을 찾을 수 없습니다: ${packageJsonPath}`);
 		process.exit(1);
 	})();
 
@@ -52,13 +52,13 @@ const incrementVersion = () => {
 	const currentVersion = packageJson.version;
 
 	!currentVersion && (() => {
-		logging(`error`, `package.json에 version 필드가 없습니다`);
+		logger(`error`, `package.json에 version 필드가 없습니다`);
 		process.exit(1);
 	})();
 
 	const versionParts = currentVersion.split(`.`);
 	versionParts.length !== 3 && (() => {
-		logging(`error`, `올바르지 않은 버전 형식입니다: ${currentVersion}`);
+		logger(`error`, `올바르지 않은 버전 형식입니다: ${currentVersion}`);
 		process.exit(1);
 	})();
 
@@ -68,14 +68,14 @@ const incrementVersion = () => {
 	packageJson.version = newVersion;
 	fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + `\n`, `utf8`);
 
-	logging(`success`, `버전 업데이트: ${currentVersion} → ${newVersion}`);
+	logger(`success`, `버전 업데이트: ${currentVersion} → ${newVersion}`);
 	return newVersion;
 };
 
 // 명령 실행 함수 ------------------------------------------------------------------------------
 const runCommand = (cmd=``, args=[], stepName=``) => {
-	logging(`info`, `${stepName} 시작`);
-	logging(`info`, `실행: ${cmd} ${args.join(` `)}`);
+	logger(`info`, `${stepName} 시작`);
+	logger(`info`, `실행: ${cmd} ${args.join(` `)}`);
 
 	const result = spawnSync(cmd, args, {
 		stdio: `inherit`,
@@ -84,17 +84,17 @@ const runCommand = (cmd=``, args=[], stepName=``) => {
 	});
 
 	result.status !== 0 && (() => {
-		logging(`error`, `${stepName} 실패 (exit code: ${result.status})`);
+		logger(`error`, `${stepName} 실패 (exit code: ${result.status})`);
 		process.exit(1);
 	})();
 
-	logging(`success`, `${stepName} 완료`);
+	logger(`success`, `${stepName} 완료`);
 	return result;
 };
 
 // 메인 실행 함수 ------------------------------------------------------------------------------
 (() => {
-	logging(`info`, `VSCE 패키지 빌드 시작`);
+	logger(`info`, `VSCE 패키지 빌드 시작`);
 	incrementVersion();
 	runCommand(
 		`pnpm`,
@@ -129,5 +129,5 @@ const runCommand = (cmd=``, args=[], stepName=``) => {
 		[`package`, `--no-dependencies`],
 		`VSCE 패키지 생성`
 	);
-	logging(`success`, `VSCE 패키지 빌드 완료`);
+	logger(`success`, `VSCE 패키지 빌드 완료`);
 })();

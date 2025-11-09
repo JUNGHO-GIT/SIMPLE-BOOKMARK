@@ -3,7 +3,7 @@
 import { vscode, path } from "@exportLibs";
 import { BookmarkModel } from "@exportModels";
 import { BookmarkOperationService, BookmarkSyncService } from "@exportServices";
-import { notify, getBookmarkPath, logging } from "@exportScripts";
+import { notify, getBookmarkPath, logger } from "@exportScripts";
 import { BookmarkStatus } from "@exportTypes";
 import type { BookmarkMetadata, BookmarkModelType } from "@exportTypes";
 import type { BookmarkOperationServiceType, BookmarkSyncServiceType } from "@exportTypes";
@@ -25,7 +25,7 @@ export const BookmarkProvider = (
 	let refreshTimer : NodeJS.Timeout | null = null;
 	setTimeout(() => (
 		initializeBookmarkFolder().catch(
-			(err: any) => logging(`error`, `activate`, `${err}`)
+			(err: any) => logger(`error`, `activate`, `${err}`)
 		), 0
 	));
 
@@ -207,7 +207,7 @@ export const BookmarkProvider = (
 			return items;
 		}
 		catch (error) {
-			logging(`error`, `select`, `${folderPath} ${error}`);
+			logger(`error`, `select`, `${folderPath} ${error}`);
 			return [];
 		}
 	};
@@ -238,7 +238,7 @@ export const BookmarkProvider = (
 						finalBookmarkName
 					);
 					notify(`info`, `overwrite`, `${finalBookmarkName}`);
-					logging(`debug`, `add`, `${sourcePath} -> ${finalBookmarkName}`);
+					logger(`debug`, `add`, `${sourcePath} -> ${finalBookmarkName}`);
 				}
 				catch (error) {
 					notify(`error`, `add`, `${error}`);
@@ -265,14 +265,14 @@ export const BookmarkProvider = (
 							vscode.Uri.file(originalPath),
 							{recursive : true}
 						);
-						logging(`debug`, `remove`, `${originalPath}`);
+						logger(`debug`, `remove`, `${originalPath}`);
 					}
 					// 원본이 이미 없는 경우는 조용히 무시
 					catch {
-						logging(`debug`, `remove`, `${originalPath}`);
+						logger(`debug`, `remove`, `${originalPath}`);
 					}
 				})();
-				logging(`debug`, `remove`, `${originalPath} ${deleteOriginal ? "with original" : "bookmark only"}`);
+				logger(`debug`, `remove`, `${originalPath} ${deleteOriginal ? "with original" : "bookmark only"}`);
 			}
 			catch (error) {
 				notify(`error`, `remove`, `${error}`);
@@ -300,7 +300,7 @@ export const BookmarkProvider = (
 						originalPath,
 						newName
 					);
-					logging(`debug`, `rename`, `${originalPath} -> ${newName}`);
+					logger(`debug`, `rename`, `${originalPath} -> ${newName}`);
 				})()
 				: await (async () => {
 					try {
@@ -352,7 +352,7 @@ export const BookmarkProvider = (
 							vscode.Uri.file(newPath),
 							{overwrite : false}
 						);
-						logging(`debug`, `rename`, `${originalPath} -> ${newPath}`);
+						logger(`debug`, `rename`, `${originalPath} -> ${newPath}`);
 					}
 					catch (error) {
 						notify(`error`, `rename`, `${error}`);
@@ -376,10 +376,10 @@ export const BookmarkProvider = (
 		copiedBookmarks = Array.from(dedup.values());
 		copiedBookmarks.length === 1 ? (
 			notify(`info`, `copy`, `${path.basename(copiedBookmarks[0].fsPath)}`),
-			logging(`debug`, `copy`, `${path.basename(copiedBookmarks[0].fsPath)}`)
+			logger(`debug`, `copy`, `${path.basename(copiedBookmarks[0].fsPath)}`)
 		) : (
 			notify(`info`, `copy`, `${copiedBookmarks.length}`),
-			logging(`debug`, `copy`, `${copiedBookmarks.length}`)
+			logger(`debug`, `copy`, `${copiedBookmarks.length}`)
 		);
 	};
 
@@ -423,7 +423,7 @@ export const BookmarkProvider = (
 				}
 			}
 			catch (error) {
-				logging(`debug`, `paste`, `failed to collect files from ${folderPath} ${error}`);
+				logger(`debug`, `paste`, `failed to collect files from ${folderPath} ${error}`);
 			}
 			return files;
 		})();
