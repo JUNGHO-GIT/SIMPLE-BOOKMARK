@@ -2,7 +2,7 @@
 
 import { vscode, path } from "@exportLibs";
 import type { BookmarkSyncServiceType } from "@exportTypes";
-import { fnValidateFileName, fnNotification, fnLogging } from "@exportScripts";
+import { validateFileName, notify, log } from "@exportScripts";
 
 // -----------------------------------------------------------------------------------------
 export const BookmarkOperationService = (
@@ -11,8 +11,8 @@ export const BookmarkOperationService = (
 ) => {
 
 	// -----------------------------------------------------------------------------------------
-	fnLogging(`debug`, `activate`, `${bookmarkPath}`);
-	fnLogging(`debug`, `activate`, `syncService initialized`);
+	log(`debug`, `activate`, `${bookmarkPath}`);
+	log(`debug`, `activate`, `syncService initialized`);
 
 	// 모든 파일 경로(flat) 목록을 반환 --------------------------------------------------------
 	const flattenToFiles = async (uri: vscode.Uri): Promise<string[]> => {
@@ -69,7 +69,7 @@ export const BookmarkOperationService = (
 
 			// 대상이 원본 내부일 경우 무한 루프 또는 손상 가능성 있으므로 차단
 			if (isSameFsPath(source, target) || isSubPath(source, target)) {
-				fnLogging(`error`, `copy`, `${source} -> ${target}`);
+				log(`error`, `copy`, `${source} -> ${target}`);
 			}
 			await vscode.workspace.fs.delete(tgtUri, {recursive: true});
 
@@ -94,7 +94,7 @@ export const BookmarkOperationService = (
 		const proceed = copiedItems.length > 0;
 
 		return !proceed
-			? fnNotification(`error`, `paste`, "No items to paste.")
+			? notify(`error`, `paste`, "No items to paste.")
 		: await (async () => {
 			let pasteCount = 0;
 
@@ -107,7 +107,7 @@ export const BookmarkOperationService = (
 				const isSame = isSameFsPath(item.fsPath, targetFile);
 
 				isSame
-				? fnLogging(`debug`, `paste`, `${item.fsPath}`)
+				? log(`debug`, `paste`, `${item.fsPath}`)
 				: await (async () => {
 					try {
 						// 소스 정보 확인
@@ -116,13 +116,13 @@ export const BookmarkOperationService = (
 							srcStat = await vscode.workspace.fs.stat(item);
 						}
 						catch (e) {
-							fnNotification(`error`, `paste`, `source missing or inaccessible ${item.fsPath}`);
+							notify(`error`, `paste`, `source missing or inaccessible ${item.fsPath}`);
 							return;
 						}
 
 						// 폴더를 자기 자신 또는 하위 폴더로 붙여넣는 경우 차단
 						if (srcStat.type === vscode.FileType.Directory && isSubPath(item.fsPath, targetFile)) {
-							fnNotification(`error`, `paste`, `cannot paste folder into itself or its subfolder ${fileName}`);
+							notify(`error`, `paste`, `cannot paste folder into itself or its subfolder ${fileName}`);
 							return;
 						}
 
@@ -140,7 +140,7 @@ export const BookmarkOperationService = (
 						pasteCount++;
 					}
 					catch (error) {
-						fnNotification(`error`, `paste`, `paste failed for ${fileName} ${error}`);
+						notify(`error`, `paste`, `paste failed for ${fileName} ${error}`);
 					}
 				})();
 			}
@@ -148,8 +148,8 @@ export const BookmarkOperationService = (
 			const messageValue = pasteCount === 1
 			? "Item pasted (overwritten)"
 			: `${pasteCount} items pasted (overwritten)`;
-			fnNotification(`info`, `paste`, messageValue);
-			fnLogging(`debug`, `paste`, `${pasteCount}`);
+			notify(`info`, `paste`, messageValue);
+			log(`debug`, `paste`, `${pasteCount}`);
 		})();
 	};
 
@@ -161,7 +161,7 @@ export const BookmarkOperationService = (
 		const proceed = copiedItems.length > 0;
 
 		return !proceed
-			? fnNotification(`error`, `paste`, "No items to paste.")
+			? notify(`error`, `paste`, "No items to paste.")
 		: await (async () => {
 
 			const srcFilesSet = new Set<string>();
@@ -180,7 +180,7 @@ export const BookmarkOperationService = (
 				!realTarget
 				? skipped.push(fileName)
 				: (isSameFsPath(src, realTarget)
-					? fnLogging(`debug`, `paste`, `${src}`)
+					? log(`debug`, `paste`, `${src}`)
 					: await (async () => {
 						try {
 							// 대상 파일이 존재하면 삭제
@@ -197,7 +197,7 @@ export const BookmarkOperationService = (
 							overwriteCount++;
 						}
 						catch (error) {
-							fnNotification(`error`, `paste`, `root overwrite failed for ${fileName} ${error}`);
+							notify(`error`, `paste`, `root overwrite failed for ${fileName} ${error}`);
 						}
 					})()
 				);
@@ -205,12 +205,12 @@ export const BookmarkOperationService = (
 
 			overwriteCount > 0 && (
 				overwriteCount === 1 ? (
-					fnNotification(`info`, `paste`, `1 file overwritten to original targets`)
+					notify(`info`, `paste`, `1 file overwritten to original targets`)
 				) : (
-					fnNotification(`info`, `paste`, `${overwriteCount} files overwritten to original targets`)
+					notify(`info`, `paste`, `${overwriteCount} files overwritten to original targets`)
 				)
 			);
-			skipped.length > 0 && fnNotification(`warn`, `paste`, `${skipped.length} files skipped (non-matching names)`);
+		skipped.length > 0 && notify(`warn`, `paste`, `${skipped.length} files skipped (non-matching names)`);
 		})();
 	};
 
@@ -224,10 +224,10 @@ export const BookmarkOperationService = (
 			try {
 				await vscode.workspace.fs.delete(item, {recursive : true});
 				deleteCount++;
-				fnLogging(`debug`, `remove`, `${item.fsPath}`);
+				log(`debug`, `remove`, `${item.fsPath}`);
 			}
 			catch (error) {
-				fnLogging(`error`, `remove`, `${item.fsPath} ${error}`);
+				log(`error`, `remove`, `${item.fsPath} ${error}`);
 			}
 		}
 
@@ -235,7 +235,7 @@ export const BookmarkOperationService = (
 		? "Original file deleted"
 		: `${deleteCount}`;
 
-		fnNotification(`info`, `remove`, successValue);
+		notify(`info`, `remove`, successValue);
 	};
 
 	// 실제 위치에 새 폴더 생성 -------------------------------------------------------------
@@ -243,10 +243,10 @@ export const BookmarkOperationService = (
 		parentPath : string,
 		folderName : string
 	) : Promise<void> => {
-		const error = fnValidateFileName(folderName);
+		const error = validateFileName(folderName);
 
 		return error
-			? void fnNotification(`error`, `create`, `${error}`)
+			? void notify(`error`, `create`, `${error}`)
 		: await (async () => {
 			const folderPath = path.join(parentPath, folderName);
 			const folderUri = vscode.Uri.file(folderPath);
@@ -258,11 +258,11 @@ export const BookmarkOperationService = (
 				exists = false;
 			}
 			exists
-					? fnNotification(`warn`, `create`, `folder already exists ${folderName}`)
+					? notify(`warn`, `create`, `folder already exists ${folderName}`)
 			: await (async () => {
 				await vscode.workspace.fs.createDirectory(folderUri);
-						fnNotification(`info`, `create`, `folder created in original location ${folderName}`);
-						fnLogging(`debug`, `create`, `${folderPath}`);
+						notify(`info`, `create`, `folder created in original location ${folderName}`);
+						log(`debug`, `create`, `${folderPath}`);
 			})();
 		})();
 	};
@@ -272,10 +272,10 @@ export const BookmarkOperationService = (
 		parentPath : string,
 		fileName : string
 	) : Promise<void> => {
-		const error = fnValidateFileName(fileName);
+		const error = validateFileName(fileName);
 
 		return error
-			? void fnNotification(`error`, `create`, `${error}`)
+			? void notify(`error`, `create`, `${error}`)
 		: await (async () => {
 			const filePath = path.join(parentPath, fileName);
 			const fileUri = vscode.Uri.file(filePath);
@@ -287,18 +287,18 @@ export const BookmarkOperationService = (
 				exists = false;
 			}
 			exists
-						? fnNotification(`warn`, `create`, `${fileName}`)
+						? notify(`warn`, `create`, `${fileName}`)
 			: await (async () => {
 				await vscode.workspace.fs.writeFile(fileUri, new Uint8Array(0));
-						fnNotification(`info`, `create`, `${fileName}`);
-						fnLogging(`debug`, `create`, `${filePath}`);
+						notify(`info`, `create`, `${fileName}`);
+						log(`debug`, `create`, `${filePath}`);
 
 				try {
 					const document = await vscode.workspace.openTextDocument(fileUri);
 					await vscode.window.showTextDocument(document);
 				}
 				catch (error) {
-					fnLogging(`error`, `create`, `${fileName} ${error}`);
+					log(`error`, `create`, `${fileName} ${error}`);
 				}
 			})();
 		})();

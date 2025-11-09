@@ -2,24 +2,24 @@
 
 // -------------------------------------------------------------------------------
 export {
-	fnGetTargetFileName,
-	fnExists,
-	fnGetBookmarkPath,
-	fnIsWithinBookmark,
-	fnValidateFileName,
+	getTargetFileName,
+	exists,
+	getBookmarkPath,
+	isWithinBookmark,
+	validateFileName,
 } from "@scripts/path";
 
 // -------------------------------------------------------------------------------
 export {
-	fnLogging,
-	fnNotification,
+	log,
+	notify,
 } from "@scripts/notification";
 
 // -------------------------------------------------------------------------------
 export {
 	LRUCache,
-	fnBatchProcess,
-	fnDebounce,
-	fnIsFileType,
-	fnSafeJsonParse,
+	batchProcess,
+	debounce,
+	isFileType,
+	safeJsonParse,
 } from "@scripts/performance";

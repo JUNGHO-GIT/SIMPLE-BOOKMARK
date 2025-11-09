@@ -32,7 +32,7 @@
 - Instead of splitting it into a lot of useless methods, use function interfaces inside each block
 
 ## JavaScript/TypeScript (ES6+)
-- Arrow functions with 'fn' prefix
+- Prefer  Arrow functions
 - Template literals: `foo` (backticks)
 - Prefer ternary/&& over if statements
 - Object keys: always double quotes ("key": value)

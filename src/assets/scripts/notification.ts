@@ -1,7 +1,7 @@
 import { vscode } from "@exportLibs";
 
 // 콘솔 로깅 출력 ----------------------------------------------------------------------
-export const fnLogging = (
+export const log = (
 	type:
 	`debug` |
 	`info` |
@@ -41,7 +41,7 @@ export const fnLogging = (
 };
 
 // VS Code 알림 센터 메시지 출력 -------------------------------------------------------
-export const fnNotification = (
+export const notify = (
 	type:
 	`debug` |
 	`info` |

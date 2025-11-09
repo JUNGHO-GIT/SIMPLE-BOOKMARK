@@ -35,7 +35,7 @@ export class LRUCache<K, V> {
 }
 
 // -----------------------------------------------------------------------------------------
-export const fnDebounce = <T extends (...args: any[]) => void>(
+export const debounce = <T extends (...args: any[]) => void>(
 	func: T, delay: number
 ): ((...args: Parameters<T>) => void) => {
 	let timeoutId: NodeJS.Timeout | null = null;
@@ -49,7 +49,7 @@ export const fnDebounce = <T extends (...args: any[]) => void>(
 };
 
 // 대량 작업을 지정한 배치 크기로 나눠 병렬 처리 --------------------------------------------
-export const fnBatchProcess = async <T, R>(
+export const batchProcess = async <T, R>(
 	items: T[],
 	processor: (item: T) => Promise<R>,
 	batchSize: number = 10
@@ -69,7 +69,7 @@ export const fnBatchProcess = async <T, R>(
 };
 
 // VS Code FileType 비트마스크에서 특정 타입 포함 여부를 판단 -------------------------------
-export const fnIsFileType = (
+export const isFileType = (
 	type: number,
 	target: number
 ): boolean => {
@@ -77,7 +77,7 @@ export const fnIsFileType = (
 }
 
 // JSON 파싱 실패 시 null을 반환하는 안전한 파서 ------------------------------------
-export const fnSafeJsonParse = <T>(
+export const safeJsonParse = <T>(
 	jsonString: string
 ): T | null => {
 	try {

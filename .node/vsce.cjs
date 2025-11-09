@@ -6,8 +6,8 @@ const path = require(`path`);
 const process = require(`process`);
 
 // 로깅 함수 -----------------------------------------------------------------------------------
-const fnLogger = (type=``, message=``) => {
-	const fnFormat = (text=``) => text.trim().replace(/^\s+/gm, ``);
+const logging = (type=``, message=``) => {
+	const format = (text=``) => text.trim().replace(/^\s+/gm, ``);
 	const line = `----------------------------------------`;
 	const colors = {
 		line: `\x1b[38;5;214m`,
@@ -19,32 +19,32 @@ const fnLogger = (type=``, message=``) => {
 	};
 	const separator = `${colors.line}${line}${colors.reset}`;
 
-	type === `info` && console.log(fnFormat(`
+	type === `info` && console.log(format(`
 		${separator}
 		${colors.info}[INFO]${colors.reset} - ${message}
 	`));
-	type === `success` && console.log(fnFormat(`
+	type === `success` && console.log(format(`
 		${separator}
 		${colors.success}[SUCCESS]${colors.reset} - ${message}
 	`));
-	type === `warn` && console.log(fnFormat(`
+	type === `warn` && console.log(format(`
 		${separator}
 		${colors.warn}[WARN]${colors.reset} - ${message}
 	`));
-	type === `error` && console.log(fnFormat(`
+	type === `error` && console.log(format(`
 		${separator}
 		${colors.error}[ERROR]${colors.reset} - ${message}
 	`));
 };
 
 // 버전 증가 함수 ------------------------------------------------------------------------------
-const fnIncrementVersion = () => {
-	fnLogger(`info`, `버전 자동 증가 시작`);
+const incrementVersion = () => {
+	logging(`info`, `버전 자동 증가 시작`);
 
 	const packageJsonPath = path.join(process.cwd(), `package.json`);
 
 	!fs.existsSync(packageJsonPath) && (() => {
-		fnLogger(`error`, `package.json 파일을 찾을 수 없습니다: ${packageJsonPath}`);
+		logging(`error`, `package.json 파일을 찾을 수 없습니다: ${packageJsonPath}`);
 		process.exit(1);
 	})();
 
@@ -52,13 +52,13 @@ const fnIncrementVersion = () => {
 	const currentVersion = packageJson.version;
 
 	!currentVersion && (() => {
-		fnLogger(`error`, `package.json에 version 필드가 없습니다`);
+		logging(`error`, `package.json에 version 필드가 없습니다`);
 		process.exit(1);
 	})();
 
 	const versionParts = currentVersion.split(`.`);
 	versionParts.length !== 3 && (() => {
-		fnLogger(`error`, `올바르지 않은 버전 형식입니다: ${currentVersion}`);
+		logging(`error`, `올바르지 않은 버전 형식입니다: ${currentVersion}`);
 		process.exit(1);
 	})();
 
@@ -68,14 +68,14 @@ const fnIncrementVersion = () => {
 	packageJson.version = newVersion;
 	fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + `\n`, `utf8`);
 
-	fnLogger(`success`, `버전 업데이트: ${currentVersion} → ${newVersion}`);
+	logging(`success`, `버전 업데이트: ${currentVersion} → ${newVersion}`);
 	return newVersion;
 };
 
 // 명령 실행 함수 ------------------------------------------------------------------------------
-const fnRunCommand = (cmd=``, args=[], stepName=``) => {
-	fnLogger(`info`, `${stepName} 시작`);
-	fnLogger(`info`, `실행: ${cmd} ${args.join(` `)}`);
+const runCommand = (cmd=``, args=[], stepName=``) => {
+	logging(`info`, `${stepName} 시작`);
+	logging(`info`, `실행: ${cmd} ${args.join(` `)}`);
 
 	const result = spawnSync(cmd, args, {
 		stdio: `inherit`,
@@ -84,34 +84,34 @@ const fnRunCommand = (cmd=``, args=[], stepName=``) => {
 	});
 
 	result.status !== 0 && (() => {
-		fnLogger(`error`, `${stepName} 실패 (exit code: ${result.status})`);
+		logging(`error`, `${stepName} 실패 (exit code: ${result.status})`);
 		process.exit(1);
 	})();
 
-	fnLogger(`success`, `${stepName} 완료`);
+	logging(`success`, `${stepName} 완료`);
 	return result;
 };
 
 // 메인 실행 함수 ------------------------------------------------------------------------------
 (() => {
-	fnLogger(`info`, `VSCE 패키지 빌드 시작`);
-	fnIncrementVersion();
-	fnRunCommand(
+	logging(`info`, `VSCE 패키지 빌드 시작`);
+	incrementVersion();
+	runCommand(
 		`pnpm`,
 		[`add`, `-D`, `esbuild`],
 		`esbuild 의존성 설치`
 	);
-	fnRunCommand(
+	runCommand(
 		`tsc`,
 		[`-p`, `.`],
 		`TypeScript 컴파일`
 	);
-	fnRunCommand(
+	runCommand(
 		`tsc-alias`,
 		[`-p`, `tsconfig.json`, `-f`],
 		`TypeScript 경로 별칭 처리`
 	);
-	fnRunCommand(
+	runCommand(
 		`esbuild`,
 		[
 			`src/extension.ts`,
@@ -124,10 +124,10 @@ const fnRunCommand = (cmd=``, args=[], stepName=``) => {
 		],
 		`esbuild 번들링`
 	);
-	fnRunCommand(
+	runCommand(
 		`vsce`,
 		[`package`, `--no-dependencies`],
 		`VSCE 패키지 생성`
 	);
-	fnLogger(`success`, `VSCE 패키지 빌드 완료`);
+	logging(`success`, `VSCE 패키지 빌드 완료`);
 })();
