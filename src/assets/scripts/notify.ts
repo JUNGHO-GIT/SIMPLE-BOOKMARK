@@ -1,4 +1,4 @@
-// assets/scripts/notification.ts
+// assets/scripts/notify.ts
 
 import { vscode } from "@exportLibs";
 

@@ -9,10 +9,10 @@ export {
 	validateFileName,
 } from "@scripts/path";
 
-// -------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------
 export {
 	notify,
-} from "@scripts/notification";
+} from "@scripts/notify";
 export {
 	logger
 } from "@scripts/logger";
