@@ -6,82 +6,89 @@ const path = require(`path`);
 const process = require(`process`);
 const { Project } = require(`ts-morph`);
 
-// 0. 상수 정의 ------------------------------------------------------------------------------------
+// 인자 파싱 ------------------------------------------------------------------------------------
+const argv = process.argv.slice(2);
+const isFix = argv.includes(`--fix`);
 const LINE_REGEX = /^(?<file>.+):(?<line>\d+)\s*-\s*(?<name>.+?)(?:\s*\((?<note>.+)\))?$/;
 
 // 로깅 함수 -----------------------------------------------------------------------------------
 const logger = (type = ``, ...args) => {
-	type === `info` && (() => {
-		console.log(`[INFO] ${args[0]}`);
-	})();
-	type === `success` && (() => {
-		console.log(`[SUCCESS] ${args[0]}`);
-	})();
-	type === `warn` && (() => {
-		console.warn(`[WARN] ${args[0]}`);
-	})();
-	type === `error` && (() => {
-		console.error(`[ERROR] ${args[0]}`);
-	})();
-};
-
-// 1. 명령행 인수 파싱 -------------------------------------------------------------------------
-const parseArgs = (argv = []) => {
-	logger(`info`, `1`, `명령행 인수 파싱 시작`);
-
-	const args = {
-		project: `tsconfig.json`,
-		apply: false,
-		ignore: [],
-		skip: [],
-		include: [],
-		exclude: [],
-		report: null,
-		skipUsedInModule: true,
-		backup: false
+	const format = (text = ``) => text.trim().replace(/^\s+/gm, ``);
+	const line = `----------------------------------------`;
+	const colors = {
+		"line": `\x1b[38;5;214m`,
+		"info": `\x1b[36m`,
+		"success": `\x1b[32m`,
+		"warn": `\x1b[33m`,
+		"error": `\x1b[31m`,
+		"reset": `\x1b[0m`
 	};
+	const separator = `${colors.line}${line}${colors.reset}`;
+	const message = String(args[0] || ``);
 
-	for (let i = 2; i < argv.length; i += 1) {
-		const currentArg = argv[i];
-		currentArg === `--project` ? (args.project = argv[++i]) :
-		currentArg === `--apply` ? (args.apply = true) :
-		currentArg === `--ignore` ? args.ignore.push(argv[++i]) :
-		currentArg === `--skip` ? args.skip.push(argv[++i]) :
-		currentArg === `--include` ? args.include.push(argv[++i]) :
-		currentArg === `--exclude` ? args.exclude.push(argv[++i]) :
-		currentArg === `--report` ? (args.report = argv[++i]) :
-		currentArg === `--no-uim` ? (args.skipUsedInModule = false) :
-		currentArg === `--backup` ? (args.backup = true) :
-		logger(`warn`, `알 수 없는 플래그 무시: ${currentArg}`);
-	}
-
-	logger(`info`, `파싱된 설정: project=${args.project}, apply=${args.apply}, backup=${args.backup}`);
-	return args;
+	(type === `info`) ? (
+		console.log(format(`
+			${separator}
+			${colors.info}[INFO]${colors.reset} - ${message}
+		`))
+	) : (type === `success`) ? (
+		console.log(format(`
+			${separator}
+			${colors.success}[SUCCESS]${colors.reset} - ${message}
+		`))
+	) : (type === `warn`) ? (
+		console.log(format(`
+			${separator}
+			${colors.warn}[WARN]${colors.reset} - ${message}
+		`))
+	) : (type === `error`) ? (
+		console.log(format(`
+			${separator}
+			${colors.error}[ERROR]${colors.reset} - ${message}
+		`))
+	) : (
+		void 0
+	);
 };
+
+// 명령 실행 함수 ------------------------------------------------------------------------------
+const run = (cmd = ``, args = []) => {
+	logger(`info`, `실행: ${cmd} ${args.join(` `)}`);
+
+	const result = spawnSync(cmd, args, {
+		stdio: `inherit`,
+		shell: true,
+		env: process.env
+	});
+
+	(result.status !== 0) ? (
+		logger(`error`, `${cmd} 실패 (exit code: ${result.status})`),
+		process.exit(result.status || 1)
+	) : (
+		logger(`success`, `${cmd} 실행 완료`)
+	);
+};
+
 
 // 유틸리티 함수 -------------------------------------------------------------------------------
 const withLocalBinOnPath = (env = {}) => {
 	const binDir = path.join(process.cwd(), `node_modules`, `.bin`);
-	const pathParts = (env.PATH || env.Path || ``).split(path.delimiter).filter(Boolean);
-	!pathParts.includes(binDir) && pathParts.unshift(binDir);
+	const envPath = (env.PATH || env.Path || ``);
+	const pathParts = envPath.split(path.delimiter).filter(Boolean);
+	(!pathParts.includes(binDir)) ? pathParts.unshift(binDir) : void 0;
 
-	const newEnv = { ...env };
-	process.platform === `win32` ? (
+	const newEnv = ({ ...env });
+	(process.platform === `win32`) ? (
 		newEnv.Path = pathParts.join(path.delimiter)
 	) : (
 		newEnv.PATH = pathParts.join(path.delimiter)
 	);
-
 	return newEnv;
 };
 
-// -----------------------------------------------------------------------------------------------
-const trySpawn = (cmd = ``, args = [], opts = {}) => {
-	const result = spawnSync(cmd, args, {
-		encoding: `utf8`,
-		env: withLocalBinOnPath(process.env),
-		...opts
-	});
+const trySpawn = (cmd = ``, args = []) => {
+	const options = { encoding: `utf8`, env: withLocalBinOnPath(process.env) };
+	const result = spawnSync(cmd, args, options);
 	return result;
 };
 
@@ -93,27 +100,31 @@ const resolveTsPruneBinJs = () => {
 		const packagePath = require.resolve(`ts-prune/package.json`, { paths: [process.cwd()] });
 		const packageDir = path.dirname(packagePath);
 		const packageJson = JSON.parse(fs.readFileSync(packagePath, `utf8`));
-		let binRelative = null;
 
-		typeof packageJson.bin === `string` ? (
-			binRelative = packageJson.bin
-		) : packageJson.bin && typeof packageJson.bin === `object` ? (
-			packageJson.bin[`ts-prune`] ? (
-				binRelative = packageJson.bin[`ts-prune`]
-			) : Object.keys(packageJson.bin).length > 0 && (
-				binRelative = packageJson.bin[Object.keys(packageJson.bin)[0]]
-			)
-		) : null;
+		const binRelative = (typeof packageJson.bin === `string`) ? (
+			packageJson.bin
+		) : (packageJson.bin && typeof packageJson.bin === `object`) ? (
+			(packageJson.bin[`ts-prune`]) ? (
+				packageJson.bin[`ts-prune`]
+			) : (() => {
+				const keys = Object.keys(packageJson.bin);
+				return (keys.length > 0) ? packageJson.bin[keys[0]] : null;
+			})()
+		) : (
+			null
+		);
 
-		!binRelative && (() => {
-			logger(`warn`, `package.json에서 bin 정보를 찾을 수 없음`);
-			return null;
+		return (!binRelative) ? (
+			logger(`warn`, `package.json에서 bin 정보를 찾을 수 없음`),
+			null
+		) : (() => {
+			const binAbsolute = path.resolve(packageDir, binRelative);
+			const exists = fs.existsSync(binAbsolute);
+			return (
+				logger(`info`, `바이너리 경로: ${binAbsolute}, 존재: ${exists}`),
+				exists ? binAbsolute : null
+			);
 		})();
-
-		const binAbsolute = path.resolve(packageDir, binRelative);
-		const exists = fs.existsSync(binAbsolute);
-		logger(`info`, `바이너리 경로: ${binAbsolute}, 존재: ${exists}`);
-		return exists ? binAbsolute : null;
 	}
 	catch (error) {
 		logger(`error`, `ts-prune 패키지 해석 실패: ${error instanceof Error ? error.message : String(error)}`);
@@ -121,111 +132,109 @@ const resolveTsPruneBinJs = () => {
 	}
 };
 
-// 2. ts-prune 실행 ---------------------------------------------------------------------------
-const runTsPrune = (args = {}) => {
-	logger(`info`, `2`, `ts-prune 실행 시작`);
+// ts-prune 실행 ------------------------------------------------------------------------------
+const runTsPrune = () => {
+	logger(`info`, `ts-prune 실행 시작`);
 
-	const cliArgs = [`-p`, args.project];
-	args.skipUsedInModule && cliArgs.push(`-u`);
-	args.ignore.forEach((pattern) => cliArgs.push(`-i`, pattern));
-	args.skip.forEach((pattern) => cliArgs.push(`-s`, pattern));
-
+	const cliArgs = [`-p`, `tsconfig.json`];
 	logger(`info`, `ts-prune 명령행 인수: ${cliArgs.join(` `)}`);
 	const errors = [];
 
 	const binJs = resolveTsPruneBinJs();
-	binJs && (() => {
+	const binResult = (binJs) ? (() => {
 		logger(`info`, `Node.js 바이너리로 ts-prune 실행 시도`);
 		const result = trySpawn(process.execPath, [binJs, ...cliArgs]);
-
-		!result.error ? (() => {
+		return (!result.error) ? (() => {
 			const okStatus = typeof result.status === `number` ? result.status === 0 : true;
-			const hasOutput = typeof result.stdout === `string` && result.stdout.trim().length > 0;
+			return (okStatus) ? (
+				logger(`success`, `Node.js 바이너리 실행 성공`),
+				(result.stdout || ``)
+			) : (
+				errors.push(`[node-bin] exited ${result.status} stdout:"${(result.stdout || ``).trim()}" stderr:"${(result.stderr || ``).trim()}"`),
+				null
+			);
+		})() : (
+			errors.push(`[node-bin] ${result.error && typeof result.error === `object` && `code` in result.error ? result.error.code : `ERR`} ${result.error ? result.error.message || `` : ``}`.trim()),
+			null
+		);
+	})() : null;
 
-			(okStatus || hasOutput) ? (() => {
-				logger(`success`, `Node.js 바이너리 실행 성공`);
-				return result.stdout;
-			})() : (() => {
-				errors.push(`[node-bin] exited ${result.status} stdout:"${(result.stdout || ``).trim()}" stderr:"${(result.stderr || ``).trim()}"`);
-			})();
-		})() : (() => {
-			const errorCode = result.error && typeof result.error === `object` && `code` in result.error ? result.error.code : `ERR`;
-			const errorMessage = result.error ? result.error.message || `` : ``;
-			errors.push(`[node-bin] ${errorCode} ${errorMessage.trim()}`);
-		})();
-	})();
+	(binResult) ? (binResult) : (() => {
+		const executionMethods = [
+			{
+				name: `local-bin`,
+				getPath: () => path.join(process.cwd(), `node_modules`, `.bin`, process.platform === `win32` ? `ts-prune.cmd` : `ts-prune`),
+				getCommand: (binPath) => [binPath, cliArgs]
+			},
+			{
+				name: `pnpm-exec`,
+				getPath: () => process.platform === `win32` ? `pnpm.cmd` : `pnpm`,
+				getCommand: (cmd) => [cmd, [`exec`, `ts-prune`, ...cliArgs]]
+			},
+			{
+				name: `npx`,
+				getPath: () => process.platform === `win32` ? `npx.cmd` : `npx`,
+				getCommand: (cmd) => [cmd, [`ts-prune`, ...cliArgs]]
+			},
+			{
+				name: `path-ts-prune`,
+				getPath: () => process.platform === `win32` ? `ts-prune.cmd` : `ts-prune`,
+				getCommand: (cmd) => [cmd, cliArgs]
+			}
+		];
 
-	const executionMethods = [
-		{
-			name: `local-bin`,
-			getPath: () => path.join(process.cwd(), `node_modules`, `.bin`, process.platform === `win32` ? `ts-prune.cmd` : `ts-prune`),
-			getCommand: (binPath) => [binPath, cliArgs]
-		},
-		{
-			name: `pnpm-exec`,
-			getPath: () => process.platform === `win32` ? `pnpm.cmd` : `pnpm`,
-			getCommand: (cmd) => [cmd, [`exec`, `ts-prune`, ...cliArgs]]
-		},
-		{
-			name: `npx`,
-			getPath: () => process.platform === `win32` ? `npx.cmd` : `npx`,
-			getCommand: (cmd) => [cmd, [`ts-prune`, ...cliArgs]]
-		},
-		{
-			name: `path-ts-prune`,
-			getPath: () => process.platform === `win32` ? `ts-prune.cmd` : `ts-prune`,
-			getCommand: (cmd) => [cmd, cliArgs]
+		for (const method of executionMethods) {
+			const commandPath = method.getPath();
+			const tuple = method.getCommand(commandPath);
+			const cmd = (tuple[0]);
+			const methodArgs = (tuple[1]);
+
+			if (method.name === `local-bin` && !fs.existsSync(commandPath)) {
+				errors.push(`[${method.name}] ${commandPath} 없음`);
+				continue;
+			}
+
+			logger(`info`, `${method.name}으로 ts-prune 실행 시도`);
+			const result = trySpawn(cmd, methodArgs);
+			const methodResult = (!result.error) ? (() => {
+				const okStatus = typeof result.status === `number` ? result.status === 0 : true;
+				return (okStatus) ? (
+					logger(`success`, `${method.name} 실행 성공`),
+					(result.stdout || ``)
+				) : (
+					errors.push(`[${method.name}] exited ${result.status} stdout:"${(result.stdout || ``).trim()}" stderr:"${(result.stderr || ``).trim()}"`),
+					null
+				);
+			})() : (
+				errors.push(`[${method.name}] ${result.error && typeof result.error === `object` && `code` in result.error ? result.error.code : `ERR`} ${result.error ? result.error.message || `` : ``}`.trim()),
+				null
+			);
+
+			if (methodResult) {
+				return methodResult;
+			}
 		}
-	];
 
-	for (const method of executionMethods) {
-		const commandPath = method.getPath();
-		const [cmd, methodArgs] = method.getCommand(commandPath);
-
-		method.name === `local-bin` && !fs.existsSync(commandPath) && (() => {
-			errors.push(`[${method.name}] ${commandPath} 없음`);
-			return;
-		})();
-
-		logger(`info`, `${method.name}으로 ts-prune 실행 시도`);
-		const result = trySpawn(cmd, methodArgs);
-
-		!result.error ? (() => {
-			const okStatus = typeof result.status === `number` ? result.status === 0 : true;
-			const hasOutput = typeof result.stdout === `string` && result.stdout.trim().length > 0;
-
-			(okStatus || hasOutput) ? (() => {
-				logger(`success`, `${method.name} 실행 성공`);
-				return result.stdout;
-			})() : (() => {
-				errors.push(`[${method.name}] exited ${result.status} stdout:"${(result.stdout || ``).trim()}" stderr:"${(result.stderr || ``).trim()}"`);
-			})();
-		})() : (() => {
-			const errorCode = result.error && typeof result.error === `object` && `code` in result.error ? result.error.code : `ERR`;
-			const errorMessage = result.error ? result.error.message || `` : ``;
-			errors.push(`[${method.name}] ${errorCode} ${errorMessage.trim()}`);
-		})();
-	}
-
-	const errorMessage = `ts-prune 실행 실패:\n${errors.map((e) => ` - ${e}`).join(`\n`)}`;
-	logger(`error`, errorMessage);
-	throw new Error(errorMessage);
+		const errorMessage = `ts-prune 실행 실패:\n${errors.map((e) => ` - ${e}`).join(`\n`)}`;
+		logger(`error`, errorMessage);
+		throw new Error(errorMessage);
+	})();
 };
 
-// 3. ts-prune 출력 파싱 -----------------------------------------------------------------------
+// ts-prune 출력 파싱 --------------------------------------------------------------------------
 const parseTsPruneOutput = (text = ``) => {
-	logger(`info`, `3`, `ts-prune 출력 파싱 시작`);
+	logger(`info`, `ts-prune 출력 파싱 시작`);
 
 	const output = [];
 	const lines = text.split(/\r?\n/);
 
 	for (const rawLine of lines) {
 		const line = rawLine.trim();
-		const match = LINE_REGEX.exec(line);
-		if (!match || !match.groups) {
+		if (line.length === 0) {
 			continue;
 		}
-		if (line.length === 0) {
+		const match = LINE_REGEX.exec(line);
+		if (!match || !match.groups) {
 			continue;
 		}
 
@@ -239,35 +248,13 @@ const parseTsPruneOutput = (text = ``) => {
 	return output;
 };
 
-// 4. 경로 필터링 ------------------------------------------------------------------------------
-const filterByPath = (items = [], include = [], exclude = []) => {
-	logger(`info`, `4`, `경로 필터링 시작`);
-
-	(include.length === 0 && exclude.length === 0) && (() => {
-		logger(`info`, `필터링 조건 없음, 모든 항목 유지`);
-		return items;
-	})();
-
-	const includeRegexes = include.map((pattern) => new RegExp(pattern));
-	const excludeRegexes = exclude.map((pattern) => new RegExp(pattern));
-
-	const filtered = items.filter((item) => {
-		const filePath = item.file;
-		let allowed = includeRegexes.length === 0 ? true : includeRegexes.some((regex) => regex.test(filePath));
-		return allowed && !(excludeRegexes.length > 0 && excludeRegexes.some((regex) => regex.test(filePath)));
-	});
-
-	logger(`info`, `필터링 결과: ${items.length} -> ${filtered.length}`);
-	return filtered;
-};
-
-// 5. 파일별 그룹화 ----------------------------------------------------------------------------
+// 파일별 그룹화 -------------------------------------------------------------------------------
 const groupByFile = (items = []) => {
-	logger(`info`, `5`, `파일별 그룹화 시작`);
+	logger(`info`, `파일별 그룹화 시작`);
 
 	const fileMap = new Map();
 	for (const item of items) {
-		!fileMap.has(item.file) && fileMap.set(item.file, []);
+		(!fileMap.has(item.file)) ? fileMap.set(item.file, []) : void 0;
 		fileMap.get(item.file).push(item);
 	}
 
@@ -278,11 +265,12 @@ const groupByFile = (items = []) => {
 // 파일 경로 유틸리티 -------------------------------------------------------------------------
 const toProjectAbsolute = (filePath = ``) => {
 	const normalized = filePath.replace(/\//g, path.sep);
-	(/^[a-zA-Z]:[\\/]/.test(normalized) || /^\\\\/.test(normalized)) && (() => {
-		return normalized;
-	})();
-	const trimmed = normalized.replace(/^[\\/]+/, ``);
-	return path.resolve(process.cwd(), trimmed);
+	const isAbsWin = /^[a-zA-Z]:[\\/]/.test(normalized) || /^\\\\/.test(normalized);
+	return (isAbsWin) ? (
+		normalized
+	) : (
+		path.resolve(process.cwd(), normalized.replace(/^[\\/]+/, ``))
+	);
 };
 
 // 안전한 백업 생성 ---------------------------------------------------------------------------
@@ -290,12 +278,13 @@ const safeBackup = (filePath = ``) => {
 	const backupPath = filePath + `.bak`;
 
 	try {
-		!fs.existsSync(filePath) && (() => {
-			return false;
-		})();
-		!fs.existsSync(backupPath) && fs.copyFileSync(filePath, backupPath);
-		logger(`info`, `백업 생성: ${backupPath}`);
-		return true;
+		return (!fs.existsSync(filePath)) ? (
+			false
+		) : (
+			(!fs.existsSync(backupPath)) ? fs.copyFileSync(filePath, backupPath) : void 0,
+			logger(`info`, `백업 생성: ${backupPath}`),
+			true
+		);
 	}
 	catch (error) {
 		logger(`warn`, `백업 실패: ${error instanceof Error ? error.message : String(error)}`);
@@ -318,15 +307,13 @@ const removeNamesInExportDeclarations = (sourceFile, targetNames) => {
 			const localName = spec.getNameNode().getText();
 			const aliasNode = spec.getAliasNode();
 			const exportedName = aliasNode ? aliasNode.getText() : localName;
-			(targetNames.has(exportedName) || targetNames.has(localName)) && (() => {
-				toRemove.push(spec);
-			})();
+			(targetNames.has(exportedName) || targetNames.has(localName)) ? toRemove.push(spec) : void 0;
 		}
 
 		toRemove.forEach((spec) => spec.remove());
-		(exportDecl.getNamedExports().length === 0 && !(exportDecl.isNamespaceExport && exportDecl.isNamespaceExport())) && (() => {
-			exportDecl.remove();
-		})();
+		const remaining = exportDecl.getNamedExports().length;
+		const isNs = exportDecl.isNamespaceExport && exportDecl.isNamespaceExport();
+		(remaining === 0 && !isNs) ? exportDecl.remove() : void 0;
 	}
 };
 
@@ -341,7 +328,7 @@ const removeLocalDeclarationsByNames = (sourceFile, targetNames) => {
 			continue;
 		}
 
-		toRemove.length === declarations.length ? (
+		(toRemove.length === declarations.length) ? (
 			varStmt.remove()
 		) : (
 			toRemove.forEach((decl) => decl.remove())
@@ -350,8 +337,13 @@ const removeLocalDeclarationsByNames = (sourceFile, targetNames) => {
 
 	const removeExportedNodes = (nodes) => {
 		for (const node of nodes) {
-			const nodeName = node.getName ? node.getName() : null;
-			nodeName && targetNames.has(nodeName) && node.hasExportKeyword && node.hasExportKeyword() && node.remove();
+			const nodeAny = (node);
+			const nodeName = typeof nodeAny.getName === `function` ? nodeAny.getName() : null;
+			(nodeName && targetNames.has(nodeName) && typeof nodeAny.hasExportKeyword === `function` && nodeAny.hasExportKeyword() && typeof nodeAny.remove === `function`) ? (
+				nodeAny.remove()
+			) : (
+				void 0
+			);
 		}
 	};
 
@@ -366,11 +358,14 @@ const removeLocalDeclarationsByNames = (sourceFile, targetNames) => {
 const removeDefaultExport = (sourceFile) => {
 	const assignments = sourceFile.getExportAssignments();
 	const defaultAssignment = assignments.find((assignment) => assignment.isExportEquals() === false);
+	let removed = false;
 
-	defaultAssignment && (() => {
-		defaultAssignment.remove();
-		return true;
-	})();
+	(defaultAssignment) ? (
+		defaultAssignment.remove(),
+		removed = true
+	) : (
+		void 0
+	);
 
 	const declarations = [
 		...sourceFile.getFunctions(),
@@ -378,113 +373,113 @@ const removeDefaultExport = (sourceFile) => {
 	];
 
 	for (const decl of declarations) {
-		decl.hasExportKeyword && decl.hasExportKeyword() && (() => {
+		if (decl.hasExportKeyword && decl.hasExportKeyword()) {
 			const modifiers = decl.getModifiers().map((mod) => mod.getText());
-			modifiers.includes(`default`) && (() => {
-				decl.remove();
-				return true;
-			})();
-		})();
+			(modifiers.includes(`default`)) ? (
+				decl.remove(),
+				removed = true
+			) : (
+				void 0
+			);
+		}
 	}
 
-	return false;
+	return removed;
 };
 
-// 6. 파일 처리 -------------------------------------------------------------------------------
-const processFile = (project, filePath = ``, names, options = {}) => {
+// 파일 처리 ----------------------------------------------------------------------------------
+const processFile = (project, filePath = ``, names) => {
 	const absolutePath = toProjectAbsolute(filePath);
 	logger(`info`, `파일 처리 중: ${filePath}`);
 
-	/\.d\.ts$/.test(absolutePath) && (() => {
-		return {
+	return (/\.d\.ts$/.test(absolutePath)) ? (
+		{
 			file: filePath,
 			removed: [],
 			skipped: true,
 			reason: `declaration-file`
-		};
+		}
+	) : (() => {
+		const sourceFile = project.getSourceFile(absolutePath) || project.addSourceFileAtPathIfExists(absolutePath);
+		return (!sourceFile) ? (
+			{
+				file: filePath,
+				removed: [],
+				skipped: true,
+				reason: `file-not-found`
+			}
+		) : (() => {
+			const beforeText = sourceFile.getFullText();
+			const removedSet = new Set();
+			removeNamesInExportDeclarations(sourceFile, names);
+			removeLocalDeclarationsByNames(sourceFile, names);
+			(names.has(`default`) && removeDefaultExport(sourceFile)) ? removedSet.add(`default`) : void 0;
+			names.forEach((name) => removedSet.add(name));
+
+			const afterText = sourceFile.getFullText();
+			const changed = beforeText !== afterText;
+
+			(changed && isFix) ? (
+				safeBackup(absolutePath),
+				sourceFile.saveSync(),
+				logger(`success`, `파일 저장 완료: ${filePath}`)
+			) : (
+				void 0
+			);
+
+			return {
+				file: filePath,
+				removed: Array.from(removedSet),
+				skipped: false
+			};
+		})();
 	})();
-
-	const sourceFile = project.getSourceFile(absolutePath) || project.addSourceFileAtPathIfExists(absolutePath);
-	!sourceFile && (() => {
-		return {
-			file: filePath,
-			removed: [],
-			skipped: true,
-			reason: `file-not-found`
-		};
-	})();
-
-	const removedSet = new Set();
-	removeNamesInExportDeclarations(sourceFile, names);
-	removeLocalDeclarationsByNames(sourceFile, names);
-	names.has(`default`) && removeDefaultExport(sourceFile) && removedSet.add(`default`);
-	names.forEach((name) => removedSet.add(name));
-
-	(removedSet.size > 0 && options.apply) && (() => {
-		options.backup && safeBackup(absolutePath);
-		sourceFile.saveSync();
-		logger(`success`, `파일 저장 완료: ${filePath}`);
-	})();
-
-	return {
-		file: filePath,
-		removed: Array.from(removedSet),
-		skipped: false
-	};
 };
 
 // 실행 -----------------------------------------------------------------------------------------
 (() => {
-	logger(`info`, `ts-prune autofix 시작`);
+	logger(`info`, `ts-prune autofix 시작 (${isFix ? `적용 모드` : `드라이런 모드`})`);
 
-	const args = parseArgs(process.argv);
-	const rawOutput = runTsPrune(args);
+	const rawOutput = runTsPrune();
 	const parsedItems = parseTsPruneOutput(rawOutput);
-	const filteredItems = filterByPath(parsedItems, args.include, args.exclude);
-	const groupedByFile = groupByFile(filteredItems);
+	const groupedByFile = groupByFile(parsedItems);
 
-	logger(`info`, `6`, `TypeScript 프로젝트 로드`);
+	logger(`info`, `TypeScript 프로젝트 로드`);
 	const project = new Project({
-		tsConfigFilePath: path.resolve(process.cwd(), args.project),
+		tsConfigFilePath: path.resolve(process.cwd(), `tsconfig.json`),
 		skipAddingFilesFromTsConfig: false
 	});
 
-	logger(`info`, `7`, `파일 처리 시작`);
+	logger(`info`, `파일 처리 시작`);
 	const results = [];
-	for (const [file, items] of groupedByFile.entries()) {
+	for (const entry of groupedByFile.entries()) {
+		const file = entry[0];
+		const items = entry[1];
 		const nameSet = new Set(items.map((item) => item.name));
-		const result = processFile(project, file, nameSet, {
-			apply: args.apply,
-			backup: args.backup
-		});
+		const result = processFile(project, file, nameSet);
 		results.push(result);
 	}
 
 	const summary = {
-		project: args.project,
-		apply: args.apply,
+		apply: isFix,
 		totalFiles: groupedByFile.size,
-		modifiedFiles: results.filter((result) => result.removed.length > 0).length,
-		skippedFiles: results.filter((result) => result.skipped).map((result) => ({
-			file: result.file,
-			reason: result.reason
+		modifiedFiles: results.filter((r) => r.removed.length > 0).length,
+		skippedFiles: results.filter((r) => r.skipped).map((r) => ({
+			file: r.file,
+			reason: r.reason
 		})),
 		details: results
 	};
 
-	args.report && (() => {
-		logger(`info`, `리포트 저장: ${args.report}`);
-		fs.writeFileSync(args.report, JSON.stringify(summary, null, 2), `utf8`);
-	})();
-
 	logger(`success`, `ts-prune autofix 완료`);
-	logger(`info`, `프로젝트: ${summary.project}`);
 	logger(`info`, `적용 모드: ${summary.apply}`);
 	logger(`info`, `후보 파일 수: ${summary.totalFiles}`);
 	logger(`info`, `수정된 파일 수: ${summary.modifiedFiles}`);
 
-	summary.skippedFiles.length > 0 && (() => {
-		logger(`warn`, `건너뛴 파일들:`);
-		summary.skippedFiles.forEach((skipped) => logger(`warn`, `  - ${skipped.file} (${skipped.reason})`));
-	})();
+	(summary.skippedFiles.length > 0) ? (
+		logger(`warn`, `건너뛴 파일들:`),
+		summary.skippedFiles.forEach((skipped) => logger(`warn`, `  - ${skipped.file} (${skipped.reason})`))
+	) : (
+		void 0
+	);
 })();
