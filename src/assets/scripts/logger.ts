@@ -27,15 +27,15 @@ export const logger = (
 	value: string,
 ): void => {
 	type === `debug` && console.debug(
-		`[simple-bookmark] [${key}] ${value}`
+		`[Simple-Bookmark] [${key}] ${value}`
 	);
 	type === `info` && console.info(
-		`[simple-bookmark] [${key}] ${value}`
+		`[Simple-Bookmark] [${key}] ${value}`
 	);
 	type === `warn` && console.warn(
-		`[simple-bookmark] [${key}] ${value}`
+		`[Simple-Bookmark] [${key}] ${value}`
 	);
 	type === `error` && console.error(
-		`[simple-bookmark] [${key}] ${value}`
+		`[Simple-Bookmark] [${key}] ${value}`
 	);
 };

@@ -28,7 +28,7 @@ export const notify = (
 	`collapse`,
 	value: string,
 ): void => {
-	const text = `[simple-bookmark] [${key}] ${value}`;
+	const text = `[Simple-Bookmark] [${key}] ${value}`;
 	const AUTO_CLOSE_MS = 1000;
 	if (type === `debug` || type === `info`) {
 		void vscode.window.withProgress({

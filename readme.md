@@ -23,9 +23,9 @@ Shortcuts are context-aware and active when the extension view is focused.
 
 ## Settings ⚙️
 
-- 🔁 `simple-bookmark.autoRefresh` (boolean, default: `true`) — Auto-refresh on file changes
-- 🔄 `simple-bookmark.showSyncStatus` (boolean, default: `true`) — Show synchronization status per item
-- 🗑️ `simple-bookmark.deleteMode` (string, default: `"ask"`) — Default delete behavior: `"ask" | "bookmarkOnly" | "bookmarkAndOriginal"`
+- 🔁 `Simple-Bookmark.autoRefresh` (boolean, default: `true`) — Auto-refresh on file changes
+- 🔄 `Simple-Bookmark.showSyncStatus` (boolean, default: `true`) — Show synchronization status per item
+- 🗑️ `Simple-Bookmark.deleteMode` (string, default: `"ask"`) — Default delete behavior: `"ask" | "bookmarkOnly" | "bookmarkAndOriginal"`
 
 ## Install ⬇️
 

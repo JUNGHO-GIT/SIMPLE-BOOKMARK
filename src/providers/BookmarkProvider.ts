@@ -455,7 +455,7 @@ export const BookmarkProvider = (
 
 			return nameToOriginalPath.size === 0
 				? void vscode.window.showWarningMessage(
-					"[simple-bookmark] No root file bookmarks to overwrite."
+					"[Simple-Bookmark] No root file bookmarks to overwrite."
 				)
 				: await fileOperationService!.pasteItemsToRoot(
 					copiedBookmarks,

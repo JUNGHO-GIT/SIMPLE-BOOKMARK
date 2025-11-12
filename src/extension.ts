@@ -25,7 +25,7 @@ export const activate = (
 	const provider = BookmarkProvider(workspaceRoot);
 	const commandManager = BookmarkCommand(provider, context);
 	const commands = commandManager.registerCommands();
-	const treeView = vscode.window.createTreeView("simple-bookmark", {
+	const treeView = vscode.window.createTreeView("Simple-Bookmark", {
 		treeDataProvider: provider,
 		canSelectMany: true,
 		showCollapseAll: true
@@ -87,7 +87,7 @@ const setupAdditionalListeners = (
 	});
 
 	const configListener = vscode.workspace.onDidChangeConfiguration(e => {
-		(e.affectsConfiguration("simple-bookmark") || e.affectsConfiguration("files.exclude")) && (() => {
+		(e.affectsConfiguration("Simple-Bookmark") || e.affectsConfiguration("files.exclude")) && (() => {
 			configTimer && clearTimeout(configTimer);
 				configTimer = setTimeout(() => {
 					logger(`debug`, `activate`, `configuration changed`);
