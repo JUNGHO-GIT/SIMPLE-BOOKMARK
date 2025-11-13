@@ -2,9 +2,9 @@
   "name": "simple-bookmark",
   "displayName": "Simple-Bookmark",
   "publisher": "JUNGHO",
-  "icon": "logo_image.png",
+  "icon": "logo.webp",
   "license": "Apache-2.0",
-  "version": "2.4.40",
+  "version": "2.4.41",
   "description": "Real-time synchronized bookmarks for VSCode",
   "main": "./out/extension.js",
   "repository": {
@@ -12,7 +12,7 @@
     "url": "https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK.git"
   },
   "engines": {
-    "vscode": "^1.105.0",
+    "vscode": "^1.106.0",
     "node": ">=18.0.0",
     "npm": ">=10.0.0"
   },
@@ -302,7 +302,7 @@
     "@swc/core": "^1.15.1",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.10.1",
-    "@types/vscode": "^1.105.0",
+    "@types/vscode": "^1.106.0",
     "@typescript-eslint/eslint-plugin": "^8.46.4",
     "@typescript-eslint/parser": "^8.46.4",
     "@vscode/test-electron": "^2.5.2",
