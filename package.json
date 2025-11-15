@@ -6,7 +6,7 @@
   "icon": "logo.webp",
   "license": "Apache-2.0",
   "main": "./out/extension.js",
-  "version": "2.5.3",
+  "version": "2.5.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK.git"
@@ -125,18 +125,6 @@
         "title": "Expand This Folder",
         "category": "Simple-Bookmark",
         "icon": "$(expand-all)"
-      },
-      {
-        "command": "Simple-Bookmark.openLogOutput",
-        "title": "Simple-Bookmark: Open Log Output",
-        "category": "Simple-Bookmark",
-        "icon": "$(output)"
-      },
-      {
-        "command": "Simple-Bookmark.openExtensionHostLog",
-        "title": "Simple-Bookmark: Open Extension Host Log",
-        "category": "Simple-Bookmark",
-        "icon": "$(extensions)"
       }
     ],
     "keybindings": [
@@ -179,16 +167,6 @@
         "key": "shift+alt+y",
         "command": "Simple-Bookmark.expandfolder",
         "when": "explorerViewletVisible && explorerResourceIsFolder && filesExplorerFocus"
-      },
-      {
-        "key": "ctrl+alt+l",
-        "command": "Simple-Bookmark.openLogOutput",
-        "when": "view == Simple-Bookmark"
-      },
-      {
-        "key": "ctrl+alt+shift+l",
-        "command": "Simple-Bookmark.openExtensionHostLog",
-        "when": "view == Simple-Bookmark"
       }
     ],
     "menus": {
@@ -210,16 +188,6 @@
         },
         {
           "command": "Simple-Bookmark.removeallbookmark",
-          "when": "view == Simple-Bookmark",
-          "group": "navigation"
-        },
-        {
-          "command": "Simple-Bookmark.openLogOutput",
-          "when": "view == Simple-Bookmark",
-          "group": "navigation"
-        },
-        {
-          "command": "Simple-Bookmark.openExtensionHostLog",
           "when": "view == Simple-Bookmark",
           "group": "navigation"
         }
@@ -323,12 +291,6 @@
           ],
           "default": "ask",
           "description": "Set the default behavior when deleting bookmarks"
-        },
-        "Simple-Bookmark.showExtensionHostLog": {
-          "type": "boolean",
-          "scope": "window",
-          "default": true,
-          "description": "When true, provide a separate command to open the Extension Host log for debugging integration issues"
         }
       }
     }
