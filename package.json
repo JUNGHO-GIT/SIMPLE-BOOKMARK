@@ -5,8 +5,8 @@
   "publisher": "JUNGHO",
   "icon": "logo.webp",
   "license": "Apache-2.0",
-  "version": "2.5.2",
   "main": "./out/extension.js",
+  "version": "2.5.3",
   "repository": {
     "type": "git",
     "url": "https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK.git"
@@ -287,6 +287,18 @@
     "configuration": {
       "title": "Simple-Bookmark",
       "properties": {
+        "Simple-Bookmark.logLevel": {
+          "type": "string",
+          "scope": "window",
+          "enum": [
+            "off",
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
+          "default": "info"
+        },
         "Simple-Bookmark.autoRefresh": {
           "type": "boolean",
           "default": true,
@@ -312,29 +324,11 @@
           "default": "ask",
           "description": "Set the default behavior when deleting bookmarks"
         },
-        "Simple-Bookmark.logLevel": {
-          "type": "string",
-          "scope": "window",
-          "enum": [
-            "off",
-            "error",
-            "info",
-            "debug"
-          ],
-          "default": "info",
-          "description": "Log level for Simple-Bookmark output channel"
-        },
         "Simple-Bookmark.showExtensionHostLog": {
           "type": "boolean",
           "scope": "window",
           "default": true,
           "description": "When true, provide a separate command to open the Extension Host log for debugging integration issues"
-        },
-        "Simple-Bookmark.outputChannelName": {
-          "type": "string",
-          "scope": "window",
-          "default": "Simple-Bookmark",
-          "description": "Name of the Output channel used by the extension"
         }
       }
     }
