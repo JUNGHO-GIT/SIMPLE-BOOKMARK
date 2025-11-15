@@ -14,7 +14,8 @@ export {
 	notify,
 } from "@scripts/notify";
 export {
-	logger
+	logger,
+	initLogger
 } from "@scripts/logger";
 
 // -------------------------------------------------------------------------------

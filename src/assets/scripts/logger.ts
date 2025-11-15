@@ -1,5 +1,19 @@
 // assets/scripts/logger.ts
 
+import { vscode } from "@exportLibs";
+
+// -----------------------------------------------------------------------------------------
+let outputChannel: vscode.OutputChannel | null = null;
+
+// -----------------------------------------------------------------------------------------
+export const initLogger = (): void => {
+	(!outputChannel) ? (
+		outputChannel = vscode.window.createOutputChannel(`Simple-Bookmark`)
+	) : (
+		void 0
+	);
+};
+
 // -----------------------------------------------------------------------------------------
 export const logger = (
 	type:
@@ -7,25 +21,13 @@ export const logger = (
 	`info` |
 	`warn` |
 	`error`,
-	key:
-	`activate` |
-	`deactivate` |
-	`add` |
-	`copy` |
-	`paste` |
-	`remove` |
-	`rename` |
-	`move` |
-	`duplicate` |
-	`create` |
-	`save` |
-	`overwrite` |
-	`export` |
-	`select` |
-	`expand` |
-	`collapse`,
+	key: string,
 	value: string,
 ): void => {
+	initLogger();
+
+	const message = `[${type.toUpperCase()}] [${key}] ${value}`;
+
 	type === `debug` && console.debug(
 		`[Simple-Bookmark] [${key}] ${value}`
 	);
@@ -38,4 +40,6 @@ export const logger = (
 	type === `error` && console.error(
 		`[Simple-Bookmark] [${key}] ${value}`
 	);
+
+	outputChannel?.appendLine(message);
 };

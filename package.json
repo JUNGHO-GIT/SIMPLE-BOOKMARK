@@ -1,20 +1,15 @@
 {
   "name": "simple-bookmark",
   "displayName": "Simple-Bookmark",
+  "description": "Real-time synchronized bookmarks for VSCode",
   "publisher": "JUNGHO",
   "icon": "logo.webp",
   "license": "Apache-2.0",
-  "version": "2.4.41",
-  "description": "Real-time synchronized bookmarks for VSCode",
+  "version": "2.4.42",
   "main": "./out/extension.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK.git"
-  },
-  "engines": {
-    "vscode": "^1.106.0",
-    "node": ">=18.0.0",
-    "npm": ">=10.0.0"
   },
   "categories": [
     "Other"
@@ -41,9 +36,14 @@
     "onCommand:Simple-Bookmark.createfolder",
     "onCommand:Simple-Bookmark.createfile",
     "onCommand:Simple-Bookmark.expandexplorer",
-    "onCommand:Simple-Bookmark.expandfolder"
+    "onCommand:Simple-Bookmark.expandfolder",
+    "onCommand:Simple-Bookmark.openLogOutput",
+    "onCommand:Simple-Bookmark.openExtensionHostLog"
   ],
   "contributes": {
+    "outputChannels": [
+      "Simple-Bookmark"
+    ],
     "views": {
       "explorer": [
         {
@@ -125,6 +125,18 @@
         "title": "Expand This Folder",
         "category": "Simple-Bookmark",
         "icon": "$(expand-all)"
+      },
+      {
+        "command": "Simple-Bookmark.openLogOutput",
+        "title": "Simple-Bookmark: Open Log Output",
+        "category": "Simple-Bookmark",
+        "icon": "$(output)"
+      },
+      {
+        "command": "Simple-Bookmark.openExtensionHostLog",
+        "title": "Simple-Bookmark: Open Extension Host Log",
+        "category": "Simple-Bookmark",
+        "icon": "$(extensions)"
       }
     ],
     "keybindings": [
@@ -167,6 +179,16 @@
         "key": "shift+alt+y",
         "command": "Simple-Bookmark.expandfolder",
         "when": "explorerViewletVisible && explorerResourceIsFolder && filesExplorerFocus"
+      },
+      {
+        "key": "ctrl+alt+l",
+        "command": "Simple-Bookmark.openLogOutput",
+        "when": "view == Simple-Bookmark"
+      },
+      {
+        "key": "ctrl+alt+shift+l",
+        "command": "Simple-Bookmark.openExtensionHostLog",
+        "when": "view == Simple-Bookmark"
       }
     ],
     "menus": {
@@ -188,6 +210,16 @@
         },
         {
           "command": "Simple-Bookmark.removeallbookmark",
+          "when": "view == Simple-Bookmark",
+          "group": "navigation"
+        },
+        {
+          "command": "Simple-Bookmark.openLogOutput",
+          "when": "view == Simple-Bookmark",
+          "group": "navigation"
+        },
+        {
+          "command": "Simple-Bookmark.openExtensionHostLog",
           "when": "view == Simple-Bookmark",
           "group": "navigation"
         }
@@ -279,6 +311,30 @@
           ],
           "default": "ask",
           "description": "Set the default behavior when deleting bookmarks"
+        },
+        "Simple-Bookmark.logLevel": {
+          "type": "string",
+          "scope": "window",
+          "enum": [
+            "off",
+            "error",
+            "info",
+            "debug"
+          ],
+          "default": "info",
+          "description": "Log level for Simple-Bookmark output channel"
+        },
+        "Simple-Bookmark.showExtensionHostLog": {
+          "type": "boolean",
+          "scope": "window",
+          "default": true,
+          "description": "When true, provide a separate command to open the Extension Host log for debugging integration issues"
+        },
+        "Simple-Bookmark.outputChannelName": {
+          "type": "string",
+          "scope": "window",
+          "default": "Simple-Bookmark",
+          "description": "Name of the Output channel used by the extension"
         }
       }
     }
@@ -291,6 +347,11 @@
     "gcloud": "node .node/gcloud.cjs --git",
     "vsce": "node .node/vsce.cjs"
   },
+  "engines": {
+    "vscode": "^1.106.0",
+    "node": ">=18.0.0",
+    "npm": ">=10.0.0"
+  },
   "dependencies": {
     "@babel/core": "^7.28.5",
     "@swc/helpers": "^0.5.17",
@@ -299,10 +360,9 @@
   },
   "devDependencies": {
     "@swc/cli": "^0.7.9",
-    "@swc/core": "^1.15.1",
+    "@swc/core": "^1.15.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.10.1",
-    "@types/vscode": "^1.106.0",
     "@typescript-eslint/eslint-plugin": "^8.46.4",
     "@typescript-eslint/parser": "^8.46.4",
     "@vscode/test-electron": "^2.5.2",

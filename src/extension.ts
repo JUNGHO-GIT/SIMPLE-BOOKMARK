@@ -1,15 +1,22 @@
 // extension.ts
 
 import { vscode } from "@exportLibs";
-import { notify, logger } from "@exportScripts";
+import { notify, logger, initLogger } from "@exportScripts";
 import { BookmarkProvider } from "@exportProviders";
 import { BookmarkCommand } from "@exportCommands";
 import type { BookmarkProviderType, BookmarkCommandType, BookmarkModelType } from "@exportTypes";
+
+// 0. deactivate ---------------------------------------------------------------------------------
+export const deactivate = (
+): void => {
+	logger(`debug`, `deactivate`, ``);
+};
 
 // 1. activate ---------------------------------------------------------------------------------
 export const activate = (
 	context: vscode.ExtensionContext
 ): void => {
+	initLogger();
 	logger(`debug`, `activate`, ``);
 	const workspaceRoot = (
 		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
@@ -50,13 +57,7 @@ export const activate = (
 	);
 };
 
-// 2. deactivate ---------------------------------------------------------------------------------
-export const deactivate = (
-): void => {
-	logger(`debug`, `deactivate`, ``);
-};
-
-// 3. setup ---------------------------------------------------------------------------------------
+// 2. setup ---------------------------------------------------------------------------------------
 const setupAdditionalListeners = (
 	provider: BookmarkProviderType,
 	commandManager: BookmarkCommandType,
@@ -67,10 +68,10 @@ const setupAdditionalListeners = (
 	let workspaceTimer: NodeJS.Timeout | null = null;
 	let configTimer: NodeJS.Timeout | null = null;
 
-	const selListener = treeView.onDidChangeSelection(e => {
+	const selListener = treeView.onDidChangeSelection((e) => {
 		selectionTimer && clearTimeout(selectionTimer);
 		selectionTimer = setTimeout(() => {
-			logger(`debug`, `select`, `${e.selection.length}`);
+			logger(`debug`, `select`, `${e.selection.map(item => item.label).join(", ")}`);
 			commandManager.updateSelectedBookmark(e.selection as BookmarkModelType[]);
 			selectionTimer = null;
 		}, 50);
