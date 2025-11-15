@@ -8,6 +8,7 @@ import _http from "http";
 import _https from "https";
 import { createRequire as _createRequire } from "module";
 import { Minimatch as _Minimatch } from "minimatch";
+import { TextEncoder as _TextEncoder } from "util";
 
 // 2. export --------------------------------------------------------------------------------
 export { _vscode as vscode };
@@ -17,3 +18,4 @@ export { _http as http };
 export { _https as https };
 export { _createRequire as createRequire };
 export { _Minimatch as Minimatch };
+export { _TextEncoder as TextEncoder };

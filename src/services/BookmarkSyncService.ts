@@ -206,7 +206,7 @@ export const BookmarkSyncService = (
 		return uniqueName;
 	};
 
-	// 동일한 북마크 이름이 이미 존재하는지 확인
+	// 동일한 북마크 이름이 이미 존재하는지 확인 -------------------------------------------
 	const isBookmarkNameExists = (
 		name : string
 	) : boolean => {

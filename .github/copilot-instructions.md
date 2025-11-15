@@ -32,7 +32,6 @@
 # 2. FORMATTING EXAMPLES
 
 # 2-1. TERNARY CHAINS
-- Wrap each condition/result in parentheses on separate lines
 **INCORRECT:**
 ```javascript
 (!s || s === "p1") ? fn() : (s === "p2") ? fn(s, "yy") : fn(s);
@@ -41,17 +40,14 @@
 ```javascript
 !s || s === `p1` ? (
   fn()
-)
-: s === `p2` ? (
+) : s === `p2` ? (
   fn(s, "yy")
-)
-: (
+) : (
   fn(s)
 )
 ```
 
 # 2-2. IIFE
-- Prefer IIFE over if-else when ternary insufficient
 - AVOID excessive IIFE, use simple parentheses when no scope needed
 - Use `(() => { })()` only when: isolated scope required, block scoping needed, or mid-execution return
 **INCORRECT:**
@@ -71,8 +67,7 @@ fs.existsSync(o) && (() => {
 ```javascript
 !r.e ? (
   typeof r.s === `number` ? r.s === 0 : true
-)
-: (
+) : (
   false
 )
 fs.existsSync(outDir) && (
