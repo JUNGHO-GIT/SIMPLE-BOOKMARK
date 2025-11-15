@@ -5,7 +5,7 @@
   "publisher": "JUNGHO",
   "icon": "logo.webp",
   "license": "Apache-2.0",
-  "version": "2.4.42",
+  "version": "1.0.75",
   "main": "./out/extension.js",
   "repository": {
     "type": "git",

@@ -37,42 +37,8 @@ const logger = (type=``, message=``) => {
 	`));
 };
 
-// 버전 증가 함수 ------------------------------------------------------------------------------
-const incrementVersion = () => {
-	logger(`info`, `버전 자동 증가 시작`);
-
-	const packageJsonPath = path.join(process.cwd(), `package.json`);
-
-	!fs.existsSync(packageJsonPath) && (() => {
-		logger(`error`, `package.json 파일을 찾을 수 없습니다: ${packageJsonPath}`);
-		process.exit(1);
-	})();
-
-	const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, `utf8`));
-	const currentVersion = packageJson.version;
-
-	!currentVersion && (() => {
-		logger(`error`, `package.json에 version 필드가 없습니다`);
-		process.exit(1);
-	})();
-
-	const versionParts = currentVersion.split(`.`);
-	versionParts.length !== 3 && (() => {
-		logger(`error`, `올바르지 않은 버전 형식입니다: ${currentVersion}`);
-		process.exit(1);
-	})();
-
-	const [major, minor, patch] = versionParts.map(Number);
-	const newVersion = `${major}.${minor}.${patch + 1}`;
-
-	packageJson.version = newVersion;
-	fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + `\n`, `utf8`);
-
-	logger(`success`, `버전 업데이트: ${currentVersion} → ${newVersion}`);
-	return newVersion;
-};
-
 // 명령 실행 함수 ------------------------------------------------------------------------------
+// @ts-ignore
 const runCommand = (cmd=``, args=[], stepName=``) => {
 	logger(`info`, `${stepName} 시작`);
 	logger(`info`, `실행: ${cmd} ${args.join(` `)}`);
@@ -95,7 +61,6 @@ const runCommand = (cmd=``, args=[], stepName=``) => {
 // 메인 실행 함수 ------------------------------------------------------------------------------
 (() => {
 	logger(`info`, `VSCE 패키지 빌드 시작`);
-	incrementVersion();
 
 	// out 디렉토리 초기화
 	(() => {

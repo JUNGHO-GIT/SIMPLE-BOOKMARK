@@ -82,6 +82,7 @@ const cleanup = () => {
 const installDependencies = (cliTool=``) => {
 	logger(`info`, `의존성 설치 시작 (옵션: ${cliTool || `auto-detect`})`);
 
+	// @ts-ignore
 	const runCommand = (cmd=``, args=[]) => {
 		logger(`info`, `실행: ${cmd} ${args.join(` `)}`);
 
@@ -227,6 +228,7 @@ const installDependencies = (cliTool=``) => {
 		logger(`success`, `프로젝트 리셋 완료`);
 	}
 	catch (e) {
+		// @ts-ignore
 		logger(`error`, `프로젝트 리셋 실패: ${e.message}`);
 		process.exit(1);
 	}

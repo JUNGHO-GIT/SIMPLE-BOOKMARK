@@ -43,6 +43,7 @@ const logger = (type=``, message=``) => {
 };
 
 // 명령 실행 함수 ------------------------------------------------------------------------------
+// @ts-ignore
 const run = (cmd=``, args=[]) => {
 	logger(`info`, `실행: ${cmd} ${args.join(` `)}`);
 
@@ -130,6 +131,7 @@ const watch = () => {
 		})();
 	}
 	catch (e) {
+		// @ts-ignore
 		logger(`error`, `스크립트 실행 실패: ${e.message}`);
 		process.exit(1);
 	}
