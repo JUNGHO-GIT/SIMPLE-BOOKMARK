@@ -11,8 +11,8 @@ const args1 = argv.find(arg => [`--npm`, `--pnpm`, `--yarn`, `--bun`].includes(a
 const args2 = argv.find(arg => [`--compile`, `--watch`].includes(arg))?.replace(`--`, ``) || ``;
 
 // 로깅 함수 -----------------------------------------------------------------------------------
-const logger = (type = ``, message = ``) => {
-	const format = (text = ``) => text.trim().replace(/^\s+/gm, ``);
+const logger = (type=``, message=``) => {
+	const format = (text=``) => text.trim().replace(/^\s+/gm, ``);
 	const line = `----------------------------------------`;
 	const colors = {
 		line: `\x1b[38;5;214m`,
@@ -44,7 +44,7 @@ const logger = (type = ``, message = ``) => {
 
 // 명령 실행 함수 ------------------------------------------------------------------------------
 // @ts-ignore
-const runCommand = (cmd = ``, args = []) => {
+const runCommand = (cmd=``, args=[]) => {
 	logger(`info`, `실행: ${cmd} ${args.join(` `)}`);
 
 	const result = spawnSync(cmd, args, {
@@ -99,13 +99,6 @@ const watch = () => {
 		[`exec`, `tsc-alias`, `-p`, `tsconfig.json`, `-f`, `--watch`]
 	);
 
-	const tscArgs = args1 === `npm` ? (
-		[`exec`, `--`, `tsc`, `--noEmit`, `--watch`]
-	)
-	: (
-		[`exec`, `tsc`, `--noEmit`, `--watch`]
-	);
-
 	const swcProc = spawn(args1, swcArgs, {
 		stdio: `inherit`,
 		shell: true,
@@ -118,17 +111,10 @@ const watch = () => {
 		env: process.env
 	});
 
-	const tscProc = spawn(args1, tscArgs, {
-		stdio: `inherit`,
-		shell: true,
-		env: process.env
-	});
-
 	const cleanup = () => {
 		logger(`info`, `워치 모드 종료 중...`);
 		swcProc.kill();
 		aliasProc.kill();
-		tscProc.kill();
 		process.exit(0);
 	};
 
@@ -143,11 +129,7 @@ const watch = () => {
 		code !== 0 && logger(`warn`, `tsc-alias 종료 (exit code: ${code})`);
 	});
 
-	tscProc.on(`close`, (code) => {
-		code !== 0 && logger(`warn`, `tsc 종료 (exit code: ${code})`);
-	});
-
-	logger(`success`, `워치 모드 실행 중 (swc + tsc-alias + tsc)`);
+	logger(`success`, `워치 모드 실행 중`);
 };
 
 // 실행 ---------------------------------------------------------------------------------------
