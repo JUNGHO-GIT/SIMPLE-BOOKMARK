@@ -6,7 +6,7 @@
   "icon": "logo.webp",
   "license": "Apache-2.0",
   "main": "./out/extension.js",
-  "version": "2.6.3",
+  "version": "2.6.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK.git"
@@ -309,19 +309,19 @@
     "npm": ">=10.0.0"
   },
   "dependencies": {
-    "@babel/core": "^7.28.5",
-    "@swc/helpers": "^0.5.17",
     "minimatch": "^10.1.1",
     "terser": "^5.44.1"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.5",
     "@swc/cli": "^0.7.9",
     "@swc/core": "^1.15.2",
+    "@swc/helpers": "^0.5.17",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.10.1",
+    "@types/vscode": "^1.106.0",
     "@typescript-eslint/eslint-plugin": "^8.46.4",
     "@typescript-eslint/parser": "^8.46.4",
-    "@types/vscode": "^1.106.0",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.0",
     "concurrently": "^9.2.1",
