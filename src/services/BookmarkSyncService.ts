@@ -66,7 +66,7 @@ export const BookmarkSyncService = (
 		const saveListener = vscode.workspace.onDidSaveTextDocument(async (document) => {
 			const filePath = document.uri.fsPath;
 			!isBookmarkedFile(filePath) || (
-				logger(`debug`, `save: ${filePath}`),
+				logger(`debug`, `save - ${filePath}`),
 				await syncBookmark(filePath)
 			);
 		});
@@ -87,7 +87,7 @@ export const BookmarkSyncService = (
 
 			watcher.onDidChange(async (uri) => {
 				uri.fsPath === originalPath && (
-					logger(`debug`, `save: ${originalPath}`),
+					logger(`debug`, `save - ${originalPath}`),
 					await syncBookmark(originalPath)
 				);
 			});
@@ -131,7 +131,7 @@ export const BookmarkSyncService = (
 						return metadata;
 					}
 					catch (error) {
-						logger(`error`, `activate: ${error instanceof Error ? error.message : String(error)}`);
+						logger(`error`, `activate - ${error instanceof Error ? error.message : String(error)}`);
 						return null;
 					}
 				});
@@ -151,7 +151,7 @@ export const BookmarkSyncService = (
 			})();
 		}
 		catch (error) {
-			logger(`error`, `activate: ${error}`);
+			logger(`error`, `activate - ${error}`);
 		}
 	};
 
@@ -184,10 +184,10 @@ export const BookmarkSyncService = (
 
 			onSyncUpdate && onSyncUpdate(originalPath, BookmarkStatus.SYNCED);
 			onRefreshNeeded && onRefreshNeeded();
-			logger(`debug`, `add: ${uniqueBookmarkName}`);
+			logger(`debug`, `add - ${uniqueBookmarkName}`);
 		}
 		catch (error) {
-			logger(`error`, `add: ${error instanceof Error ? error.message : String(error)}`);
+			logger(`error`, `add - ${error instanceof Error ? error.message : String(error)}`);
 		}
 	};
 
@@ -245,7 +245,7 @@ export const BookmarkSyncService = (
 
 			// 파일시스템 rename
 			try {
-				logger(`debug`, `rename: ${metadata!.originalPath} -> ${newOriginalPath}`);
+				logger(`debug`, `rename - ${metadata!.originalPath} -> ${newOriginalPath}`);
 				await vscode.workspace.fs.rename(
 					vscode.Uri.file(metadata!.originalPath),
 					vscode.Uri.file(newOriginalPath),
@@ -255,12 +255,10 @@ export const BookmarkSyncService = (
 			catch (error) {
 				logger(`error`, `rename: ${error instanceof Error ? error.message : String(error)}`);
 			}
-		}
-		else {
-			logger(`debug`, `rename: ${metadata!.originalPath}`);
-		}
-
-		// 메타데이터 파일 rename(이름 변경 반영)
+	}
+	else {
+		logger(`debug`, `rename - ${metadata!.originalPath}`);
+	}		// 메타데이터 파일 rename(이름 변경 반영)
 		const oldMetaPath = path.join(bookmarkPath, `${metadata!.bookmarkName}${METADATA_EXT}`);
 		const newMetaPath = path.join(bookmarkPath, `${finalMetaName}${METADATA_EXT}`);
 
@@ -284,12 +282,10 @@ export const BookmarkSyncService = (
 			bookmarkedFiles.set(originalPath, metadata!);
 		}
 
-		onSyncUpdate && onSyncUpdate(newOriginalPath, BookmarkStatus.SYNCED);
-		onRefreshNeeded && onRefreshNeeded();
-		logger(`debug`, `rename: ${finalMetaName} / ${newOriginalPath}`);
-	};
-
-	// 북마크 제거 ------------------------------------------------------------------------
+	onSyncUpdate && onSyncUpdate(newOriginalPath, BookmarkStatus.SYNCED);
+	onRefreshNeeded && onRefreshNeeded();
+	logger(`debug`, `rename - ${finalMetaName} / ${newOriginalPath}`);
+};	// 북마크 제거 ------------------------------------------------------------------------
 	// - 메타데이터 파일을 삭제하고 워처 및 내부 상태를 정리
 	const removeBookmark = async (
 		originalPath : string
@@ -436,7 +432,7 @@ export const BookmarkSyncService = (
 	// 초기화 ----------------------------------------------------------------------------
 	setupEventListeners();
 	loadExistingBookmarks().catch((err) => {
-		logger(`error`, `activate: ${err instanceof Error ? err.message : String(err)}`);
+		logger(`error`, `activate - ${err instanceof Error ? err.message : String(err)}`);
 	});
 
 	// 99. return -----------------------------------------------------------------------------

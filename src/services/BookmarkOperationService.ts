@@ -11,8 +11,8 @@ export const BookmarkOperationService = (
 ) => {
 
 	// -----------------------------------------------------------------------------------------
-	logger(`debug`, `activate: ${bookmarkPath}`);
-	logger(`debug`, `activate: syncService initialized`);
+	logger(`debug`, `activate - ${bookmarkPath}`);
+	logger(`debug`, `activate - syncService initialized`);
 
 	// 모든 파일 경로(flat) 목록을 반환 --------------------------------------------------------
 	const flattenToFiles = async (uri: vscode.Uri): Promise<string[]> => {
@@ -69,7 +69,7 @@ export const BookmarkOperationService = (
 
 			// 대상이 원본 내부일 경우 무한 루프 또는 손상 가능성 있으므로 차단
 			if (isSameFsPath(source, target) || isSubPath(source, target)) {
-				logger(`error`, `copy: ${source} -> ${target}`);
+				logger(`error`, `copy - ${source} -> ${target}`);
 			}
 			await vscode.workspace.fs.delete(tgtUri, {recursive: true});
 
@@ -107,7 +107,7 @@ export const BookmarkOperationService = (
 				const isSame = isSameFsPath(item.fsPath, targetFile);
 
 				isSame
-				? logger(`debug`, `paste: ${item.fsPath}`)
+				? logger(`debug`, `paste - ${item.fsPath}`)
 				: await (async () => {
 					try {
 						// 소스 정보 확인
@@ -116,13 +116,13 @@ export const BookmarkOperationService = (
 							srcStat = await vscode.workspace.fs.stat(item);
 						}
 						catch (e) {
-							notify(`error`, `paste: Source not found or inaccessible: ${fileName}`);
+							notify(`error`, `paste - Source not found or inaccessible: ${fileName}`);
 							return;
 						}
 
 						// 폴더를 자기 자신 또는 하위 폴더로 붙여넣는 경우 차단
 						if (srcStat.type === vscode.FileType.Directory && isSubPath(item.fsPath, targetFile)) {
-							notify(`error`, `paste: Cannot paste a folder into itself or its subfolder: ${fileName}`);
+							notify(`error`, `paste - Cannot paste a folder into itself or its subfolder: ${fileName}`);
 							return;
 						}
 
@@ -140,7 +140,7 @@ export const BookmarkOperationService = (
 						pasteCount++;
 					}
 					catch (error) {
-						notify(`error`, `paste: Paste failed for ${fileName}: ${error}`);
+						notify(`error`, `paste - Paste failed for ${fileName}: ${error}`);
 					}
 				})();
 			}
@@ -148,8 +148,8 @@ export const BookmarkOperationService = (
 			const messageValue = pasteCount === 1
 			? "1 item pasted (overwritten)"
 			: `${pasteCount} items pasted (overwritten)`;
-			notify(`info`, `paste: ${messageValue}`);
-			logger(`debug`, `paste: ${pasteCount}`);
+			notify(`info`, `paste - ${messageValue}`);
+			logger(`debug`, `paste - ${pasteCount}`);
 		})();
 	};
 
@@ -177,10 +177,10 @@ export const BookmarkOperationService = (
 				const fileName = path.basename(src);
 				const realTarget = nameToOriginalPath.get(fileName);
 
-				!realTarget
-				? skipped.push(fileName)
-				: (isSameFsPath(src, realTarget)
-					? logger(`debug`, `paste: ${src}`)
+			!realTarget
+			? skipped.push(fileName)
+			: (isSameFsPath(src, realTarget)
+					? logger(`debug`, `paste - ${src}`)
 					: await (async () => {
 						try {
 							// 대상 파일이 존재하면 삭제
@@ -205,12 +205,12 @@ export const BookmarkOperationService = (
 
 			overwriteCount > 0 && (
 				overwriteCount === 1 ? (
-					notify(`info`, `paste: 1 file overwritten at original location`)
+					notify(`info`, `paste - 1 file overwritten at original location`)
 				) : (
-					notify(`info`, `paste: ${overwriteCount} files overwritten at original locations`)
+					notify(`info`, `paste - ${overwriteCount} files overwritten at original locations`)
 				)
 			);
-			skipped.length > 0 && notify(`warn`, `paste: ${skipped.length} files skipped (no matching original names)`);
+			skipped.length > 0 && notify(`warn`, `paste - ${skipped.length} files skipped (no matching original names)`);
 		})();
 	};
 
@@ -224,10 +224,10 @@ export const BookmarkOperationService = (
 			try {
 				await vscode.workspace.fs.delete(item, {recursive : true});
 				deleteCount++;
-				logger(`debug`, `remove: ${item.fsPath}`);
+				logger(`debug`, `remove - ${item.fsPath}`);
 			}
 			catch (error) {
-				logger(`error`, `remove: ${item.fsPath} ${String(error)}`);
+				logger(`error`, `remove - ${item.fsPath} ${String(error)}`);
 			}
 		}
 
@@ -235,7 +235,7 @@ export const BookmarkOperationService = (
 		? "Deleted 1 original file"
 		: `Deleted ${deleteCount} original files`;
 
-		notify(`info`, `remove: ${successValue}`);
+		notify(`info`, `remove - ${successValue}`);
 	};
 
 	// 실제 위치에 새 폴더 생성 -------------------------------------------------------------
@@ -246,7 +246,7 @@ export const BookmarkOperationService = (
 		const error = validateFileName(folderName);
 
 		return error
-			? void notify(`error`, `create: Invalid folder name: ${error}`)
+			? void notify(`error`, `create - Invalid folder name: ${error}`)
 		: await (async () => {
 			const folderPath = path.join(parentPath, folderName);
 			const folderUri = vscode.Uri.file(folderPath);
@@ -258,11 +258,11 @@ export const BookmarkOperationService = (
 				exists = false;
 			}
 			exists
-						? notify(`warn`, `create: Folder already exists: ${folderName}`)
+					? notify(`warn`, `create - Folder already exists: ${folderName}`)
 			: await (async () => {
-				await vscode.workspace.fs.createDirectory(folderUri);
-						notify(`info`, `create`, `Folder created at original location: ${folderName}`);
-						logger(`debug`, `create: ${folderPath}`);
+						await vscode.workspace.fs.createDirectory(folderUri);
+						notify(`info`, `create - Folder created at original location: ${folderName}`);
+						logger(`debug`, `create - ${folderPath}`);
 			})();
 		})();
 	};
@@ -275,7 +275,7 @@ export const BookmarkOperationService = (
 		const error = validateFileName(fileName);
 
 		return error
-			? void notify(`error`, `create: Invalid file name: ${error}`)
+			? void notify(`error`, `create - Invalid file name: ${error}`)
 		: await (async () => {
 			const filePath = path.join(parentPath, fileName);
 			const fileUri = vscode.Uri.file(filePath);
@@ -287,19 +287,18 @@ export const BookmarkOperationService = (
 				exists = false;
 			}
 			exists
-							? notify(`warn`, `create: File already exists: ${fileName}`)
+					? notify(`warn`, `create - File already exists: ${fileName}`)
 			: await (async () => {
-				await vscode.workspace.fs.writeFile(fileUri, new Uint8Array(0));
-						notify(`info`, `create`, `File created: ${fileName}`);
-						logger(`debug`, `create: ${filePath}`);
+						await vscode.workspace.fs.writeFile(fileUri, new Uint8Array(0));
+						notify(`info`, `create - File created: ${fileName}`);
+						logger(`debug`, `create - ${filePath}`);
 
 				try {
 					const document = await vscode.workspace.openTextDocument(fileUri);
 					await vscode.window.showTextDocument(document);
 				}
 				catch (error) {
-					logger(`error`, `create`, `${fileName} ${error}`);
-					logger(`error`, `create: ${fileName} ${String(error)}`);
+					logger(`error`, `create - ${fileName} ${error}`);
 				}
 			})();
 		})();

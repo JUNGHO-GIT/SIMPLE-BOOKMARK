@@ -6,45 +6,40 @@ import { BookmarkProvider } from "@exportProviders";
 import { BookmarkCommand } from "@exportCommands";
 import type { BookmarkProviderType, BookmarkCommandType, BookmarkModelType } from "@exportTypes";
 
-// 0. deactivate ---------------------------------------------------------------------------------
-export const deactivate = (
-): void => {
-	logger(`debug`, `deactivate`, ``);
-};
+// -------------------------------------------------------------------------------------------------
+export const deactivate = () => {};
+export const activate = (context: vscode.ExtensionContext) => {
 
-// 1. activate ---------------------------------------------------------------------------------
-export const activate = (
-	context: vscode.ExtensionContext
-): void => {
+	// 0. Initialize Logger ------------------------------------------------------------------------
 	initLogger();
-	logger(`debug`, `activate`, ``);
+	logger(`info`, `Simple-Bookmark is now active!`);
 	const workspaceRoot = (
 		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
-		? vscode.workspace.workspaceFolders[0].uri.fsPath
-		: undefined
+			? vscode.workspace.workspaceFolders[0].uri.fsPath
+			: undefined
 	);
 
-	!workspaceRoot && (
-		notify(`warn`, `activate`, `requires an open workspace to function properly.`),
-		logger(`debug`, `activate`, `no workspace`)
-	);
+	!workspaceRoot && (() => {
+		notify(`warn`, `activate - requires an open workspace to function properly.`);
+		logger(`debug`, `activate - no workspace`);
+	})();
 
 	const provider = BookmarkProvider(workspaceRoot);
 	const commandManager = BookmarkCommand(provider, context);
 	const commands = commandManager.registerCommands();
-	const treeView = vscode.window.createTreeView("Simple-Bookmark", {
+	const treeView = vscode.window.createTreeView(`Simple-Bookmark`, {
 		treeDataProvider: provider,
 		canSelectMany: true,
-		showCollapseAll: true
+		showCollapseAll: true,
 	});
 
 	treeView.onDidExpandElement(e => {
 		const p = (e.element as any).originalPath;
-		p && (provider as any).markExpanded(process.platform === "win32" ? p.toLowerCase() : p);
+		p && (provider as any).markExpanded(process.platform === `win32` ? p.toLowerCase() : p);
 	});
 	treeView.onDidCollapseElement(e => {
 		const p = (e.element as any).originalPath;
-		p && (provider as any).markCollapsed(process.platform === "win32" ? p.toLowerCase() : p);
+		p && (provider as any).markCollapsed(process.platform === `win32` ? p.toLowerCase() : p);
 	});
 
 	const additionalListeners = setupAdditionalListeners(provider, commandManager, treeView);
@@ -53,7 +48,7 @@ export const activate = (
 		treeView,
 		...commands,
 		...additionalListeners,
-		{ dispose: () => provider.dispose() }
+		{ dispose: () => { provider.dispose(); } }
 	);
 };
 
@@ -71,7 +66,7 @@ const setupAdditionalListeners = (
 	const selListener = treeView.onDidChangeSelection((e) => {
 		selectionTimer && clearTimeout(selectionTimer);
 		selectionTimer = setTimeout(() => {
-			logger(`debug`, `select`, `${e.selection.map(item => item.label).join(", ")}`);
+			logger(`debug`, `select - ${e.selection.map(item => item.label).join(`, `)}`);
 			commandManager.updateSelectedBookmark(e.selection as BookmarkModelType[]);
 			selectionTimer = null;
 		}, 50);
@@ -80,18 +75,18 @@ const setupAdditionalListeners = (
 	const workspaceListener = vscode.workspace.onDidChangeWorkspaceFolders(() => {
 		workspaceTimer && clearTimeout(workspaceTimer);
 		workspaceTimer = setTimeout(() => {
-			logger(`debug`, `activate`, `workspace changed`);
-			notify(`info`, `activate`, `Bookmarks may need to be refreshed.`);
+			logger(`debug`, `activate - workspace changed`);
+			notify(`info`, `activate - Bookmarks may need to be refreshed.`);
 			provider.refresh();
 			workspaceTimer = null;
 		}, 200);
 	});
 
 	const configListener = vscode.workspace.onDidChangeConfiguration(e => {
-		(e.affectsConfiguration("Simple-Bookmark") || e.affectsConfiguration("files.exclude")) && (() => {
+		(e.affectsConfiguration(`Simple-Bookmark`) || e.affectsConfiguration(`files.exclude`)) && (() => {
 			configTimer && clearTimeout(configTimer);
-				configTimer = setTimeout(() => {
-					logger(`debug`, `activate`, `configuration changed`);
+			configTimer = setTimeout(() => {
+				logger(`debug`, `activate - configuration changed`);
 				provider.refresh();
 				configTimer = null;
 			}, 150);
@@ -104,7 +99,7 @@ const setupAdditionalListeners = (
 			workspaceTimer && clearTimeout(workspaceTimer);
 			configTimer && clearTimeout(configTimer);
 			selectionTimer = workspaceTimer = configTimer = null;
-		}
+		},
 	};
 
 	listeners.push(selListener, workspaceListener, configListener, timerCleanup);

@@ -160,7 +160,7 @@ export const BookmarkCommand = (
 			}
 		}
 		catch (error) {
-			logger(`debug`, `select`, error instanceof Error ? error.message : String(error));
+			logger(`debug`, `select - ${error instanceof Error ? error.message : String(error)}`);
 		}
 	};
 
@@ -197,7 +197,7 @@ export const BookmarkCommand = (
 			}
 		}
 		catch (error) {
-			logger(`debug`, `expand`, `${folderUri.fsPath} ${error instanceof Error ? error.message : String(error)}`);
+			logger(`debug`, `expand - ${folderUri.fsPath} ${error instanceof Error ? error.message : String(error)}`);
 		}
 	};
 
@@ -212,7 +212,7 @@ export const BookmarkCommand = (
 	const registerRefreshCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"Simple-Bookmark.refreshentry", () => {
-			logger(`debug`, `select`, `Refresh command executed`);
+			logger(`debug`, `select - Refresh command executed`);
 			provider.refresh();
 		}
 	);
@@ -227,7 +227,7 @@ export const BookmarkCommand = (
 				const bookmarkName = path.basename(uri.fsPath);
 				return (stat.type === vscode.FileType.Directory || stat.type === vscode.FileType.File)
 					? (await provider.addBookmark(uri.fsPath, bookmarkName), provider.refresh())
-					: notify(`error`, `add`, "Only files or folders can be added.");
+					: notify(`error`, `add - Only files or folders can be added.`);
 			})()
 			: await (async () => {
 				await vscode.commands.executeCommand("copyFilePath");
@@ -239,9 +239,9 @@ export const BookmarkCommand = (
 						const bookmarkName = path.basename(picked.fsPath);
 						return (stat.type === vscode.FileType.Directory || stat.type === vscode.FileType.File)
 								? (await provider.addBookmark(picked.fsPath, bookmarkName), provider.refresh())
-								: notify(`error`, `add`, "Only files or folders can be added.");
+								: notify(`error`, `add - Only files or folders can be added.`);
 					})()
-								: notify(`error`, `add`, "No file or folder selected in Explorer.");
+								: notify(`error`, `add - No file or folder selected in Explorer.`);
 			})();
 		}
 	);
@@ -261,7 +261,7 @@ export const BookmarkCommand = (
 			);
 
 			return itemsToRemove.length === 0
-						? notify(`error`, `remove`, "삭제할 북마크가 선택되지 않았습니다.")
+						? notify(`error`, `remove - 삭제할 북마크가 선택되지 않았습니다.`)
 			: await (async () => {
 				const config = vscode.workspace.getConfiguration("Simple-Bookmark");
 				const deleteMode = config.get<string>("deleteMode", "ask");
@@ -300,7 +300,7 @@ export const BookmarkCommand = (
 					? (deleteOriginal ? "Bookmark and original file deleted" : "Bookmark deleted")
 					: (deleteOriginal ? `${itemsToRemove.length} bookmarks and original files deleted` : `${itemsToRemove.length} bookmarks deleted`);
 
-				notify(`info`, `remove`, successMessage);
+				notify(`info`, `remove - ${successMessage}`);
 			})();
 		}
 	);
@@ -313,7 +313,7 @@ export const BookmarkCommand = (
 			const target : BookmarkModelType | undefined = item || (selectedBookmarks.length > 0 ? selectedBookmarks[0] : undefined);
 
 			return !target
-				? notify(`error`, `rename`, "No bookmark selected to rename.")
+				? notify(`error`, `rename - No bookmark selected to rename.`)
 			: await (async () => {
 				const currentName = target.bookmarkMetadata.bookmarkName;
 
@@ -328,7 +328,7 @@ export const BookmarkCommand = (
 					: await (async () => {
 						await provider.renameBookmark(target.originalPath, newName.trim());
 						provider.refresh();
-						notify(`info`, `rename`, `Renamed: ${currentName} → ${newName.trim()}`);
+						notify(`info`, `rename - Renamed: ${currentName} → ${newName.trim()}`);
 					})();
 			})();
 		}
@@ -350,7 +350,7 @@ export const BookmarkCommand = (
 			);
 
 		return targets.length === 0
-				? notify(`error`, `copy`, "No items selected to copy.")
+				? notify(`error`, `copy - No items selected to copy.`)
 		: (() => {
 				const dedupMap = new Map<string, BookmarkModelType>();
 				for (const t of targets) {
@@ -360,7 +360,7 @@ export const BookmarkCommand = (
 
 				const available = targets.filter((t) => t.isOriginalAvailable);
 				return available.length === 0
-					? notify(`warn`, `copy`, "No available original files to copy.")
+					? notify(`warn`, `copy - No available original files to copy.`)
 				: (() => {
 					updateSelectedBookmark(available);
 					provider.copyBookmarks(available);
@@ -375,7 +375,7 @@ export const BookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"Simple-Bookmark.pastebookmark", async (item? : BookmarkModelType) => {
 			return !provider.hasCopiedItems()
-					? notify(`error`, `paste`, "Nothing to paste: clipboard is empty.")
+					? notify(`error`, `paste - Nothing to paste: clipboard is empty.`)
 			: await (async () => {
 				return !item && selectedBookmarks.length === 0
 					? await (async () => {
@@ -395,11 +395,11 @@ export const BookmarkCommand = (
 
 						return targetPath
 							? await (async () => {
-								logger(`debug`, `paste`, `${targetPath as string}`);
+								logger(`debug`, `paste - ${targetPath as string}`);
 								await provider.pasteItems(targetPath as string);
 								provider.refresh();
 							})()
-							: notify(`warn`, `paste`, "Select a valid target folder to paste into.");
+							: notify(`warn`, `paste - Select a valid target folder to paste into.`);
 					})();
 			})();
 		}
@@ -411,7 +411,7 @@ export const BookmarkCommand = (
 		"Simple-Bookmark.pasterootbookmark",
 		async () => {
 			return !provider.hasCopiedItems()
-					? notify(`error`, `paste`, "Nothing to paste: clipboard is empty.")
+					? notify(`error`, `paste - Nothing to paste: clipboard is empty.`)
 			: await (async () => {
 				await provider.pasteItemsToRoot();
 				provider.refresh();
@@ -427,7 +427,7 @@ export const BookmarkCommand = (
 			const allItems = await provider.getChildren();
 
 			return !allItems || allItems.length === 0
-						? notify(`info`, `remove`, "삭제할 북마크가 없습니다.")
+						? notify(`info`, `remove - 삭제할 북마크가 없습니다.`)
 			: await (async () => {
 				const config = vscode.workspace.getConfiguration("Simple-Bookmark");
 				const deleteMode = config.get<string>("deleteMode", "ask");
@@ -462,7 +462,7 @@ export const BookmarkCommand = (
 					? `All ${allItems.length} bookmarks and original files deleted`
 					: `All ${allItems.length} bookmarks deleted`;
 
-				notify(`info`, `remove`, successMessage);
+				notify(`info`, `remove - ${successMessage}`);
 			})();
 		}
 	);
@@ -491,7 +491,7 @@ export const BookmarkCommand = (
 
 				return parentPath
 						? (await provider.createFolder(parentPath, folderName.trim()), provider.refresh())
-						: notify(`warn`, `create`, "Select a valid parent folder.");
+						: notify(`warn`, `create - Select a valid parent folder.`);
 			})();
 		}
 	);
@@ -520,7 +520,7 @@ export const BookmarkCommand = (
 
 				return parentPath
 						? (await provider.createFile(parentPath, fileName.trim()), provider.refresh())
-						: notify(`warn`, `create`, "Select a valid parent folder.");
+						: notify(`warn`, `create - Select a valid parent folder.`);
 			})();
 		}
 	);
@@ -530,19 +530,19 @@ export const BookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"Simple-Bookmark.expandexplorer",
 		async () => {
-				logger(`debug`, `select`, `registerExpandExplorerCommand`);
+				logger(`debug`, `select - registerExpandExplorerCommand`);
 
 			const folders = vscode.workspace.workspaceFolders;
 
 			return !folders || folders.length === 0
-						? notify(`warn`, `select`, "No workspace folder available to expand.")
+						? notify(`warn`, `select - No workspace folder available to expand.`)
 			: await (async () => {
 				await vscode.commands.executeCommand("workbench.view.explorer");
 				excludeRuleCache.clear();
 
 				// 새로운 간소화된 전체 확장 방법 사용
 				await expandAllExplorerFolders();
-					notify(`info`, `select`, "Explorer expanded for all workspace folders.");
+					notify(`info`, `select - Explorer expanded for all workspace folders.`);
 			})();
 		}
 	);
