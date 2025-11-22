@@ -1,0 +1,16 @@
+{
+  "external": [
+    "vscode"
+  ],
+  "copyPackages": [
+		"minimatch"
+  ],
+  "esbuildOptions": {
+    "tree-shaking": true,
+    "target": "node21",
+    "legal-comments": "none"
+  },
+  "vsceOptions": {
+    "no-dependencies": true
+  }
+}
