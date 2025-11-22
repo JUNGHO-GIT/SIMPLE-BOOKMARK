@@ -1,8 +1,11 @@
-// swc.cjs
+/**
+ * @file swc.cjs
+ * @since 2025-11-22
+ */
 
 const { spawn } = require(`child_process`);
 const process = require(`process`);
-const { logger, runCmd, validateDir, delDir } = require(`./bundle.cjs`);
+const { logger, runCmd, validateDir, delDir } = require(`./utils.cjs`);
 
 // 인자 파싱 ------------------------------------------------------------------------------------
 const TITLE = `swc.cjs`;

@@ -6,7 +6,7 @@
   "icon": "logo.webp",
   "license": "Apache-2.0",
   "main": "./out/extension.js",
-  "version": "2.6.9",
+  "version": "2.7.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK.git"
@@ -300,7 +300,7 @@
     "compile": "bun .node/swc.cjs --bun --compile",
     "reset": "bun .node/reset.cjs --bun --reset",
     "fix": "bun .node/fix.cjs --bun --fix",
-    "gcloud": "bun .node/gcloud.cjs --bun --deploy",
+    "git": "bun .node/git.cjs --bun --push",
     "vsce": "bun .node/vsce.cjs --bun --package"
   },
   "engines": {
@@ -310,11 +310,9 @@
     "pnpm": ">=9.0.0"
   },
   "dependencies": {
-    "minimatch": "^10.1.1",
-    "terser": "^5.44.1"
+    "minimatch": "^10.1.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.5",
     "@swc/cli": "^0.7.9",
     "@swc/core": "^1.15.2",
     "@swc/helpers": "^0.5.17",

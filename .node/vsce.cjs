@@ -1,8 +1,11 @@
-// vsce.cjs
+/**
+ * @file vsce.cjs
+ * @since 2025-11-22
+ */
 
 const fs = require(`fs`);
 const path = require(`path`);
-const { logger, runCmd, delDir, delFile } = require(`./bundle.cjs`);
+const { logger, runCmd, delDir, delFile } = require(`./utils.cjs`);
 
 // 인자 파싱 ------------------------------------------------------------------------------------
 const TITLE = `vsce.cjs`;

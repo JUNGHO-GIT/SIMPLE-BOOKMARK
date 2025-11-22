@@ -66,7 +66,7 @@ export const BookmarkSyncService = (
 		const saveListener = vscode.workspace.onDidSaveTextDocument(async (document) => {
 			const filePath = document.uri.fsPath;
 			!isBookmarkedFile(filePath) || (
-				logger(`debug`, `save`, `${filePath}`),
+				logger(`debug`, `save: ${filePath}`),
 				await syncBookmark(filePath)
 			);
 		});
@@ -87,7 +87,7 @@ export const BookmarkSyncService = (
 
 			watcher.onDidChange(async (uri) => {
 				uri.fsPath === originalPath && (
-					logger(`debug`, `save`, `${originalPath}`),
+					logger(`debug`, `save: ${originalPath}`),
 					await syncBookmark(originalPath)
 				);
 			});
@@ -106,8 +106,8 @@ export const BookmarkSyncService = (
 	const disposeWatcherFor = (
 		originalPath : string
 	) : void => {
-		const w = bookmarkWatchers.get(originalPath);
-		w && (w.dispose(), bookmarkWatchers.delete(originalPath));
+ 		const w = bookmarkWatchers.get(originalPath);
+ 		w && (w.dispose(), bookmarkWatchers.delete(originalPath));
 	};
 
 	// 병렬 처리 및 배치 상태 업데이트 -------------------------------------------------------------
@@ -131,7 +131,7 @@ export const BookmarkSyncService = (
 						return metadata;
 					}
 					catch (error) {
-						logger(`error`, `activate`, error instanceof Error ? error.message : String(error));
+						logger(`error`, `activate: ${error instanceof Error ? error.message : String(error)}`);
 						return null;
 					}
 				});
@@ -151,7 +151,7 @@ export const BookmarkSyncService = (
 			})();
 		}
 		catch (error) {
-			logger(`error`, `activate`, `${error}`);
+			logger(`error`, `activate: ${error}`);
 		}
 	};
 
@@ -184,10 +184,10 @@ export const BookmarkSyncService = (
 
 			onSyncUpdate && onSyncUpdate(originalPath, BookmarkStatus.SYNCED);
 			onRefreshNeeded && onRefreshNeeded();
-			logger(`debug`, `add`, `${uniqueBookmarkName}`);
+			logger(`debug`, `add: ${uniqueBookmarkName}`);
 		}
 		catch (error) {
-			logger(`error`, `add`, error instanceof Error ? error.message : String(error));
+			logger(`error`, `add: ${error instanceof Error ? error.message : String(error)}`);
 		}
 	};
 
@@ -245,7 +245,7 @@ export const BookmarkSyncService = (
 
 			// 파일시스템 rename
 			try {
-				logger(`debug`, `rename`, `${metadata!.originalPath} -> ${newOriginalPath}`);
+				logger(`debug`, `rename: ${metadata!.originalPath} -> ${newOriginalPath}`);
 				await vscode.workspace.fs.rename(
 					vscode.Uri.file(metadata!.originalPath),
 					vscode.Uri.file(newOriginalPath),
@@ -253,11 +253,11 @@ export const BookmarkSyncService = (
 				);
 			}
 			catch (error) {
-				logger(`error`, `rename`, error instanceof Error ? error.message : String(error));
+				logger(`error`, `rename: ${error instanceof Error ? error.message : String(error)}`);
 			}
 		}
 		else {
-			logger(`debug`, `rename`, `${metadata!.originalPath}`);
+			logger(`debug`, `rename: ${metadata!.originalPath}`);
 		}
 
 		// 메타데이터 파일 rename(이름 변경 반영)
@@ -286,7 +286,7 @@ export const BookmarkSyncService = (
 
 		onSyncUpdate && onSyncUpdate(newOriginalPath, BookmarkStatus.SYNCED);
 		onRefreshNeeded && onRefreshNeeded();
-		logger(`debug`, `rename`, `${finalMetaName} / ${newOriginalPath}`);
+		logger(`debug`, `rename: ${finalMetaName} / ${newOriginalPath}`);
 	};
 
 	// 북마크 제거 ------------------------------------------------------------------------
@@ -303,10 +303,10 @@ export const BookmarkSyncService = (
 				bookmarkedFiles.delete(originalPath);
 				disposeWatcherFor(originalPath);
 				onRefreshNeeded && onRefreshNeeded();
-					logger(`debug`, `remove`, `${originalPath}`);
+				logger(`debug`, `remove: ${originalPath}`);
 			}
 			catch (error) {
-					logger(`error`, `remove`, error instanceof Error ? error.message : String(error));
+				logger(`error`, `remove: ${error instanceof Error ? error.message : String(error)}`);
 			}
 		})();
 	};
@@ -436,7 +436,7 @@ export const BookmarkSyncService = (
 	// 초기화 ----------------------------------------------------------------------------
 	setupEventListeners();
 	loadExistingBookmarks().catch((err) => {
-		logger(`error`, `activate`, err instanceof Error ? err.message : String(err));
+		logger(`error`, `activate: ${err instanceof Error ? err.message : String(err)}`);
 	});
 
 	// 99. return -----------------------------------------------------------------------------
