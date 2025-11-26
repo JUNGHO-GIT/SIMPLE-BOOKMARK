@@ -6,7 +6,7 @@
   "icon": "logo.webp",
   "license": "Apache-2.0",
   "main": "./out/extension.js",
-  "version": "2.7.4",
+  "version": "2.7.5",
   "repository": {
     "type": "git",
     "url": "https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK.git"
@@ -295,34 +295,35 @@
       }
     }
   },
-  "scripts": {
-    "watch": "bun .node/swc.cjs --bun --watch",
-    "compile": "bun .node/swc.cjs --bun --compile",
-    "reset": "bun .node/reset.cjs --bun --reset",
-    "fix": "bun .node/fix.cjs --bun --fix",
-    "git": "bun .node/git.cjs --bun --push",
-    "vsce": "bun .node/vsce.cjs --bun --package"
-  },
   "engines": {
     "vscode": ">=1.106.1",
     "node": ">=21.0.0",
     "npm": ">=10.0.0",
     "pnpm": ">=9.0.0"
   },
+  "scripts": {
+    "watch": "bun .node/swc.cjs --bun --watch",
+    "compile-server": "bun .node/swc.cjs --bun --compile --server",
+    "reset": "bun .node/reset.cjs --bun --reset",
+    "fix": "bun .node/fix.cjs --bun --fix",
+    "git-fetch": "bun .node/git.cjs --bun --fetch",
+    "git-push": "bun .node/git.cjs --bun --push",
+    "vsce": "bun .node/vsce.cjs --bun --package"
+  },
   "dependencies": {
     "minimatch": "^10.1.1"
   },
   "devDependencies": {
     "@swc/cli": "^0.7.9",
-    "@swc/core": "^1.15.2",
+    "@swc/core": "^1.15.3",
     "@swc/helpers": "^0.5.17",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.10.1",
     "@types/vscode": "^1.106.1",
-    "@typescript-eslint/eslint-plugin": "^8.47.0",
-    "@typescript-eslint/parser": "^8.47.0",
+    "@typescript-eslint/eslint-plugin": "^8.48.0",
+    "@typescript-eslint/parser": "^8.48.0",
     "@vscode/test-electron": "^2.5.2",
-    "@vscode/vsce": "^3.7.0",
+    "@vscode/vsce": "^3.7.1",
     "concurrently": "^9.2.1",
     "esbuild": "^0.27.0",
     "eslint": "^9.39.1",
