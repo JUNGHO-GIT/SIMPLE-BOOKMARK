@@ -1,42 +1,35 @@
-# 🚀 Simple-Bookmark
+# Simple-Bookmark
 
-Simple-Bookmark is a lightweight VS Code extension that lets you bookmark files and folders in the Explorer sidebar for fast navigation and simple management.
+**Simple-Bookmark** is a lightweight VS Code extension designed to help you navigate your workspace faster by bookmarking frequently used files and folders.
 
-## Features ✨
+## Key Features
 
-- 🔖 Add and remove bookmarks (files & folders) from the Explorer or the extension view
-- 📋 Copy & paste bookmarked items, rename bookmarks, and create files/folders in the original location
-- 📂 Expand all workspace folders or expand a specific folder in the Explorer
-- 🔁 Auto-refresh bookmarks on file changes and show per-item sync status
-- 🗑️ Configurable delete behavior: ask / bookmarkOnly / bookmarkAndOriginal
-- 💾 Session persistence and bulk operations (remove all, reset)
+- **Easy Bookmarking**: Add files and folders to the bookmark view directly from the Explorer.
+- **Quick Navigation**: Jump to bookmarked items instantly.
+- **Real-time Sync**: Automatically detects file changes and updates bookmark status.
+- **File Management**: Copy, paste, rename, and delete files directly within the bookmark view.
+- **Status Indicators**: Visual cues for synced, modified, or missing files.
 
-## Default shortcuts ⌨️
+## Shortcuts
 
-- Shift+Alt+A — ➕ Add bookmark
-- Shift+Alt+D — ➖ Remove bookmark
-- Shift+Alt+R — ✏️ Rename bookmark
-- Shift+Alt+Y — 📂 Expand Explorer or expand a folder (context-aware)
-- Ctrl+C / Ctrl+V — 📋 Copy / Paste inside the Simple-Bookmark view
+| Key | Action |
+| :--- | :--- |
+| `Shift`+`Alt`+`A` | Add Bookmark |
+| `Shift`+`Alt`+`D` | Remove Bookmark |
+| `Shift`+`Alt`+`R` | Rename Bookmark |
+| `Shift`+`Alt`+`Y` | Expand Folder / Explorer |
+| `Ctrl`+`C` / `V` | Copy / Paste (in view) |
 
-Shortcuts are context-aware and active when the extension view is focused.
+> *Shortcuts work when the Simple-Bookmark view is focused.*
 
-## Settings ⚙️
+## Settings
 
-- 🔁 `Simple-Bookmark.autoRefresh` (boolean, default: `true`) — Auto-refresh on file changes
-- 🔄 `Simple-Bookmark.showSyncStatus` (boolean, default: `true`) — Show synchronization status per item
-- 🗑️ `Simple-Bookmark.deleteMode` (string, default: `"ask"`) — Default delete behavior: `"ask" | "bookmarkOnly" | "bookmarkAndOriginal"`
+| Setting | Default | Description |
+| :--- | :--- | :--- |
+| `autoRefresh` | `true` | Automatically refresh bookmarks on file changes. |
+| `showSyncStatus` | `true` | Display sync status (e.g., missing, modified) for items. |
+| `deleteMode` | `"ask"` | Delete behavior: `"ask"`, `"bookmarkOnly"`, or `"bookmarkAndOriginal"`. |
 
-## Install ⬇️
+## License
 
-- 📥 Install from the VS Code Marketplace by searching for "Simple-Bookmark".
-- 🛠️ Local development: Node.js 18+, run `npm install` then `npm run compile` or `npm run watch`. Use `npm run vsce` to create a package.
-
-## Contributing 🤝
-
-- 📦 Repository: [Simple-Bookmark on GitHub](https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK)
-- ✉️ PRs, bug reports, and suggestions are welcome.
-
-## License 📄
-
-- 🔓 Apache-2.0
+Apache-2.0

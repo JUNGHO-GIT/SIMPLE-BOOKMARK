@@ -17,15 +17,11 @@ src/
 ├── services/                       # Business logic (File operations, Sync)
 ├── assets/
 │   ├── scripts/                    # Core Utilities
-│   │   ├── diagnostic.ts           # Diagnostic Manager (validation orchestration)
-│   │   ├── filter.ts               # Document Filtering (analyzable check)
-│   │   ├── glob.ts                 # Glob Pattern Utilities
-│   │   ├── lineIndex.ts            # Line/Column Index Mapper
 │   │   ├── logger.ts               # Logging System
 │   │   ├── notify.ts               # User Notifications
-│   │   ├── performance.ts          # Performance Monitoring & Resource Limiting
-│   │   └── validate.ts             # Document Validation Logic
-│   └── types/
+│   │   ├── path.ts                 # Path Manipulation Utilities
+│   │   └── performance.ts          # Performance Monitoring
+│   └── types/                      # Type Definitions
 └── exports/                        # Barrel files for clean imports
 ```
 
@@ -47,6 +43,7 @@ src/
   - Manages the lifecycle of the bookmark storage folder.
   - Orchestrates `BookmarkOperationService` and `BookmarkSyncService`.
   - Handles tree expansion/collapse states and refreshes.
+  - Implemented as a factory function for better encapsulation.
 
 ### 3.3. Command Layer (`commands/BookmarkCommand.ts`)
 
