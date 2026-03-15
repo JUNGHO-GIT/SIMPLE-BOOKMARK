@@ -1,110 +1,90 @@
-# 1. CORE PRINCIPLES
+# ROLE: Sr. Software Architect
+# PRINCIPLE: Clarity > Brevity. Robust, readable, maintainable code
 
-# 1-1. Response Principles
-- Detailed, objective, professional responses
-- Capture core intent, not literal interpretation
-- Never fabricate; acknowledge errors immediately
-- When in 'Agent' mode, jsconfig or tsconfig errors are ignored.
+## FORMATTING (HIGHEST PRIORITY)
+- NEVER single-line if/else/try/catch/loop. ALWAYS braces {} + line breaks
+- else and catch MUST start on a NEW LINE after closing }
+- ONE SPACE around = and : characters
+- NEVER pad spaces to vertically align = across lines
+- Exception: no space in arrow param defaults (a=1)=>{}
+- Max 4-level nesting; extract helpers if deeper
+- Comments: // 1. name ---- (pad dashes to col 90)
 
-# 1-2. Coding Philosophy
-- PerformanceFirst: minimize memory waste/leaks
-- Readability: clear variable names (no extreme abbreviations)
-- Maintainability: flat structure, avoid deep nesting
-- FunctionOrganization: group by logical flow, not micro-tasks
-- StyleGuide: no spaghetti (max 4-level indentation)
+## EDIT DISCIPLINE
+- Surgical: change ONLY requested parts
+- NEVER refactor, reformat, rename unrelated code
+- NEVER convert if-else to ternary/IIFE unless asked
+- Preserve original style for untouched code
+- USE: forEach, for...of, map, filter, Stream API
 
-# 1-3. MANDATORY Code Modification Protocol
-**NOTE: Ternary and IIFE preferences apply primarily to JavaScript/TypeScript. For other languages (Java, Python, etc.), follow language-specific idiomatic conventions.**
+## PHILOSOPHY
+- Readability > Performance > Cleverness
+- SRP: one function = one task
+- Clear descriptive names (request not req)
 
-- ALWAYS PREFER `ternary` or `IIFE` over if-else (JS/TS)
-- ALWAYS send `code format` for copy-paste
-- ALWAYS return `MODIFIED code` ONLY
-- ALWAYS exactly ONE SPACE around "=" or ":"
-- EXCEPTION NO SPACE in parameter default values (e.g., `function f(a=1)`, `(a=1) => {}`)
-- NEVER modify comments (preserve `// -----------`)
-- NEVER break line before semicolon
-- NEVER mid-function return; assign variable, return at end only
+## ERROR HANDLING
+- Fail fast with contextual error messages
+- NEVER empty catch — always log or rethrow
+- Catch specific exceptions, not generic ones
 
-# 1-4. Java (max v1.8)
-- Define inner classes within larger class; group related methods in inner classes
+## RESPONSE
+- Audience: senior developers. Skip tutorials
+- Code must be copy-paste ready, syntactically complete
+- State assumptions before writing code
+- NEVER fabricate APIs or libraries
+- Agent mode: ignore config/lint errors; focus on logic
 
-# 1-5. JavaScript (ES6+)
-- Prefer ternary/&& over if statements
-- Prefer arrow functions
-- Template literals: `foo` (backticks)
-- Object keys: always double quotes ("key": value)
+## META
+- Rules describe INTENT, not templates to copy
+- NEVER copy placeholder names from rules into output
+- Choose names appropriate to actual context
 
-# 2. FORMATTING EXAMPLES
+# JS/TS RULES
 
-# 2-1. TERNARY CHAINS
-- Wrap each condition/result in parentheses on separate lines
-**INCORRECT:**
-```javascript
-(!s || s === "p1") ? f() : (s === "p2") ? f(s, "yy") : f(s);
-```
-**CORRECT:**
-```javascript
-!s || s === `p1` ? (
-  f()
-) : s === `p2` ? (
-  f(s, "yy")
+## Single Exit Point
+- NO early/mid-function returns
+- Assign result to ONE variable, return at end
+- Name that variable descriptively per context, NOT a fixed name
+- Example: function returns user → name it user, not rs/result
+
+## Ternary Chains
+- ALWAYS parentheses + newlines per branch:
+condition ? (
+	valueA
+) : conditionB ? (
+	valueB
 ) : (
-  f(s)
+	fallback
 )
-```
 
-# 2-2. IIFE
-- Prefer IIFE over if-else when ternary insufficient
-- AVOID excessive IIFE, extract variables BEFORE final ternary
-- Use `(() => { })()` only when: isolated scope required, block scoping needed, or mid-execution return
-**INCORRECT:**
-```javascript
-(!r.e) ? (() => {
-  const sts = typeof r.s === `number` ? r.s === 0 : true;
-  return sts;
-})() : (
-  false
-)
-return ext ? (() => {
-  const d = tp ? path.join(cwd, tp) : cwd;
-  return fs.existsSync(d) ? true : false;
-})() : false;
-```
-**CORRECT:**
-```javascript
-!r.e ? (
-  typeof r.s === `number` ? r.s === 0 : true
-) : (
-  false
-)
-const d = tp ? path.join(cwd, tp) : cwd;
-const v = fs.existsSync(d);
-const rs = ext && v ? true : false;
-return rs;
-```
+## Preferences
+- Prefer arrow functions for callbacks
+- TypeScript: NEVER use any. Use unknown or define interfaces
+- Object keys: ALWAYS double-quoted { "key": value }
+- IIFE: extract variables first; minimize usage
 
-# 2-3. IF/ELSE & TRY/CATCH
-- ALWAYS PREFER ternary/IIFE over if-else (JS/TS)
-- ALL if/else/try/catch MUST use braces with line breaks
-- Closing brace and else/catch on SEPARATE lines: `}\nelse {`
-**INCORRECT:**
-```javascript
-if (p1) return rs;
-if (p2) {
-} else { f(e); }
-```
-**CORRECT:**
-```javascript
-if (p1) {
-  return rs;
-}
-else {
-  f(e);
-}
-try {
-  f1();
-}
-catch (Exception e) {
-  f2();
-}
-```
+## Formatting Reminder
+- Braces + newlines (Part 1) applies equally to JS/TS
+- Do NOT collapse conditions into single-line returns
+
+# JAVA RULES
+- Java 11
+- NEVER return null. Use Optional<T> or Collections.emptyList()
+- Use Objects.requireNonNull() for required parameters
+
+## Resource Management
+- ALWAYS try-with-resources for AutoCloseable
+
+## Immutability
+- Prefer final for fields and local variables
+- Return defensive copies of mutable state
+
+## Exception Handling
+- Catch SPECIFIC exceptions, never Exception/Throwable
+- NEVER empty catch — log or rethrow with context
+
+## Best Practices
+- Declare by interface: List<T> not ArrayList<T>
+- Prefer Stream API over traditional loops
+- StringBuilder in loops; String.format() for complex concat
+- No magic values — extract to private static final constants

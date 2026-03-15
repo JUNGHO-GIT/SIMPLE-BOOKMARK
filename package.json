@@ -6,7 +6,7 @@
   "icon": "logo.webp",
   "license": "Apache-2.0",
   "main": "./out/extension.js",
-  "version": "2.7.6",
+  "version": "2.7.7",
   "repository": {
     "type": "git",
     "url": "https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK.git"
@@ -302,13 +302,11 @@
     "pnpm": ">=9.0.0"
   },
   "scripts": {
-    "watch": "bun .node/swc.cjs --bun --watch",
-    "compile-server": "bun .node/swc.cjs --bun --compile --server",
-    "reset": "bun .node/reset.cjs --bun --reset",
-    "fix": "bun .node/fix.cjs --bun --fix",
-    "git-fetch": "bun .node/git.cjs --bun --fetch",
-    "git-push": "bun .node/git.cjs --bun --push",
-    "vsce": "bun .node/vsce.cjs --bun --package"
+    "project": "bun .node/bootstrap-sync.mjs --project",
+    "git": "bun .node/bootstrap-sync.mjs --git",
+    "ps1": "bun .node/bootstrap-sync.mjs --ps1",
+    "tools": "bun .node/bootstrap-sync.mjs --tools",
+    "sync": "bun .node/bootstrap-sync.mjs --sync"
   },
   "dependencies": {
     "minimatch": "^10.1.1"
