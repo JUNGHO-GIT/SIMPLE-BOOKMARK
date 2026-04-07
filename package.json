@@ -6,7 +6,7 @@
   "icon": "logo.webp",
   "license": "Apache-2.0",
   "main": "./out/extension.js",
-  "version": "2.8.3",
+  "version": "2.8.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK.git"
@@ -296,38 +296,38 @@
     }
   },
   "engines": {
-    "vscode": ">=1.106.1",
+    "vscode": ">=1.110.0",
     "node": ">=21.0.0",
     "npm": ">=10.0.0",
     "pnpm": ">=9.0.0"
   },
   "scripts": {
-    "git": "bun ~/.jsync/bootstrap-sync.mjs --git",
-    "sync": "bun ~/.jsync/bootstrap-sync.mjs --sync",
-    "tools": "bun ~/.jsync/bootstrap-sync.mjs --tools",
-    "project": "bun ~/.jsync/bootstrap-sync.mjs --project"
+    "git": "bun ~/.bootstrap/bootstrap-sync.mjs --git",
+    "sync": "bun ~/.bootstrap/bootstrap-sync.mjs --sync",
+    "tools": "bun ~/.bootstrap/bootstrap-sync.mjs --tools",
+    "project": "bun ~/.bootstrap/bootstrap-sync.mjs --project"
   },
   "dependencies": {
-    "minimatch": "^10.1.1"
+    "minimatch": "^10.2.5"
   },
   "devDependencies": {
     "@swc/cli": "^0.7.9",
     "@swc/core": "^1.15.3",
     "@swc/helpers": "^0.5.17",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^24.10.1",
-    "@types/vscode": "^1.106.1",
-    "@typescript-eslint/eslint-plugin": "^8.48.0",
+    "@types/node": "^25.5.2",
+    "@types/vscode": "^1.110.0",
+    "@typescript-eslint/eslint-plugin": "^8.58.0",
     "@typescript-eslint/parser": "^8.48.0",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.1",
     "concurrently": "^9.2.1",
-    "esbuild": "^0.27.0",
-    "eslint": "^9.39.1",
+    "esbuild": "^0.28.0",
+    "eslint": "^10.2.0",
     "mocha": "^11.7.5",
     "ts-morph": "^27.0.2",
     "ts-prune": "^0.10.3",
     "tsc-alias": "^1.8.16",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.2"
   }
 }

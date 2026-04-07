@@ -63,6 +63,7 @@ export const BookmarkOperationService = (
 		const stat = await vscode.workspace.fs.stat(srcUri);
 
 		stat.type === vscode.FileType.File ? await (async () => {
+			await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.dirname(target)));
 			const content = await vscode.workspace.fs.readFile(srcUri);
 			await vscode.workspace.fs.writeFile(tgtUri, content);
 		})() : await (async () => {
@@ -156,7 +157,8 @@ export const BookmarkOperationService = (
 	// 루트 붙여넣기 -------------------------------------------------------------
 	const pasteItemsToRoot = async (
 		copiedItems : vscode.Uri[],
-		nameToOriginalPath : Map<string, string>
+		nameToOriginalPath : Map<string, string>,
+		sourceToOriginalPath : Map<string, string> = new Map()
 	) : Promise<void> => {
 		const proceed = copiedItems.length > 0;
 
@@ -172,10 +174,15 @@ export const BookmarkOperationService = (
 
 			let overwriteCount = 0;
 			const skipped : string[] = [];
+			const normalizedSourceMap = new Map<string, string>();
+
+			for (const [sourcePath, targetPath] of sourceToOriginalPath.entries()) {
+				normalizedSourceMap.set(normalizeForCompare(sourcePath), targetPath);
+			}
 
 			for (const src of srcFiles) {
 				const fileName = path.basename(src);
-				const realTarget = nameToOriginalPath.get(fileName);
+				const realTarget = normalizedSourceMap.get(normalizeForCompare(src)) || nameToOriginalPath.get(fileName);
 
 			!realTarget
 			? skipped.push(fileName)

@@ -1,0 +1,105 @@
+/**
+ * @file .client.swcrc
+ * @description swc 설정 (클라이언트)
+ * @author Jungho
+ * @since 2025-11-30
+ * @updated 2026-02-08
+ */
+{
+  "$schema": "https://swc.rs/schema.json",
+  "isModule": true,
+  "minify": true,
+  "sourceMaps": true, // Sentry 등 에러 트래킹 서비스 연동 시 필수
+  "inlineSourcesContent": false, // 소스맵 용량 절감 – 별도 파일로 분리
+  "exclude": [
+    "node_modules"
+  ],
+  "module": {
+    "type": "es6", // 번들러 Tree-shaking 최적화
+    "strict": true,
+    "strictMode": true,
+    "lazy": false,
+    "noInterop": false,
+    "importInterop": "swc",
+    "ignoreDynamic": false, // 번들러가 dynamic import 처리하도록 위임
+    "preserveImportMeta": false,
+    "resolveFully": false
+  },
+  "jsc": {
+    "baseUrl": "./",
+    "target": "es2022",
+    "loose": true,
+    "externalHelpers": true, // @swc/helpers 로 헬퍼 중복 제거 – 번들 사이즈 절감
+    "keepClassNames": false,
+    "preserveAllComments": false,
+    "paths": {},
+    "parser": {
+      "syntax": "typescript",
+      "tsx": true,
+      "decorators": true,
+      "dynamicImport": true
+    },
+    "minify": {
+      "compress": {
+        "arguments": false, // arguments 객체 최적화 (화살표 함수 미지원이므로 false 안전)
+        "arrows": true, // function(){} → ()=>{} 변환
+        "booleans": true, // 불리언 표현식 단순화 (!!x → x)
+        "collapse_vars": true, // 연속 변수 선언 병합
+        "comparisons": true, // 비교 연산자 최적화
+        "conditionals": true, // 조건문 최적화 (if/else → 삼항)
+        "dead_code": true, // 도달 불가 코드 제거
+        "directives": true, // 중복 directive 제거
+        "drop_console": true, // console.* 완전 제거
+        "drop_debugger": true, // debugger 제거
+        "evaluate": true, // 상수 표현식 미리 계산 (1+2 → 3)
+        "if_return": true, // if/return 패턴 최적화
+        "join_vars": true, // 연속 var 선언 병합
+        "loops": true, // 루프 최적화 (do{…}while → while)
+        "negate_iife": true, // IIFE 부정 최적화 (!function(){}())
+        "passes": 2, // 압축 패스 횟수 – 2회가 사이즈/속도 균형점
+        "reduce_vars": true, // 변수 참조 → 값 인라인 최적화
+        "sequences": true, // 연속 문장을 콤마 연산자로 병합
+        "switches": true, // switch 문 최적화
+        "typeofs": true, // typeof 최적화
+        "unused": true // 미사용 변수/함수 제거
+      },
+      "mangle": {
+        "keep_classnames": false,
+        "keep_fnames": false
+      },
+      "format": {
+        "comments": false, // 모든 주석 제거 (라이선스 주석 포함)
+        "asciiOnly": true // 비-ASCII 문자 이스케이프 – CDN 인코딩 안전성
+      }
+    },
+    "transform": {
+      "legacyDecorator": true,
+      "decoratorMetadata": true,
+      "useDefineForClassFields": false,
+      "treatConstEnumAsEnum": false,
+      "verbatimModuleSyntax": false,
+      "react": {
+        "runtime": "automatic",
+        "useBuiltins": true,
+        "refresh": false // 프로덕션 빌드 – 반드시 false
+      },
+      "optimizer": {
+        "simplify": true, // 표현식 단순화 패스 활성화
+        "globals": {
+          "vars": {
+            "process.env.NODE_ENV": "\"production\""
+          },
+          "typeofs": {
+            "window": "object" // SSR 분기 dead code 제거에 유리
+          }
+        },
+        "jsonify": {
+          "minCost": 1024 // 큰 객체 리터럴 → JSON.parse() 변환 – V8 파싱 성능 향상
+        }
+      }
+    },
+    "output": {
+      "charset": "utf8"
+    }
+  }
+}

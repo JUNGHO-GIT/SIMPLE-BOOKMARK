@@ -145,6 +145,16 @@ export const BookmarkCommand = (
 		});
 	};
 
+	// 하위 경로 여부 확인 -----------------------------------------------------------------------
+	const isWithinPath = (
+		parentPath: string,
+		targetPath: string
+	): boolean => {
+		const relative = path.relative(parentPath, targetPath);
+		return relative === ""
+			|| (!relative.startsWith("..") && !path.isAbsolute(relative));
+	};
+
 	// Explorer 항목을 재귀적으로 확장 ------------------------------------------------------
 	const expandAllExplorerFolders = async () : Promise<void> => {
 		try {
@@ -251,56 +261,90 @@ export const BookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"Simple-Bookmark.removebookmark",
 		async (item? : BookmarkModelType) => {
-			const itemsToRemove : string[] = item
-			? [item.originalPath]
-			: (selectedBookmarks.length > 0
-				? selectedBookmarks
-					.filter((i) => provider.isRootBookmark(i.originalPath))
-					.map((i) => i.originalPath)
-				: []
-			);
+			const candidateItems : BookmarkModelType[] = item
+				? [item]
+				: selectedBookmarks;
+			const rootBookmarkTargets = new Set<string>();
+			const originalOnlyTargets = new Set<string>();
 
-			return itemsToRemove.length === 0
+			for (const candidate of candidateItems) {
+				provider.isRootBookmark(candidate.originalPath)
+					? rootBookmarkTargets.add(candidate.originalPath)
+					: candidate.isOriginalAvailable && originalOnlyTargets.add(candidate.originalPath);
+			}
+
+			const itemsToRemove : string[] = Array.from(rootBookmarkTargets.values());
+			const originalItemsToRemove : string[] = Array.from(originalOnlyTargets.values()).filter((targetPath) => {
+				return !itemsToRemove.some((rootPath) => isWithinPath(rootPath, targetPath));
+			});
+
+			return itemsToRemove.length === 0 && originalItemsToRemove.length === 0
 						? notify(`error`, `remove - 삭제할 북마크가 선택되지 않았습니다.`)
 			: await (async () => {
-				const config = vscode.workspace.getConfiguration("Simple-Bookmark");
-				const deleteMode = config.get<string>("deleteMode", "ask");
+				let removedBookmarksWithOriginal = false;
 
-				let deleteOriginal : boolean = false;
+				if (itemsToRemove.length > 0) {
+					const config = vscode.workspace.getConfiguration("Simple-Bookmark");
+					const deleteMode = config.get<string>("deleteMode", "ask");
 
-				if (deleteMode === "bookmarkOnly") {
-					deleteOriginal = false;
-				} else if (deleteMode === "bookmarkAndOriginal") {
-					deleteOriginal = true;
-				} else {
-					const itemCountText = itemsToRemove.length === 1
-						? "1 bookmark"
-						: `${itemsToRemove.length} bookmarks`;
+					let deleteOriginal : boolean = false;
 
+					if (deleteMode === "bookmarkOnly") {
+						deleteOriginal = false;
+					} else if (deleteMode === "bookmarkAndOriginal") {
+						deleteOriginal = true;
+					} else {
+						const itemCountText = itemsToRemove.length === 1
+							? "1 bookmark"
+							: `${itemsToRemove.length} bookmarks`;
+
+						const choice = await vscode.window.showWarningMessage(
+							`How would you like to delete ${itemCountText}?`,
+							{modal : true},
+							"Bookmark Only",
+							"Bookmark + Original File"
+						);
+
+						if (!choice) {
+							return;
+						}
+
+						deleteOriginal = choice === "Bookmark + Original File";
+					}
+
+					for (const originalPath of itemsToRemove) {
+						await provider.removeBookmark(originalPath, deleteOriginal);
+					}
+
+					removedBookmarksWithOriginal = deleteOriginal;
+				}
+
+				if (originalItemsToRemove.length > 0) {
+					const itemCountText = originalItemsToRemove.length === 1
+						? "1 original item"
+						: `${originalItemsToRemove.length} original items`;
 					const choice = await vscode.window.showWarningMessage(
-						`How would you like to delete ${itemCountText}?`,
+						`Delete ${itemCountText} inside bookmarked folders?`,
 						{modal : true},
-						"Bookmark Only",
-						"Bookmark + Original File"
+						"Delete Original"
 					);
 
 					if (!choice) {
 						return;
 					}
 
-					deleteOriginal = choice === "Bookmark + Original File";
+					await provider.deleteOriginalItems(originalItemsToRemove);
 				}
 
-				for (const originalPath of itemsToRemove) {
-					await provider.removeBookmark(originalPath, deleteOriginal);
-				}
 				provider.refresh();
 
-				const successMessage = itemsToRemove.length === 1
-					? (deleteOriginal ? "Bookmark and original file deleted" : "Bookmark deleted")
-					: (deleteOriginal ? `${itemsToRemove.length} bookmarks and original files deleted` : `${itemsToRemove.length} bookmarks deleted`);
+				itemsToRemove.length > 0 && (() => {
+					const successMessage = itemsToRemove.length === 1
+						? (removedBookmarksWithOriginal ? "Bookmark and original file deleted" : "Bookmark deleted")
+						: (removedBookmarksWithOriginal ? `${itemsToRemove.length} bookmarks and original files deleted` : `${itemsToRemove.length} bookmarks deleted`);
 
-				notify(`info`, `remove - ${successMessage}`);
+					notify(`info`, `remove - ${successMessage}`);
+				})();
 			})();
 		}
 	);

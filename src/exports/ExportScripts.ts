@@ -4,6 +4,8 @@
 export {
 	getTargetFileName,
 	exists,
+	getBookmarkRootPath,
+	getLegacyBookmarkPath,
 	getBookmarkPath,
 	isWithinBookmark,
 	validateFileName,

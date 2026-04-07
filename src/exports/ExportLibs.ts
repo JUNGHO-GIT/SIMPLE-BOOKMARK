@@ -3,6 +3,7 @@
 // 1. import --------------------------------------------------------------------------------
 import _vscode from "vscode";
 import _fs from "fs";
+import _os from "os";
 import _path from "path";
 import _http from "http";
 import _https from "https";
@@ -13,6 +14,7 @@ import { TextEncoder as _TextEncoder } from "util";
 // 2. export --------------------------------------------------------------------------------
 export { _vscode as vscode };
 export { _fs as fs };
+export { _os as os };
 export { _path as path };
 export { _http as http };
 export { _https as https };
