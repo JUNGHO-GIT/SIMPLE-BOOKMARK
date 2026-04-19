@@ -154,6 +154,49 @@ export const BookmarkCommand = (
 		return relative === ""
 			|| (!relative.startsWith("..") && !path.isAbsolute(relative));
 	};
+	// 1. 폴더 북마크 재귀 수집 -------------------------------------------------------------
+	const collectFolderBookmarks = async (
+		item? : BookmarkModelType,
+		visited : Set<string> = new Set()
+	): Promise<BookmarkModelType[]> => {
+		const children = item ? await provider.getChildren(item) : await provider.getChildren();
+		const folders : BookmarkModelType[] = [];
+
+		for (const child of children) {
+			if (child.bookmarkMetadata.isFile) {
+				continue;
+			}
+
+			const key = process.platform === "win32"
+				? path.resolve(child.originalPath).toLowerCase()
+				: path.resolve(child.originalPath);
+
+			if (visited.has(key)) {
+				continue;
+			}
+
+			visited.add(key);
+			folders.push(child);
+			folders.push(...await collectFolderBookmarks(child, visited));
+		}
+
+		return folders;
+	};
+
+	// 2. 폴더 펼침 상태 일괄 반영 ----------------------------------------------------------
+	const setFolderExpansionState = async (
+		expanded : boolean
+	): Promise<void> => {
+		const folders = await collectFolderBookmarks();
+
+		for (const folder of folders) {
+			expanded
+				? provider.markExpanded(folder.originalPath)
+				: provider.markCollapsed(folder.originalPath);
+		}
+
+		provider.refresh();
+	};
 
 	// Explorer 항목을 재귀적으로 확장 ------------------------------------------------------
 	const expandAllExplorerFolders = async () : Promise<void> => {
@@ -569,6 +612,41 @@ export const BookmarkCommand = (
 		}
 	);
 
+	// 3. 선택 폴더 펼침 ------------------------------------------------------------------
+	const registerExpandBookmarkFolderCommand = (
+	) : vscode.Disposable => vscode.commands.registerCommand(
+		"Simple-Bookmark.expandbookmarkfolder",
+		async (item? : BookmarkModelType) => {
+			const target : BookmarkModelType | undefined = item || (selectedBookmarks.length > 0 ? selectedBookmarks[0] : undefined);
+
+			return !target
+				? notify(`warn`, `expand - No bookmark folder selected.`)
+				: target.bookmarkMetadata.isFile
+					? notify(`warn`, `expand - Selected bookmark is not a folder.`)
+					: (
+						provider.markExpanded(target.originalPath),
+						provider.refresh()
+					);
+		}
+	);
+
+	// 4. 전체 북마크 펼침 -----------------------------------------------------------------
+	const registerExpandAllBookmarksCommand = (
+	) : vscode.Disposable => vscode.commands.registerCommand(
+		"Simple-Bookmark.expandallbookmarks",
+		async () => {
+			await setFolderExpansionState(true);
+		}
+	);
+
+	// 5. 전체 북마크 접힘 -----------------------------------------------------------------
+	const registerCollapseAllBookmarksCommand = (
+	) : vscode.Disposable => vscode.commands.registerCommand(
+		"Simple-Bookmark.collapseallbookmarks",
+		async () => {
+			await setFolderExpansionState(false);
+		}
+	);
 	// 탐색기 전체 확장 ------------------------------------------------------------------
 	const registerExpandExplorerCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
@@ -596,7 +674,7 @@ export const BookmarkCommand = (
 	) : vscode.Disposable => vscode.commands.registerCommand(
 		"Simple-Bookmark.expandfolder",
 		async (uri : vscode.Uri) => {
-			logger(`debug`, `expand`, `${uri?.fsPath}`);
+			logger(`debug`, `expand - ${uri?.fsPath}`);
 
 			// URI가 전달되지 않은 경우 (키보드 단축키로 실행한 경우) 현재 활성 편집기의 파일 사용
 			if (!uri) {
@@ -612,7 +690,7 @@ export const BookmarkCommand = (
 							uri = workspaceFolders[0].uri;
 						}
 						else {
-								notify(`warn`, `select`, "No folder available to expand.");
+								notify(`warn`, `select - No folder available to expand.`);
 							return;
 						}
 					}
@@ -622,7 +700,7 @@ export const BookmarkCommand = (
 				// 폴더인지 확인
 				const stat = await vscode.workspace.fs.stat(uri);
 				if (!(stat.type & vscode.FileType.Directory)) {
-						notify(`warn`, `select`, `Selected item is not a folder: ${uri.fsPath}`);
+						notify(`warn`, `select - Selected item is not a folder: ${uri.fsPath}`);
 					return;
 				}
 
@@ -631,14 +709,14 @@ export const BookmarkCommand = (
 				await delay(100);
 
 				// 폴더와 모든 하위 폴더를 확장
-				logger(`debug`, `expand`, `${uri.fsPath}`);
+				logger(`debug`, `expand - ${uri.fsPath}`);
 				await expandFolderRecursively(uri);
 
-					notify(`info`, `expand`, `Expanded: ${path.basename(uri.fsPath)}`);
+					notify(`info`, `expand - Expanded: ${path.basename(uri.fsPath)}`);
 			}
 			catch (error) {
-				logger(`debug`, `expand`, `${error}`);
-				notify(`error`, `expand`, `${error}`);
+				logger(`debug`, `expand - ${error}`);
+				notify(`error`, `expand - ${error}`);
 			}
 		}
 	);
@@ -657,6 +735,9 @@ export const BookmarkCommand = (
 			registerDeleteAllBookmarkCommand(),
 			registerCreateFolderCommand(),
 			registerCreateFileCommand(),
+			registerExpandBookmarkFolderCommand(),
+			registerExpandAllBookmarksCommand(),
+			registerCollapseAllBookmarksCommand(),
 			registerExpandExplorerCommand(),
 			registerExpandFolderCommand()
 		])

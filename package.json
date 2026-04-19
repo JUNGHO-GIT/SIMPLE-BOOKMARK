@@ -6,7 +6,7 @@
   "icon": "logo.webp",
   "license": "Apache-2.0",
   "main": "./out/extension.js",
-  "version": "2.8.5",
+  "version": "2.8.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK.git"
@@ -37,6 +37,9 @@
     "onCommand:Simple-Bookmark.createfile",
     "onCommand:Simple-Bookmark.expandexplorer",
     "onCommand:Simple-Bookmark.expandfolder",
+    "onCommand:Simple-Bookmark.expandbookmarkfolder",
+    "onCommand:Simple-Bookmark.expandallbookmarks",
+    "onCommand:Simple-Bookmark.collapseallbookmarks",
     "onCommand:Simple-Bookmark.openLogOutput",
     "onCommand:Simple-Bookmark.openExtensionHostLog"
   ],
@@ -125,6 +128,24 @@
         "title": "Expand This Folder",
         "category": "Simple-Bookmark",
         "icon": "$(expand-all)"
+      },
+      {
+        "command": "Simple-Bookmark.expandbookmarkfolder",
+        "title": "Expand",
+        "category": "Simple-Bookmark",
+        "icon": "$(chevron-down)"
+      },
+      {
+        "command": "Simple-Bookmark.expandallbookmarks",
+        "title": "Expand All Bookmarks",
+        "category": "Simple-Bookmark",
+        "icon": "$(chevron-down)"
+      },
+      {
+        "command": "Simple-Bookmark.collapseallbookmarks",
+        "title": "Collapse All Bookmarks",
+        "category": "Simple-Bookmark",
+        "icon": "$(chevron-up)"
       }
     ],
     "keybindings": [
@@ -172,24 +193,34 @@
     "menus": {
       "view/title": [
         {
+          "command": "Simple-Bookmark.collapseallbookmarks",
+          "when": "view == Simple-Bookmark",
+          "group": "navigation@1"
+        },
+        {
+          "command": "Simple-Bookmark.expandallbookmarks",
+          "when": "view == Simple-Bookmark",
+          "group": "navigation@2"
+        },
+        {
           "command": "Simple-Bookmark.refreshentry",
           "when": "view == Simple-Bookmark",
-          "group": "navigation"
+          "group": "navigation@3"
         },
         {
           "command": "Simple-Bookmark.copybookmark",
           "when": "view == Simple-Bookmark",
-          "group": "navigation"
+          "group": "navigation@4"
         },
         {
           "command": "Simple-Bookmark.pasterootbookmark",
           "when": "view == Simple-Bookmark",
-          "group": "navigation"
+          "group": "navigation@5"
         },
         {
           "command": "Simple-Bookmark.removeallbookmark",
           "when": "view == Simple-Bookmark",
-          "group": "navigation"
+          "group": "navigation@6"
         }
       ],
       "view/item/context": [
@@ -222,6 +253,11 @@
           "command": "Simple-Bookmark.createfile",
           "when": "view == Simple-Bookmark && viewItem == bookmarkFolder",
           "group": "2_modification@2"
+        },
+        {
+          "command": "Simple-Bookmark.expandbookmarkfolder",
+          "when": "view == Simple-Bookmark && viewItem == bookmarkFolder",
+          "group": "2_modification@3"
         },
         {
           "command": "Simple-Bookmark.removebookmark",
@@ -304,30 +340,29 @@
   "scripts": {
     "git": "bun ~/.bootstrap/bootstrap-sync.mjs --git",
     "sync": "bun ~/.bootstrap/bootstrap-sync.mjs --sync",
-    "tools": "bun ~/.bootstrap/bootstrap-sync.mjs --tools",
-    "project": "bun ~/.bootstrap/bootstrap-sync.mjs --project"
+    "tools": "bun ~/.bootstrap/bootstrap-sync.mjs --tools"
   },
   "dependencies": {
     "minimatch": "^10.2.5"
   },
   "devDependencies": {
-    "@swc/cli": "^0.7.9",
-    "@swc/core": "^1.15.3",
-    "@swc/helpers": "^0.5.17",
+    "@swc/cli": "^0.8.1",
+    "@swc/core": "^1.15.26",
+    "@swc/helpers": "^0.5.21",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^25.5.2",
-    "@types/vscode": "^1.110.0",
-    "@typescript-eslint/eslint-plugin": "^8.58.0",
-    "@typescript-eslint/parser": "^8.48.0",
+    "@types/node": "^25.6.0",
+    "@types/vscode": "^1.116.0",
+    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/parser": "^8.58.2",
     "@vscode/test-electron": "^2.5.2",
-    "@vscode/vsce": "^3.7.1",
+    "@vscode/vsce": "^3.9.1",
     "concurrently": "^9.2.1",
     "esbuild": "^0.28.0",
-    "eslint": "^10.2.0",
+    "eslint": "^10.2.1",
     "mocha": "^11.7.5",
-    "ts-morph": "^27.0.2",
+    "ts-morph": "^28.0.0",
     "ts-prune": "^0.10.3",
     "tsc-alias": "^1.8.16",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3"
   }
 }
