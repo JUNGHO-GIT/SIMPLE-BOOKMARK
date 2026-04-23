@@ -4,7 +4,9 @@ import { vscode } from "@exportLibs";
 import type { BookmarkMetadata, BookmarkModelType } from "@exportTypes";
 import { BookmarkStatus } from "@exportTypes";
 
-// -------------------------------------------------------------------------------------------
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// 1. 북마크 트리 아이템
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 export const BookmarkModel = (
 	metadata : BookmarkMetadata,
 	status : BookmarkStatus = BookmarkStatus.SYNCED,
@@ -12,15 +14,15 @@ export const BookmarkModel = (
 ) : BookmarkModelType => {
 
 	// 0. 변수 설정 ----------------------------------------------------------------------------
-	let collapsibleState = metadata.isFile
-	? vscode.TreeItemCollapsibleState.None
-	: vscode.TreeItemCollapsibleState.Collapsed;
-	let base = new vscode.TreeItem(
+	const collapsibleState = metadata.isFile
+		? vscode.TreeItemCollapsibleState.None
+		: vscode.TreeItemCollapsibleState.Collapsed;
+	const base = new vscode.TreeItem(
 		metadata.bookmarkName,
 		collapsibleState
 	) as BookmarkModelType;
 
-	// 항목의 라벨/아이콘/툴팁/명령 갱신 -------------------------------------------------------
+	// 1-1. 표시 속성 갱신
 	const setupDisplay = (
 		item: BookmarkModelType
 	): void => {
@@ -56,34 +58,35 @@ export const BookmarkModel = (
 			: undefined;
 	};
 
-	// 상태 변경 시 내부 상태를 갱신하고 표시를 다시 설정 ---------------------------------------
+	// 1-2. 상태 갱신
 	const updateStatus = function (
 		this: BookmarkModelType,
 		newStatus: BookmarkStatus
 	): void {
-		this.status !== newStatus && ((this as any).status = newStatus, setupDisplay(this));
+		if (this.status !== newStatus) {
+			this.status = newStatus;
+			setupDisplay(this);
+		}
 	};
 
-	// 원본 파일이 사용 가능한 상태인지 여부를 계산 --------------------------------------------
+	// 1-3. 원본 사용 가능 여부 계산
 	const computeIsOriginalAvailable = (
 		status: BookmarkStatus
 	): boolean => (
 		status === BookmarkStatus.SYNCED || status === BookmarkStatus.MODIFIED
 	);
 
-	// 베이스 속성 병합 ----------------------------------------------------------------------
-	base = Object.assign(base, {
-		originalPath: metadata.originalPath,
-		bookmarkMetadata: metadata,
-		status: status,
-		id: metadata.originalPath,
-		resourceUri: vscode.Uri.file(metadata.originalPath),
-		contextValue: options?.contextValueOverride || (metadata.isFile ? `bookmarkFile` : `bookmarkFolder`),
-		updateStatus: updateStatus.bind(base),
-	}) as BookmarkModelType;
+	// 1-4. 베이스 속성 주입
+	base.originalPath = metadata.originalPath;
+	base.bookmarkMetadata = metadata;
+	base.status = status;
+	base.id = metadata.originalPath;
+	base.resourceUri = vscode.Uri.file(metadata.originalPath);
+	base.contextValue = options?.contextValueOverride ?? (metadata.isFile ? `bookmarkFile` : `bookmarkFolder`);
+	base.updateStatus = updateStatus.bind(base);
 
 	Object.defineProperty(base, "isOriginalAvailable", {
-		get() {
+		get(): boolean {
 			return computeIsOriginalAvailable(base.status);
 		}
 	});

@@ -8,7 +8,9 @@ import { BookmarkStatus } from "@exportTypes";
 import type { BookmarkMetadata, BookmarkModelType } from "@exportTypes";
 import type { BookmarkOperationServiceType, BookmarkSyncServiceType } from "@exportTypes";
 
-// -------------------------------------------------------------------------------
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// 1. 북마크 프로바이더
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 export const BookmarkProvider = (
 	workspaceRoot : string | undefined
 ) => {
@@ -25,7 +27,7 @@ export const BookmarkProvider = (
 	let refreshTimer : NodeJS.Timeout | null = null;
 	setTimeout(() => (
 		initializeBookmarkFolder().catch(
-			(err: any) => logger(`error`, `activate - ${err}`)
+			(err: unknown) => logger(`error`, `activate - ${err instanceof Error ? err.message : String(err)}`)
 		), 0
 	));
 
@@ -174,7 +176,7 @@ export const BookmarkProvider = (
 		: !element
 		? await getRootBookmarks()
 		: await (async () => {
-			const ancestor : Set<string> | undefined = (element as any)._ancestorPaths;
+			const ancestor = element._ancestorPaths;
 			const isCycle = !!ancestor && ancestor.has(element.originalPath);
 
 			return isCycle
@@ -278,7 +280,7 @@ export const BookmarkProvider = (
 
 					const chain = new Set<string>(ancestor ?? []);
 					chain.add(folderPath);
-					(sysItem as any)._ancestorPaths = chain;
+					sysItem._ancestorPaths = chain;
 				})();
 
 				items.push(sysItem);
@@ -667,10 +669,12 @@ export const BookmarkProvider = (
 		createFolder,
 		createFile,
 		deleteOriginalItems,
+		// 1-1. markExpanded
 		markExpanded(path : string) {
 			const key = normalizePath(path);
 			expandedDirPaths.add(key);
 		},
+		// 1-2. markCollapsed
 		markCollapsed(path : string) {
 			const key = normalizePath(path);
 			expandedDirPaths.delete(key);

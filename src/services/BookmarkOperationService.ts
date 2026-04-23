@@ -4,7 +4,9 @@ import { vscode, path } from "@exportLibs";
 import type { BookmarkSyncServiceType } from "@exportTypes";
 import { validateFileName, notify, logger } from "@exportScripts";
 
-// -----------------------------------------------------------------------------------------
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// 1. 파일 작업 서비스
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 export const BookmarkOperationService = (
 	bookmarkPath : string,
 	_syncService? : BookmarkSyncServiceType
@@ -17,20 +19,28 @@ export const BookmarkOperationService = (
 	// 모든 파일 경로(flat) 목록을 반환 --------------------------------------------------------
 	const flattenToFiles = async (uri: vscode.Uri): Promise<string[]> => {
 		const stat = await vscode.workspace.fs.stat(uri);
-		return stat.type === vscode.FileType.File
-		? [uri.fsPath]
-		: await (async () => {
-			const out: string[] = [];
+		let flattenedFiles: string[] = [];
+
+		if (stat.type === vscode.FileType.File) {
+			flattenedFiles = [uri.fsPath];
+		}
+		else {
 			const entries = await vscode.workspace.fs.readDirectory(uri);
-			for (const [name] of entries) {
-				const child = vscode.Uri.file(path.join(uri.fsPath, name));
-				const childStat = await vscode.workspace.fs.stat(child);
-				childStat.type === vscode.FileType.File
-					? out.push(child.fsPath)
-					: (await flattenToFiles(child)).forEach((p) => out.push(p));
-			}
-			return out;
-		})();
+			const nestedFiles = await Promise.all(
+				entries.map(async ([name, type]) => {
+					const childPath = path.join(uri.fsPath, name);
+					return type === vscode.FileType.File
+						? [childPath]
+						: await flattenToFiles(vscode.Uri.file(childPath));
+				})
+			);
+
+			nestedFiles.forEach((filePaths) => {
+				flattenedFiles.push(...filePaths);
+			});
+		}
+
+		return flattenedFiles;
 	};
 
 	// 파일 경로 비교를 위해 정규화 -----------------------------------------------------

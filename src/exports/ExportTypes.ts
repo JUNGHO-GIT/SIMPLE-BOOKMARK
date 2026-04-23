@@ -38,6 +38,7 @@ export type BookmarkModelType = TreeItem & {
 	status : BookmarkStatus;
 	isOriginalAvailable : boolean;
 	updateStatus : (newStatus : BookmarkStatus) => void;
+	_ancestorPaths? : Set<string>;
 };
 
 // providers ----------------------------------------------------------------------

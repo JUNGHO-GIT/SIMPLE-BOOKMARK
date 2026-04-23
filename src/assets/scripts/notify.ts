@@ -9,19 +9,25 @@ import { vscode } from "@exportLibs";
 const MAIN = `Simple-Bookmark`;
 const AUTO_CLOSE_MS = 1000;
 
-// -------------------------------------------------------------------------------------------------
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// 1. 알림 유틸
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+// 1-1. 진행 알림 표시
 const showProgress = async (text: string): Promise<void> => {
 	await vscode.window.withProgress({
 		location: vscode.ProgressLocation.Notification,
 		title: text,
 		cancellable: false,
 	},
-	async (_) => {
-		await new Promise((res) => setTimeout(res, AUTO_CLOSE_MS));
+	async () => {
+		await new Promise<void>((resolve) => {
+			setTimeout(resolve, AUTO_CLOSE_MS);
+		});
 	});
 };
 
-// -------------------------------------------------------------------------------------------------
+// 1-2. 알림 출력
 export const notify = async (
 	type: `debug` | `info` | `hint` | `warn` | `error`,
 	value: string
@@ -48,9 +54,5 @@ export const notify = async (
 	};
 	const text = `${config.title.str} ${config[type].str} ${value}`;
 
-	type === `debug` && await showProgress(text);
-	type === `info` && await showProgress(text);
-	type === `hint` && await showProgress(text);
-	type === `warn` && await showProgress(text);
-	type === `error` && await showProgress(text);
+	await showProgress(text);
 };

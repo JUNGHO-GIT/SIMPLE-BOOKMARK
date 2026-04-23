@@ -2,7 +2,11 @@
 
 import { path, fs, os } from "@exportLibs";
 
-// 1. 대상 파일명 보정 ----------------------------------------------------------------------------
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// 1. 경로 유틸
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+// 1-1. 대상 파일명 보정
 export const getTargetFileName = (
 	_dir: string,
 	fileName: string
@@ -10,27 +14,27 @@ export const getTargetFileName = (
 	return fileName;
 };
 
-// 2. 워크스페이스 경로 정규화 ----------------------------------------------------------------------
+// 1-2. 워크스페이스 경로 정규화
 const normalizeWorkspaceRoot = (
 	workspaceRoot: string
 ): string => {
 	return path.resolve(workspaceRoot);
 };
 
-// 3. 중앙 북마크 루트 경로 반환 --------------------------------------------------------------------
+// 1-3. 중앙 북마크 루트 경로 반환
 export const getBookmarkRootPath = (
 ): string => {
 	return path.join(os.homedir(), ".bookmark");
 };
 
-// 4. 기존 워크스페이스 북마크 경로 반환 --------------------------------------------------------------
+// 1-4. 기존 워크스페이스 북마크 경로 반환
 export const getLegacyBookmarkPath = (
 	workspaceRoot: string
 ): string => {
 	return path.join(normalizeWorkspaceRoot(workspaceRoot), ".bookmark");
 };
 
-// 5. 워크스페이스별 중앙 저장 상대 경로 계산 ---------------------------------------------------------
+// 1-5. 워크스페이스별 중앙 저장 상대 경로 계산
 const getWorkspaceStorageRelativePath = (
 	workspaceRoot: string
 ): string => {
@@ -51,7 +55,7 @@ const getWorkspaceStorageRelativePath = (
 	return segments.length > 0 ? path.join(...segments) : "_root";
 };
 
-// 6. 중앙 관리용 .bookmark 폴더 경로 반환 -----------------------------------------------------------
+// 1-6. 중앙 관리용 북마크 경로 반환
 export const getBookmarkPath = (
 	workspaceRoot: string
 ): string => {
@@ -61,7 +65,7 @@ export const getBookmarkPath = (
 	);
 };
 
-// 7. 북마크 폴더 내부 경로 여부 판단 ----------------------------------------------------------------
+// 1-7. 북마크 폴더 내부 경로 여부 판단
 export const isWithinBookmark = (
 	itemPath: string,
 	bookmarkPath: string
@@ -69,16 +73,25 @@ export const isWithinBookmark = (
 	return itemPath.startsWith(bookmarkPath);
 };
 
-// 8. 파일명 검증 -----------------------------------------------------------------------------------
+// 1-8. 파일명 검증
 export const validateFileName = (
 	fileName: string
 ): string | null => {
-	return (!fileName || !fileName.trim()) ? "File name cannot be empty" :
-	(fileName.includes("/") || fileName.includes("\\")) ? "Invalid characters in file name" :
-	null;
+	let validationError: string | null = null;
+	const trimmedFileName = fileName.trim();
+	const hasInvalidSeparator = fileName.includes("/") || fileName.includes("\\");
+
+	if (!fileName || !trimmedFileName) {
+		validationError = "File name cannot be empty";
+	}
+	else if (hasInvalidSeparator) {
+		validationError = "Invalid characters in file name";
+	}
+
+	return validationError;
 };
 
-// 9. 경로 존재 여부 확인 ----------------------------------------------------------------------------
+// 1-9. 경로 존재 여부 확인
 export const exists = (
 	filePath: string
 ): boolean => {

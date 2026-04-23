@@ -6,7 +6,9 @@ import { notify, logger } from "@exportScripts";
 import { LRUCache, isFileType } from "@exportScripts";
 import type { BookmarkProviderType, BookmarkModelType, ExcludeRuleType } from "@exportTypes";
 
-// -----------------------------------------------------------------------------------------
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// 1. 북마크 명령
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 export const BookmarkCommand = (
 	provider : BookmarkProviderType,
 	_context : vscode.ExtensionContext
@@ -16,6 +18,14 @@ export const BookmarkCommand = (
 	let excludeRuleCache = new LRUCache<string, ExcludeRuleType[]>(50);
 	let selectedBookmarks : BookmarkModelType[] = [];
 	let minimatchOptions = { dot : true, nocase : process.platform === "win32" } as const;
+
+	// 1-1. when 절 추출
+	const getWhenClause = (
+		value: boolean | {when?: string}
+	): string | undefined => {
+		const whenClause = typeof value === "object" && value ? value.when : undefined;
+		return typeof whenClause === "string" ? whenClause : undefined;
+	};
 
 	// 윈도우 경로 구분자를 POSIX 형식("/")으로 변환 --------------------------------------------
 	const toPosixPath = (
@@ -46,10 +56,14 @@ export const BookmarkCommand = (
 			const rules: ExcludeRuleType[] = [];
 
 			for (const [pattern, value] of Object.entries(raw)) {
-				typeof value === "boolean"
-				? (value && rules.push({matcher: new Minimatch(pattern, minimatchOptions)}))
-				: (value && typeof value === "object" && typeof (value as any).when === "string"
-					&& rules.push({matcher: new Minimatch(pattern, minimatchOptions), when: (value as any).when}));
+				const whenClause = getWhenClause(value);
+
+				if (typeof value === "boolean") {
+					value && rules.push({matcher: new Minimatch(pattern, minimatchOptions)});
+				}
+				else if (whenClause) {
+					rules.push({matcher: new Minimatch(pattern, minimatchOptions), when: whenClause});
+				}
 			}
 
 			excludeRuleCache.set(cacheKey, rules);

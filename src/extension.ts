@@ -6,8 +6,14 @@ import { BookmarkProvider } from "@exportProviders";
 import { BookmarkCommand } from "@exportCommands";
 import type { BookmarkProviderType, BookmarkCommandType, BookmarkModelType } from "@exportTypes";
 
-// -------------------------------------------------------------------------------------------------
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// 1. 확장 진입점
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+// 1-1. deactivate
 export const deactivate = () => {};
+
+// 1-2. activate
 export const activate = (context: vscode.ExtensionContext) => {
 
 	// 0. Initialize Logger ------------------------------------------------------------------------
@@ -34,12 +40,12 @@ export const activate = (context: vscode.ExtensionContext) => {
 	});
 
 	treeView.onDidExpandElement(e => {
-		const p = (e.element as any).originalPath;
-		p && (provider as any).markExpanded(process.platform === `win32` ? p.toLowerCase() : p);
+		const p = e.element.originalPath;
+		p && provider.markExpanded(p);
 	});
 	treeView.onDidCollapseElement(e => {
-		const p = (e.element as any).originalPath;
-		p && (provider as any).markCollapsed(process.platform === `win32` ? p.toLowerCase() : p);
+		const p = e.element.originalPath;
+		p && provider.markCollapsed(p);
 	});
 
 	const additionalListeners = setupAdditionalListeners(provider, commandManager, treeView);
@@ -52,7 +58,7 @@ export const activate = (context: vscode.ExtensionContext) => {
 	);
 };
 
-// 2. setup ---------------------------------------------------------------------------------------
+// 1-3. 추가 리스너 설정
 const setupAdditionalListeners = (
 	provider: BookmarkProviderType,
 	commandManager: BookmarkCommandType,

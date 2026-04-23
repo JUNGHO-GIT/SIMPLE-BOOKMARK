@@ -10,16 +10,18 @@ const MAIN = `Simple-Bookmark`;
 const logLevelMap = { off: 0, debug: 1, info: 2, hint: 3, warn: 4, error: 5 };
 let outputChannel: vscode.OutputChannel | null = null;
 
-// -------------------------------------------------------------------------------------------------
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// 1. 로거 유틸
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+// 1-1. 로거 초기화
 export const initLogger = (): void => {
-	!outputChannel ? (
-		outputChannel = vscode.window.createOutputChannel(MAIN)
-	) : (
-		void 0
-	);
+	if (!outputChannel) {
+		outputChannel = vscode.window.createOutputChannel(MAIN);
+	}
 };
 
-// -------------------------------------------------------------------------------------------------
+// 1-2. 로그 레벨 조회
 const getLogLevel = (): number => {
 	const config = vscode.workspace.getConfiguration(MAIN);
 	const level = config.get<string>(`logLevel`, `info`);
@@ -27,17 +29,17 @@ const getLogLevel = (): number => {
 	return rs;
 };
 
-// -------------------------------------------------------------------------------------------------
+// 1-3. 출력 채널 반영
 const appendOutput = (levelKey: keyof typeof logLevelMap, msg: string): void => {
 	outputChannel && getLogLevel() <= logLevelMap[levelKey] && outputChannel.appendLine(msg);
 };
 
-// -------------------------------------------------------------------------------------------------
+// 1-4. 로그 문자열 정리
 const formatLog = (text = ``): string => {
 	return text.trim().replace(/^\s+/gm, ``);
 };
 
-// -------------------------------------------------------------------------------------------------
+// 1-5. 로그 출력
 export const logger = (
 	type: `debug` | `info` | `hint` | `warn` | `error`,
 	value: string

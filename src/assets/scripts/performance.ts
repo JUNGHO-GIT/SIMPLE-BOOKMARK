@@ -1,17 +1,27 @@
 // assets/scripts/performance.ts
 
-// LRU 캐시 클래스 ----------------------------------------------------------------------
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// 1. 성능 유틸
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+// 1-1. LRU 캐시
 export class LRUCache<K, V> {
 	private cache = new Map<K, V>();
 	private readonly maxSize: number;
+
+	// 1-1. constructor
 	constructor(maxSize: number) {
 		this.maxSize = maxSize;
 	}
+
+	// 1-2. get
 	get(key: K): V | undefined {
 		const value = this.cache.get(key);
 		value !== undefined && (this.cache.delete(key), this.cache.set(key, value));
 		return value;
 	}
+
+	// 1-3. set
 	set(key: K, value: V): void {
 		this.cache.has(key) && this.cache.delete(key);
 		this.cache.size >= this.maxSize && (() => {
@@ -20,26 +30,36 @@ export class LRUCache<K, V> {
 		})();
 		this.cache.set(key, value);
 	}
+
+	// 1-4. has
 	has(key: K): boolean {
 		return this.cache.has(key);
 	}
+
+	// 1-5. delete
 	delete(key: K): boolean {
 		return this.cache.delete(key);
 	}
+
+	// 1-6. clear
 	clear(): void {
 		this.cache.clear();
 	}
+
+	// 1-7. size
 	get size(): number {
 		return this.cache.size;
 	}
 }
 
-// -----------------------------------------------------------------------------------------
-export const debounce = <T extends (...args: any[]) => void>(
-	func: T, delay: number
-): ((...args: Parameters<T>) => void) => {
+// 1-8. debounce
+export const debounce = <Args extends unknown[]>(
+	func: (...args: Args) => void,
+	delay: number
+): ((...args: Args) => void) => {
 	let timeoutId: NodeJS.Timeout | null = null;
-	return (...args: Parameters<T>) => {
+
+	return (...args: Args) => {
 		timeoutId && clearTimeout(timeoutId);
 		timeoutId = setTimeout(() => {
 			func(...args);
@@ -48,7 +68,7 @@ export const debounce = <T extends (...args: any[]) => void>(
 	};
 };
 
-// 대량 작업을 지정한 배치 크기로 나눠 병렬 처리 --------------------------------------------
+// 1-9. batchProcess
 export const batchProcess = async <T, R>(
 	items: T[],
 	processor: (item: T) => Promise<R>,
@@ -68,15 +88,15 @@ export const batchProcess = async <T, R>(
 	return results;
 };
 
-// VS Code FileType 비트마스크에서 특정 타입 포함 여부를 판단 -------------------------------
+// 1-10. isFileType
 export const isFileType = (
 	type: number,
 	target: number
 ): boolean => {
 	return (type & target) === target;
-}
+};
 
-// JSON 파싱 실패 시 null을 반환하는 안전한 파서 ------------------------------------
+// 1-11. safeJsonParse
 export const safeJsonParse = <T>(
 	jsonString: string
 ): T | null => {

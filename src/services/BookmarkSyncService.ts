@@ -5,7 +5,9 @@ import type { BookmarkMetadata } from "@exportTypes";
 import { BookmarkStatus } from "@exportTypes";
 import { validateFileName, logger } from "@exportScripts";
 
-// -----------------------------------------------------------------------------------------
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// 1. 북마크 동기화 서비스
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 export const BookmarkSyncService = (
 	bookmarkPath : string,
 	onSyncUpdate? : (p : string, status : BookmarkStatus) => void,
@@ -15,8 +17,10 @@ export const BookmarkSyncService = (
 	// 0. 변수 설정 ----------------------------------------------------------------------------
 	const bookmarkWatchers = new Map<string, vscode.FileSystemWatcher>();
 	const bookmarkedFiles = new Map<string, BookmarkMetadata>();
+	const bookmarkNames = new Set<string>();
 	const METADATA_EXT = `.bookmark.json`;
 	const disposables : vscode.Disposable[] = [];
+	const textEncoder = new TextEncoder();
 
 	// 파일/폴더 존재 여부를 확인 ---------------------------------------------------------------
 	const fileExists = async (
@@ -127,7 +131,11 @@ export const BookmarkSyncService = (
 				const batchPromises = batch.map(async (metadataPath) => {
 					try {
 						const metadata = await loadMetadata(metadataPath);
-						metadata && (bookmarkedFiles.set(metadata.originalPath, metadata), createWatcherFor(metadata.originalPath));
+						metadata && (
+							bookmarkedFiles.set(metadata.originalPath, metadata),
+							bookmarkNames.add(metadata.bookmarkName),
+							createWatcherFor(metadata.originalPath)
+						);
 						return metadata;
 					}
 					catch (error) {
@@ -166,13 +174,14 @@ export const BookmarkSyncService = (
 			const baseName = path.basename(originalPath);
 			const finalBookmarkName = bookmarkName || baseName;
 			const uniqueBookmarkName = generateUniqueBookmarkName(finalBookmarkName);
+			const currentTimestamp = Date.now();
 
 			const metadata : BookmarkMetadata = {
 				originalPath : originalPath,
 				bookmarkName : uniqueBookmarkName,
 				isFile : stat.type === vscode.FileType.File,
-				createdAt : Date.now(),
-				lastSyncAt : Date.now(),
+				createdAt : currentTimestamp,
+				lastSyncAt : currentTimestamp,
 				originalExists : true,
 			};
 
@@ -180,6 +189,7 @@ export const BookmarkSyncService = (
 			await saveMetadata(metadataPath, metadata);
 
 			bookmarkedFiles.set(originalPath, metadata);
+			bookmarkNames.add(uniqueBookmarkName);
 			createWatcherFor(originalPath);
 
 			onSyncUpdate && onSyncUpdate(originalPath, BookmarkStatus.SYNCED);
@@ -210,7 +220,7 @@ export const BookmarkSyncService = (
 	const isBookmarkNameExists = (
 		name : string
 	) : boolean => {
-		return Array.from(bookmarkedFiles.values()).some((m) => m.bookmarkName === name);
+		return bookmarkNames.has(name);
 	};
 
 	// 북마크 이름 변경 --------------------------------------------------------------------
@@ -231,6 +241,7 @@ export const BookmarkSyncService = (
 		// 메타데이터 이름 중복 처리
 		const existsOther = Array.from(bookmarkedFiles.values()).some((m) => m.originalPath !== originalPath && m.bookmarkName === newNameRaw);
 		const finalMetaName = existsOther ? generateUniqueBookmarkName(newNameRaw) : newNameRaw;
+		const previousBookmarkName = metadata!.bookmarkName;
 
 		// 실제 파일/폴더 rename 준비
 		const dir = path.dirname(metadata!.originalPath);
@@ -269,6 +280,10 @@ export const BookmarkSyncService = (
 		// 메타데이터 파일명이 변경되지 않은 경우 기존 파일 삭제는 하지 않음
 		await saveMetadata(newMetaPath, metadata!);
 		oldMetaPath !== newMetaPath && await vscode.workspace.fs.delete(vscode.Uri.file(oldMetaPath));
+		previousBookmarkName !== finalMetaName && (
+			bookmarkNames.delete(previousBookmarkName),
+			bookmarkNames.add(finalMetaName)
+		);
 
 		// 내부 맵과 워처 재바인딩
 		if (path.resolve(originalPath) !== path.resolve(newOriginalPath)) {
@@ -297,6 +312,7 @@ export const BookmarkSyncService = (
 				const metadataPath = path.join(bookmarkPath, `${metadata.bookmarkName}${METADATA_EXT}`);
 				await vscode.workspace.fs.delete(vscode.Uri.file(metadataPath));
 				bookmarkedFiles.delete(originalPath);
+				bookmarkNames.delete(metadata.bookmarkName);
 				disposeWatcherFor(originalPath);
 				onRefreshNeeded && onRefreshNeeded();
 				logger(`debug`, `remove: ${originalPath}`);
@@ -403,7 +419,7 @@ export const BookmarkSyncService = (
 		const content = JSON.stringify(metadata, null, 2);
 		await vscode.workspace.fs.writeFile(
 			vscode.Uri.file(metadataPath),
-			new TextEncoder().encode(content)
+			textEncoder.encode(content)
 		);
 	};
 
@@ -427,6 +443,7 @@ export const BookmarkSyncService = (
 		bookmarkWatchers.forEach((watcher) => watcher.dispose());
 		bookmarkWatchers.clear();
 		bookmarkedFiles.clear();
+		bookmarkNames.clear();
 	};
 
 	// 초기화 ----------------------------------------------------------------------------
