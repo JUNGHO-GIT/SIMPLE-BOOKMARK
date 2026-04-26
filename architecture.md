@@ -1,9 +1,9 @@
-# SIMPLE-BOOKMARK Architecture
+# simple-bookmark Architecture
 
 ## Structure Map
 
 ```text
-SIMPLE-BOOKMARK
+simple-bookmark
 |-- src/
 |   |-- commands/    -> bookmark action entrypoints
 |   |-- providers/   -> tree view adapters

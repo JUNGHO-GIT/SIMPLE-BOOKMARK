@@ -6,10 +6,10 @@
   "icon": "logo.webp",
   "license": "Apache-2.0",
   "main": "./out/extension.js",
-  "version": "4.1.3",
+  "version": "4.1.5",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JUNGHO-GIT/SIMPLE-BOOKMARK.git"
+    "url": "https://github.com/jungho-dev/simple-bookmark.git"
   },
   "categories": [
     "Other"

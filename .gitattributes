@@ -2,7 +2,7 @@
 
 * text eol=lf
 
-# Directories --------------------------------------------------------------------------------
+# Directories ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
 
 # 1. Build outputs
 **/build/** linguist-vendored linguist-generated
@@ -71,7 +71,7 @@
 **/hs_err_pid* linguist-vendored linguist-generated
 **/replay_pid* linguist-vendored linguist-generated
 
-# Files --------------------------------------------------------------------------------------
+# Files ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
 
 # 1. OS / editor noise
 **/*.swp linguist-vendored linguist-generated

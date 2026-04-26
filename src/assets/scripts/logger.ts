@@ -5,7 +5,7 @@
 
 import { vscode } from "@exportLibs";
 
-// -------------------------------------------------------------------------------------------------
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
 const MAIN = `Simple-Bookmark`;
 const logLevelMap = { off: 0, debug: 1, info: 2, hint: 3, warn: 4, error: 5 };
 let outputChannel: vscode.OutputChannel | null = null;
@@ -46,7 +46,7 @@ export const logger = (
 ): void => {
 	const config = {
 		line: {
-			str: `-----------------------------------------`,
+			str: `―――――――――――――――――――――――――――――――――――――――--`,
 			color: `\u001b[38;2;255;162;0m`,
 		},
 		title: {

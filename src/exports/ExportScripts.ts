@@ -1,30 +1,28 @@
 // exports/ExportScripts.ts
 
-// -------------------------------------------------------------------------------
 export {
-	getTargetFileName,
+	initLogger,
+	logger,
+} from "@scripts/logger";
+
+// ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+export { notify } from "@scripts/notify";
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+export {
 	exists,
+	getBookmarkPath,
 	getBookmarkRootPath,
 	getLegacyBookmarkPath,
-	getBookmarkPath,
+	getTargetFileName,
 	isWithinBookmark,
 	validateFileName,
 } from "@scripts/path";
 
-// ---------------------------------------------------------------------------------
+// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
 export {
-	notify,
-} from "@scripts/notify";
-export {
-	logger,
-	initLogger
-} from "@scripts/logger";
-
-// -------------------------------------------------------------------------------
-export {
-	LRUCache,
 	batchProcess,
 	debounce,
 	isFileType,
+	LRUCache,
 	safeJsonParse,
 } from "@scripts/performance";
