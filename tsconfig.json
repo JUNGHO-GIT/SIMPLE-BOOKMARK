@@ -8,6 +8,8 @@
     "lib": [
       "esnext"
     ],
+		"rootDir": "./src",
+		"ignoreDeprecations": "6.0",
 		"sourceMap": true,
 		"strict": true,
 		"esModuleInterop": true,

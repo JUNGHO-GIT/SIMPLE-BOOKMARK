@@ -10,105 +10,96 @@ const MAIN = `Simple-Bookmark`;
 const logLevelMap = { off: 0, debug: 1, info: 2, hint: 3, warn: 4, error: 5 };
 let outputChannel: vscode.OutputChannel | null = null;
 
-// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
-// 1. 로거 유틸
-// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
-
 // 1-1. 로거 초기화
 export const initLogger = (): void => {
-	if (!outputChannel) {
-		outputChannel = vscode.window.createOutputChannel(MAIN);
-	}
+  if (!outputChannel) {
+  	outputChannel = vscode.window.createOutputChannel(MAIN);
+  }
 };
 
 // 1-2. 로그 레벨 조회
 const getLogLevel = (): number => {
-	const config = vscode.workspace.getConfiguration(MAIN);
-	const level = config.get<string>(`logLevel`, `info`);
-	const rs = logLevelMap[level as keyof typeof logLevelMap] || 2;
-	return rs;
+  const config = vscode.workspace.getConfiguration(MAIN);
+  const level = config.get<string>(`logLevel`, `info`);
+  const rs = logLevelMap[level as keyof typeof logLevelMap] || 2;
+  return rs;
 };
 
 // 1-3. 출력 채널 반영
 const appendOutput = (levelKey: keyof typeof logLevelMap, msg: string): void => {
-	outputChannel && getLogLevel() <= logLevelMap[levelKey] && outputChannel.appendLine(msg);
+  outputChannel && getLogLevel() <= logLevelMap[levelKey] && outputChannel.appendLine(msg);
 };
 
 // 1-4. 로그 문자열 정리
-const formatLog = (text = ``): string => {
-	return text.trim().replace(/^\s+/gm, ``);
-};
+const formatLog = (text=``): string => text.trim().replace(/^\s+/gm, ``);
 
 // 1-5. 로그 출력
-export const logger = (
-	type: `debug` | `info` | `hint` | `warn` | `error`,
-	value: string
-): void => {
-	const config = {
-		line: {
-			str: `―――――――――――――――――――――――――――――――――――――――--`,
-			color: `\u001b[38;2;255;162;0m`,
-		},
-		title: {
-			str: `[${MAIN}]`,
-			color: `\u001b[38;2;78;201;176m`,
-		},
-		debug: {
-			str: `[DEBUG]`,
-			color: `\u001b[38;5;141m`,
-		},
-		info: {
-			str: `[INFO]`,
-			color: `\u001b[38;5;46m`,
-		},
-		hint: {
-			str: `[HINT]`,
-			color: `\u001b[38;5;39m`,
-		},
-		warn: {
-			str: `[WARN]`,
-			color: `\u001b[38;5;214m`,
-		},
-		error: {
-			str: `[ERROR]`,
-			color: `\u001b[38;5;196m`,
-		},
-		reset: {
-			str: ``,
-			color: `\u001b[0m`,
-		},
-	};
-	const separator = `${config.reset.color}${config.line.color}${config.line.str}${config.reset.color}`;
-	const title = `${config.reset.color}${config.title.color}${config.title.str}${config.reset.color}`;
-	const level = `${config.reset.color}${config[type].color}${config[type].str}${config.reset.color}`;
-	const logMsg = formatLog(`
-		${separator}
-		${title} ${level}
-		${value}
-	`);
-	const outputMsg = formatLog(`
-		${config.line.str}
-		${config[type].str} - ${value}
-	`);
+export const logger = (type: `debug` | `info` | `hint` | `warn` | `error`, value: string): void => {
+  const config = {
+    line: {
+      str: `―――――――――――――――――――――――――――――――――――――――--`,
+      color: `\u001b[38;2;255;162;0m`,
+    },
+    title: {
+      str: `[${MAIN}]`,
+      color: `\u001b[38;2;78;201;176m`,
+    },
+    debug: {
+      str: `[DEBUG]`,
+      color: `\u001b[38;5;141m`,
+    },
+    info: {
+      str: `[INFO]`,
+      color: `\u001b[38;5;46m`,
+    },
+    hint: {
+      str: `[HINT]`,
+      color: `\u001b[38;5;39m`,
+    },
+    warn: {
+      str: `[WARN]`,
+      color: `\u001b[38;5;214m`,
+    },
+    error: {
+      str: `[ERROR]`,
+      color: `\u001b[38;5;196m`,
+    },
+    reset: {
+      str: ``,
+      color: `\u001b[0m`,
+    },
+  };
+  const separator = `${config.reset.color}${config.line.color}${config.line.str}${config.reset.color}`;
+  const title = `${config.reset.color}${config.title.color}${config.title.str}${config.reset.color}`;
+  const level = `${config.reset.color}${config[type].color}${config[type].str}${config.reset.color}`;
+  const logMsg = formatLog(`
+  ${separator}
+  ${title} ${level}
+  ${value}
+  `);
+  const outputMsg = formatLog(`
+  ${config.line.str}
+  ${config[type].str} - ${value}
+  `);
 
-	type === `debug` && (() => {
-		console.debug(logMsg);
-		appendOutput(`debug`, outputMsg);
-	})();
-	type === `info` && (() => {
-		console.info(logMsg);
-		appendOutput(`info`, outputMsg);
-	})();
-	type === `hint` && (() => {
-		console.log(logMsg);
-		appendOutput(`hint`, outputMsg);
-	})();
-	type === `warn` && (() => {
-		console.warn(logMsg);
-		appendOutput(`warn`, outputMsg);
-	})();
-	type === `error` && (() => {
-		console.error(logMsg);
-		appendOutput(`error`, outputMsg);
-	})();
+  type === `debug` && (() => {
+      console.debug(logMsg);
+      appendOutput(`debug`, outputMsg);
+    })();
+  type === `info` && (() => {
+      console.info(logMsg);
+      appendOutput(`info`, outputMsg);
+    })();
+  type === `hint` && (() => {
+      console.log(logMsg);
+      appendOutput(`hint`, outputMsg);
+    })();
+  type === `warn` && (() => {
+      console.warn(logMsg);
+      appendOutput(`warn`, outputMsg);
+    })();
+  type === `error` && (() => {
+      console.error(logMsg);
+      appendOutput(`error`, outputMsg);
+    })();
 };
