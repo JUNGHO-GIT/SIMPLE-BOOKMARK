@@ -75,103 +75,123 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
   const pasteItems = async (copiedItems: vscode.Uri[], targetPath: string): Promise<void> => {
     const proceed = copiedItems.length > 0;
 
-    return !proceed ? notify(`error`, `paste: Nothing to paste: clipboard is empty.`) : await (async () => {
-          let pasteCount = 0;
+    if (!proceed) {
+      notify(`error`, `paste: Nothing to paste: clipboard is empty.`);
+      return;
+    }
 
-          for (const item of copiedItems) {
-            const fileName = path.basename(item.fsPath);
-            const targetFile = path.join(targetPath, fileName);
-            const targetUri = vscode.Uri.file(targetFile);
+    let pasteCount = 0;
+    for (const item of copiedItems) {
+      const fileName = path.basename(item.fsPath);
+      const targetFile = path.join(targetPath, fileName);
+      const targetUri = vscode.Uri.file(targetFile);
 
-            // 소스/대상 동일 여부 검사 (플랫폼별 정규화 포함)
-            const isSame = isSameFsPath(item.fsPath, targetFile);
+      // 소스/대상 동일 여부 검사 (플랫폼별 정규화 포함)
+      const isSame = isSameFsPath(item.fsPath, targetFile);
 
-            isSame ? logger(`debug`, `paste - ${item.fsPath}`) : await (async () => {
-                try {
-                  // 소스 정보 확인
-                  let srcStat: vscode.FileStat | undefined;
-                  try {
-                    srcStat = await vscode.workspace.fs.stat(item);
-                  }
-                  catch (_e) {
-                    notify(`error`, `paste - Source not found or inaccessible: ${fileName}`);
-                    return;
-                  }
-                  // 폴더를 자기 자신 또는 하위 폴더로 붙여넣는 경우 차단
-                  if (srcStat.type === vscode.FileType.Directory && isSubPath(item.fsPath, targetFile)) {
-                    notify(`error`, `paste - Cannot paste a folder into itself or its subfolder: ${fileName}`);
-                    return;
-                  }
-                  // 대상 파일이 존재하면 삭제
-                  try {
-                    await vscode.workspace.fs.stat(targetUri);
-                    await vscode.workspace.fs.delete(targetUri, {
-                      recursive: true,
-                      useTrash: false,
-                    });
-                  }
-                  catch {
-                    // 파일이 없으면 무시하고 계속 진행
-                  }
-                  // 복사 실행
-                  await copyFileOrFolder(item.fsPath, targetFile);
-                  pasteCount++;
-                }
-                catch (error) {
-                  notify(`error`, `paste - Paste failed for ${fileName}: ${error}`);
-                }
-              })();
+      if (isSame) {
+        logger(`debug`, `paste - ${item.fsPath}`);
+      }
+      else {
+        try {
+          // 소스 정보 확인
+          let srcStat: vscode.FileStat | undefined;
+          try {
+            srcStat = await vscode.workspace.fs.stat(item);
           }
-          const messageValue = pasteCount === 1 ? "1 item pasted (overwritten)" : `${pasteCount} items pasted (overwritten)`;
-          notify(`info`, `paste - ${messageValue}`);
-          logger(`debug`, `paste - ${pasteCount}`);
-        })();
+          catch (_e) {
+            notify(`error`, `paste - Source not found or inaccessible: ${fileName}`);
+            continue;
+          }
+          // 폴더를 자기 자신 또는 하위 폴더로 붙여넣는 경우 차단
+          if (srcStat.type === vscode.FileType.Directory && isSubPath(item.fsPath, targetFile)) {
+            notify(`error`, `paste - Cannot paste a folder into itself or its subfolder: ${fileName}`);
+            continue;
+          }
+          // 대상 파일이 존재하면 삭제
+          try {
+            await vscode.workspace.fs.stat(targetUri);
+            await vscode.workspace.fs.delete(targetUri, {
+              recursive: true,
+              useTrash: false,
+            });
+          }
+          catch {
+            // 파일이 없으면 무시하고 계속 진행
+          }
+          // 복사 실행
+          await copyFileOrFolder(item.fsPath, targetFile);
+          pasteCount++;
+        }
+        catch (error) {
+          notify(`error`, `paste - Paste failed for ${fileName}: ${error}`);
+        }
+      }
+    }
+    const messageValue = pasteCount === 1 ? "1 item pasted (overwritten)" : `${pasteCount} items pasted (overwritten)`;
+    notify(`info`, `paste - ${messageValue}`);
+    logger(`debug`, `paste - ${pasteCount}`);
   };
 
   // 루트 붙여넣기 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
   const pasteItemsToRoot = async (copiedItems: vscode.Uri[], nameToOriginalPath: Map<string, string>, sourceToOriginalPath: Map<string, string> = new Map()): Promise<void> => {
     const proceed = copiedItems.length > 0;
 
-    return !proceed ? notify(`error`, `paste: Nothing to paste: clipboard is empty.`) : await (async () => {
-          const srcFilesSet = new Set<string>();
-          for (const uri of copiedItems) {
-            (await flattenToFiles(uri)).forEach((f: string) => srcFilesSet.add(f));
-          }
-          const srcFiles = Array.from(srcFilesSet.values());
+    if (!proceed) {
+      notify(`error`, `paste: Nothing to paste: clipboard is empty.`);
+      return;
+    }
 
-          let overwriteCount = 0;
-          const skipped: string[] = [];
-          const normalizedSourceMap = new Map<string, string>();
+    const srcFilesSet = new Set<string>();
+    for (const uri of copiedItems) {
+      const flattenedFiles = await flattenToFiles(uri);
+      for (const filePath of flattenedFiles) {
+        srcFilesSet.add(filePath);
+      }
+    }
+    const srcFiles = Array.from(srcFilesSet.values());
 
-          for (const [sourcePath, targetPath] of sourceToOriginalPath.entries()) {
-            normalizedSourceMap.set(normalizeForCompare(sourcePath), targetPath);
-          }
-          for (const src of srcFiles) {
-            const fileName = path.basename(src);
-            const realTarget = normalizedSourceMap.get(normalizeForCompare(src)) || nameToOriginalPath.get(fileName);
+    let overwriteCount = 0;
+    const skipped: string[] = [];
+    const normalizedSourceMap = new Map<string, string>();
 
-            !realTarget ? skipped.push(fileName) : isSameFsPath(src, realTarget) ? logger(`debug`, `paste - ${src}`) : await (async () => {
-                try {
-                  // 대상 파일이 존재하면 삭제
-                  try {
-                    await vscode.workspace.fs.stat(vscode.Uri.file(realTarget));
-                    await vscode.workspace.fs.delete(vscode.Uri.file(realTarget), { recursive: true, useTrash: false });
-                  }
-                  catch {
-                    // 파일이 없으면 무시하고 계속 진행
-                  }
-                  // 복사 실행
-                  await copyFileOrFolder(src, realTarget);
-                  overwriteCount++;
-                }
-                catch (error) {
-                  notify(`error`, `paste: Overwrite failed at original location for ${fileName}: ${String(error)}`);
-                }
-              })();
+    for (const [sourcePath, targetPath] of sourceToOriginalPath.entries()) {
+      normalizedSourceMap.set(normalizeForCompare(sourcePath), targetPath);
+    }
+    for (const src of srcFiles) {
+      const fileName = path.basename(src);
+      const realTarget = normalizedSourceMap.get(normalizeForCompare(src)) || nameToOriginalPath.get(fileName);
+
+      if (!realTarget) {
+        skipped.push(fileName);
+      }
+      else if (isSameFsPath(src, realTarget)) {
+        logger(`debug`, `paste - ${src}`);
+      }
+      else {
+        try {
+          // 대상 파일이 존재하면 삭제
+          try {
+            await vscode.workspace.fs.stat(vscode.Uri.file(realTarget));
+            await vscode.workspace.fs.delete(vscode.Uri.file(realTarget), { recursive: true, useTrash: false });
           }
-          overwriteCount > 0 && (overwriteCount === 1 ? notify(`info`, `paste - 1 file overwritten at original location`) : notify(`info`, `paste - ${overwriteCount} files overwritten at original locations`));
-          skipped.length > 0 && notify(`warn`, `paste - ${skipped.length} files skipped (no matching original names)`);
-        })();
+          catch {
+            // 파일이 없으면 무시하고 계속 진행
+          }
+          // 복사 실행
+          await copyFileOrFolder(src, realTarget);
+          overwriteCount++;
+        }
+        catch (error) {
+          notify(`error`, `paste: Overwrite failed at original location for ${fileName}: ${String(error)}`);
+        }
+      }
+    }
+
+    if (overwriteCount > 0) {
+      overwriteCount === 1 ? notify(`info`, `paste - 1 file overwritten at original location`) : notify(`info`, `paste - ${overwriteCount} files overwritten at original locations`);
+    }
+    skipped.length > 0 && notify(`warn`, `paste - ${skipped.length} files skipped (no matching original names)`);
   };
 
   // 실제 원본 파일/폴더 삭제 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-

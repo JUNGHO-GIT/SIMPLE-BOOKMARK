@@ -12,7 +12,10 @@ export class LRUCache<K, V> {
   // 1-2. get
   get(key: K): V | undefined {
     const value = this.cache.get(key);
-    value !== undefined && (this.cache.delete(key), this.cache.set(key, value));
+    if (value !== undefined) {
+      this.cache.delete(key);
+      this.cache.set(key, value);
+    }
     return value;
   }
   // 1-3. set

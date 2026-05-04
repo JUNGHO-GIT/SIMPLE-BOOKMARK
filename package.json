@@ -6,7 +6,7 @@
   "icon": "logo.webp",
   "license": "Apache-2.0",
   "main": "./out/extension.js",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/jungho-dev/simple-bookmark.git"
@@ -332,7 +332,7 @@
     }
   },
   "engines": {
-    "vscode": ">=1.118.0",
+    "vscode": ">=1.116.0",
     "node": ">=21.0.0",
     "npm": ">=10.0.0",
     "pnpm": ">=9.0.0"
@@ -353,7 +353,7 @@
     "@swc/helpers": "^0.5.21",
     "@types/mocha": "^10.0.10",
     "@types/node": "^25.6.0",
-    "@types/vscode": "^1.118.0",
+    "@types/vscode": "^1.116.0",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.9.1",
     "concurrently": "^9.2.1",

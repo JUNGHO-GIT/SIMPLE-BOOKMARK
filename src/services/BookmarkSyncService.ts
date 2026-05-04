@@ -8,11 +8,14 @@ import { BookmarkStatus } from "@exportTypes";
 export const BookmarkSyncService = (bookmarkPath: string, onSyncUpdate?: (p: string, status: BookmarkStatus) => void, onRefreshNeeded?: () => void) => {
   // 0. 변수 설정 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
   const bookmarkWatchers = new Map<string, vscode.FileSystemWatcher>();
+  const watcherPathRefs = new Map<string, Set<string>>();
   const bookmarkedFiles = new Map<string, BookmarkMetadata>();
   const bookmarkNames = new Set<string>();
   const METADATA_EXT = `.bookmark.json`;
   const disposables: vscode.Disposable[] = [];
   const textEncoder = new TextEncoder();
+  const SYNC_DEBOUNCE_MS = 150;
+  const syncTimers = new Map<string, NodeJS.Timeout>();
 
   // 파일/폴더 존재 여부를 확인 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
   const fileExists = async (p: string): Promise<boolean> => {
@@ -23,6 +26,30 @@ export const BookmarkSyncService = (bookmarkPath: string, onSyncUpdate?: (p: str
     catch {
       return false;
     }
+  };
+
+  // 동기화 요청을 파일별로 디바운싱 ――――――――――――――――――――――――――――――――――――――――――――――――
+  const clearSyncTimerFor = (originalPath: string): void => {
+    const existingTimer = syncTimers.get(originalPath);
+    existingTimer && clearTimeout(existingTimer);
+    syncTimers.delete(originalPath);
+  };
+
+  // 파일별 watcher 키 정규화 ――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  const normalizeWatcherKey = (targetPath: string): string => process.platform === `win32` ? path.resolve(targetPath).toLowerCase() : path.resolve(targetPath);
+
+  // 파일 변경 이벤트 적용 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  const queueSyncBookmark = (originalPath: string): void => {
+    clearSyncTimerFor(originalPath);
+
+    const timer = setTimeout(() => {
+      syncTimers.delete(originalPath);
+      syncBookmark(originalPath).catch((error) => {
+        logger(`error`, `sync - ${error instanceof Error ? error.message : String(error)}`);
+      });
+    }, SYNC_DEBOUNCE_MS);
+
+    syncTimers.set(originalPath, timer);
   };
 
   // 파일의 확장자를 보존하여 새 이름을 생성 ――――――――――――――――――――――――――――――――――――――――――――――――
@@ -49,38 +76,62 @@ export const BookmarkSyncService = (bookmarkPath: string, onSyncUpdate?: (p: str
   // - 북마크별 워처만 등록
   // - 문서 저장/변경/삭제 이벤트를 구독하여 북마크 상태를 갱신
   const setupEventListeners = (): void => {
-    const saveListener = vscode.workspace.onDidSaveTextDocument(async (document) => {
+    const saveListener = vscode.workspace.onDidSaveTextDocument((document) => {
       const filePath = document.uri.fsPath;
-      !isBookmarkedFile(filePath) || (logger(`debug`, `save - ${filePath}`), await syncBookmark(filePath));
+      if (isBookmarkedFile(filePath)) {
+        logger(`debug`, `save - ${filePath}`);
+        queueSyncBookmark(filePath);
+      }
     });
     disposables.push(saveListener);
   };
 
-  // 파일별 워처 생성 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
-  // 특정 원본 경로에 대한 파일시스템 워처를 생성
+  // 디렉터리별 워처 생성 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 같은 폴더의 북마크는 하나의 watcher를 공유하여 파일 이벤트 결과를 유지
   const createWatcherFor = (originalPath: string): void => {
-    bookmarkWatchers.has(originalPath) || (() => {
-        const pattern = new vscode.RelativePattern(path.dirname(originalPath), path.basename(originalPath));
+    const watcherDir = path.dirname(originalPath);
+    const watcherKey = normalizeWatcherKey(watcherDir);
+    const watchedPaths = watcherPathRefs.get(watcherKey) ?? new Set<string>();
+    watchedPaths.add(originalPath);
+    watcherPathRefs.set(watcherKey, watchedPaths);
+
+    bookmarkWatchers.has(watcherKey) || (() => {
+        const pattern = new vscode.RelativePattern(watcherDir, `*`);
         const watcher = vscode.workspace.createFileSystemWatcher(pattern, false, false, false);
 
-        watcher.onDidChange(async (uri) => {
-          uri.fsPath === originalPath && (logger(`debug`, `save - ${originalPath}`), await syncBookmark(originalPath));
+        watcher.onDidChange((uri) => {
+          const eventPath = uri.fsPath;
+          if (isBookmarkedFile(eventPath)) {
+            logger(`debug`, `save - ${eventPath}`);
+            queueSyncBookmark(eventPath);
+          }
         });
         watcher.onDidCreate(async (uri) => {
-          uri.fsPath === originalPath && (await updateBookmarkStatus(originalPath, BookmarkStatus.SYNCED));
+          const eventPath = uri.fsPath;
+          isBookmarkedFile(eventPath) && (await updateBookmarkStatus(eventPath, BookmarkStatus.SYNCED));
         });
         watcher.onDidDelete(async (uri) => {
-          uri.fsPath === originalPath && (await updateBookmarkStatus(originalPath, BookmarkStatus.MISSING));
+          const eventPath = uri.fsPath;
+          isBookmarkedFile(eventPath) && (await updateBookmarkStatus(eventPath, BookmarkStatus.MISSING));
         });
 
-        bookmarkWatchers.set(originalPath, watcher);
+        bookmarkWatchers.set(watcherKey, watcher);
       })();
   };
 
-  // 특정 원본 경로의 파일시스템 워처를 해제 ―――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 특정 원본 경로의 파일시스템 워처 참조를 해제 ――――――――――――――――――――――――――――――――――――――――――――--
   const disposeWatcherFor = (originalPath: string): void => {
-    const w = bookmarkWatchers.get(originalPath);
-    w && (w.dispose(), bookmarkWatchers.delete(originalPath));
+    clearSyncTimerFor(originalPath);
+    const watcherKey = normalizeWatcherKey(path.dirname(originalPath));
+    const watchedPaths = watcherPathRefs.get(watcherKey);
+    watchedPaths?.delete(originalPath);
+
+    if (watchedPaths && watchedPaths.size === 0) {
+      watcherPathRefs.delete(watcherKey);
+      const watcher = bookmarkWatchers.get(watcherKey);
+      watcher?.dispose();
+      bookmarkWatchers.delete(watcherKey);
+    }
   };
 
   // 병렬 처리 및 배치 상태 업데이트 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
@@ -89,8 +140,8 @@ export const BookmarkSyncService = (bookmarkPath: string, onSyncUpdate?: (p: str
       const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(bookmarkPath));
       const metaPaths = entries.filter(([name]) => name.endsWith(METADATA_EXT)).map(([name]) => path.join(bookmarkPath, name));
 
-      // 병렬로 메타데이터 로딩 - 최대 10개씩 배치 처리
-      const BATCH_SIZE = 10;
+      // 병렬로 메타데이터 로딩 - 최대 50개씩 배치 처리
+      const BATCH_SIZE = 50;
       const loadedMetadata: BookmarkMetadata[] = [];
 
       for (let i = 0; i < metaPaths.length; i += BATCH_SIZE) {
@@ -98,7 +149,11 @@ export const BookmarkSyncService = (bookmarkPath: string, onSyncUpdate?: (p: str
         const batchPromises = batch.map(async (metadataPath) => {
           try {
             const metadata = await loadMetadata(metadataPath);
-            metadata && (bookmarkedFiles.set(metadata.originalPath, metadata), bookmarkNames.add(metadata.bookmarkName), createWatcherFor(metadata.originalPath));
+            if (metadata) {
+              bookmarkedFiles.set(metadata.originalPath, metadata);
+              bookmarkNames.add(metadata.bookmarkName);
+              createWatcherFor(metadata.originalPath);
+            }
             return metadata;
           }
           catch (error) {
@@ -107,16 +162,21 @@ export const BookmarkSyncService = (bookmarkPath: string, onSyncUpdate?: (p: str
           }
         });
         const batchResults = await Promise.all(batchPromises);
-        batchResults.forEach((meta) => meta && loadedMetadata.push(meta));
+        batchResults.forEach((meta) => {
+          meta && loadedMetadata.push(meta);
+        });
       }
       // 배치로 상태 확인 후 한 번에 갱신
       loadedMetadata.length > 0 && (await (async () => {
-          const statusPromises = loadedMetadata.map(async (metadata) => {
-            const status = await checkBookmarkStatus(metadata);
-            onSyncUpdate?.(metadata.originalPath, status);
-            return status;
-          });
-          await Promise.all(statusPromises);
+          for (let i = 0; i < loadedMetadata.length; i += BATCH_SIZE) {
+            const batch = loadedMetadata.slice(i, i + BATCH_SIZE);
+            const statusPromises = batch.map(async (metadata) => {
+              const status = await checkBookmarkStatus(metadata);
+              onSyncUpdate?.(metadata.originalPath, status);
+              return status;
+            });
+            await Promise.all(statusPromises);
+          }
           onRefreshNeeded?.();
         })());
     }
@@ -229,7 +289,10 @@ export const BookmarkSyncService = (bookmarkPath: string, onSyncUpdate?: (p: str
     // 메타데이터 파일명이 변경되지 않은 경우 기존 파일 삭제는 하지 않음
     await saveMetadata(newMetaPath, metadata);
     oldMetaPath !== newMetaPath && (await vscode.workspace.fs.delete(vscode.Uri.file(oldMetaPath)));
-    previousBookmarkName !== finalMetaName && (bookmarkNames.delete(previousBookmarkName), bookmarkNames.add(finalMetaName));
+    if (previousBookmarkName !== finalMetaName) {
+      bookmarkNames.delete(previousBookmarkName);
+      bookmarkNames.add(finalMetaName);
+    }
 
     // 내부 맵과 워처 재바인딩
     if (path.resolve(originalPath) !== path.resolve(newOriginalPath)) {
@@ -358,9 +421,18 @@ export const BookmarkSyncService = (bookmarkPath: string, onSyncUpdate?: (p: str
 
   // 리소스 정리 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
   const dispose = (): void => {
-    disposables.forEach((d) => d.dispose());
-    bookmarkWatchers.forEach((watcher) => watcher.dispose());
+    disposables.forEach((d) => {
+      d.dispose();
+    });
+    syncTimers.forEach((timer) => {
+      clearTimeout(timer);
+    });
+    syncTimers.clear();
+    bookmarkWatchers.forEach((watcher) => {
+      watcher.dispose();
+    });
     bookmarkWatchers.clear();
+    watcherPathRefs.clear();
     bookmarkedFiles.clear();
     bookmarkNames.clear();
   };
