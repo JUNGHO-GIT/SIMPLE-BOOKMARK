@@ -10,7 +10,13 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
   logger(`debug`, `activate - syncService initialized`);
 
   // 모든 파일 경로(flat) 목록을 반환 ――――――――――――――――――――――――――――――――――――――――――――――――――――――--
-  const flattenToFiles = async (uri: vscode.Uri): Promise<string[]> => {
+  const flattenToFiles = async (uri: vscode.Uri, visited: Set<string> = new Set()): Promise<string[]> => {
+    const currentPath = process.platform === `win32` ? path.resolve(uri.fsPath).toLowerCase() : path.resolve(uri.fsPath);
+    if (visited.has(currentPath)) {
+    	return [];
+    }
+    visited.add(currentPath);
+
     const stat = await vscode.workspace.fs.stat(uri);
     let flattenedFiles: string[] = [];
 
@@ -22,7 +28,7 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
       const nestedFiles = await Promise.all(
         entries.map(async ([name, type]) => {
           const childPath = path.join(uri.fsPath, name);
-          return type === vscode.FileType.File ? [childPath] : await flattenToFiles(vscode.Uri.file(childPath));
+          return type === vscode.FileType.File ? [childPath] : type === vscode.FileType.Directory ? await flattenToFiles(vscode.Uri.file(childPath), visited) : [];
         }),
       );
 
@@ -55,8 +61,14 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
         // 대상이 원본 내부일 경우 무한 루프 또는 손상 가능성 있으므로 차단
         if (isSameFsPath(source, target) || isSubPath(source, target)) {
           logger(`error`, `copy - ${source} -> ${target}`);
+          throw new Error(`Cannot copy a folder into itself or its subfolder: ${path.basename(source)}`);
         }
-        await vscode.workspace.fs.delete(tgtUri, { recursive: true });
+        try {
+          await vscode.workspace.fs.delete(tgtUri, { recursive: true, useTrash: false });
+        }
+        catch {
+          // 대상이 없으면 그대로 생성
+        }
 
         await vscode.workspace.fs.createDirectory(tgtUri);
         const entries = await vscode.workspace.fs.readDirectory(srcUri);
@@ -198,16 +210,18 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
   const deleteOriginalFiles = async (items: vscode.Uri[]): Promise<void> => {
     let deleteCount = 0;
 
-    for (const item of items) {
+    const deleteResults = await Promise.all(items.map(async (item) => {
       try {
         await vscode.workspace.fs.delete(item, { recursive: true });
-        deleteCount++;
         logger(`debug`, `remove - ${item.fsPath}`);
+        return true;
       }
       catch (error) {
         logger(`error`, `remove - ${item.fsPath} ${String(error)}`);
+        return false;
       }
-    }
+    }));
+    deleteCount = deleteResults.filter(Boolean).length;
     const successValue = deleteCount === 1 ? "Deleted 1 original file" : `Deleted ${deleteCount} original files`;
 
     notify(`info`, `remove - ${successValue}`);

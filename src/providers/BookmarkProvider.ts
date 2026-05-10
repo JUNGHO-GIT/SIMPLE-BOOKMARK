@@ -153,7 +153,7 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
     return (
       !ready ? [] : !element ? await getRootBookmarks() : await (async () => {
           const ancestor = element._ancestorPaths;
-          const isCycle = !!ancestor && ancestor.has(element.originalPath);
+          const isCycle = !!ancestor && ancestor.has(normalizePath(element.originalPath));
 
           return (
             isCycle ? [] : !element.bookmarkMetadata.isFile ? await getFolderContents(element.originalPath, ancestor) : []
@@ -163,7 +163,10 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
   };
 
   // 경로 비교를 위해 플랫폼별 정규화 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
-  const normalizePath = (p: string): string => (process.platform === "win32" ? p.toLowerCase() : p);
+  const normalizePath = (p: string): string => {
+    const resolvedPath = path.resolve(p);
+    return process.platform === "win32" ? resolvedPath.toLowerCase() : resolvedPath;
+  };
 
   // 디렉토리 우선, 이름 오름차순으로 정렬 ―――――――――――――――――――――――――――――――――――――――――――――――――――-
   const sortItems = (a: BookmarkModelType, b: BookmarkModelType): number => {
@@ -212,19 +215,22 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
       const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(folderPath));
       const items: BookmarkModelType[] = [];
       const sortedEntries = entries.sort(sortEntries);
+      const now = Date.now();
 
       for (const [name, type] of sortedEntries) {
         const itemPath = path.join(folderPath, name);
-        const skip = ancestor?.has(itemPath);
-        skip && void 0;
+        const normalizedItemPath = normalizePath(itemPath);
 
+        if (ancestor?.has(normalizedItemPath)) {
+        	continue;
+        }
         const isFile = type === vscode.FileType.File;
         const virtualMetadata = {
           originalPath: itemPath,
           bookmarkName: name,
           isFile,
-          createdAt: Date.now(),
-          lastSyncAt: Date.now(),
+          createdAt: now,
+          lastSyncAt: now,
           originalExists: true,
         };
 
@@ -234,11 +240,11 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
         sysItem.id = `child:${folderPath}|${itemPath}`;
 
         !isFile && (() => {
-            const key = normalizePath(itemPath);
+            const key = normalizedItemPath;
             sysItem.collapsibleState = expandedDirPaths.has(key) ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed;
 
             const chain = new Set<string>(ancestor ?? []);
-            chain.add(folderPath);
+            chain.add(normalizePath(folderPath));
             sysItem._ancestorPaths = chain;
           })();
 
@@ -420,7 +426,7 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
   // 폴더 내 모든 파일 경로를 재귀적으로 수집 ――――――――――――――――――――――――――――――――――――――――――--
   const collectFilesFromFolder = async (folderPath: string, visited: Set<string> = new Set()): Promise<string[]> => {
     const files: string[] = [];
-    const normalizedPath = path.resolve(folderPath);
+    const normalizedPath = normalizePath(folderPath);
 
     // 순환 참조 방지 (심볼릭 링크 등)
     if (!visited.has(normalizedPath)) {

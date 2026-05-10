@@ -1,7 +1,5 @@
 # .gitattributes
 
-* text eol=lf
-
 # Directories ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
 
 # 1. Build outputs

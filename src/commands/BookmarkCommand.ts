@@ -289,8 +289,9 @@ export const BookmarkCommand = (provider: BookmarkProviderType, _context: vscode
 
   // 북마크 제거 (북마크만 또는 북마크 + 원본 선택 삭제) ―――――――――――――――――――――――――――――――――――――――――――――--
   const registerRemoveBookmarkCommand = (): vscode.Disposable =>
-    vscode.commands.registerCommand("Simple-Bookmark.removebookmark", async (item?: BookmarkModelType) => {
-      const candidateItems: BookmarkModelType[] = item ? [item] : selectedBookmarks;
+    vscode.commands.registerCommand("Simple-Bookmark.removebookmark", async (item?: BookmarkModelType, selectedItems?: BookmarkModelType[]) => {
+      const commandItems = selectedItems && selectedItems.length > 0 ? selectedItems : item ? [item] : selectedBookmarks;
+      const candidateItems = Array.from(new Map(commandItems.map((candidate) => [candidate.originalPath, candidate])).values());
       const rootBookmarkTargets = new Set<string>();
       const originalOnlyTargets = new Set<string>();
 
@@ -298,7 +299,8 @@ export const BookmarkCommand = (provider: BookmarkProviderType, _context: vscode
         provider.isRootBookmark(candidate.originalPath) ? rootBookmarkTargets.add(candidate.originalPath) : candidate.isOriginalAvailable && originalOnlyTargets.add(candidate.originalPath);
       }
       const itemsToRemove: string[] = Array.from(rootBookmarkTargets.values());
-      const originalItemsToRemove: string[] = Array.from(originalOnlyTargets.values()).filter((targetPath) => !itemsToRemove.some((rootPath) => isWithinPath(rootPath, targetPath)));
+      const sortedRootTargets = itemsToRemove.sort((a, b) => a.length - b.length);
+      const originalItemsToRemove: string[] = Array.from(originalOnlyTargets.values()).filter((targetPath) => !sortedRootTargets.some((rootPath) => isWithinPath(rootPath, targetPath)));
 
       return itemsToRemove.length === 0 && originalItemsToRemove.length === 0 ? notify(`error`, `remove - 삭제할 북마크가 선택되지 않았습니다.`) : await (async () => {
             let removedBookmarksWithOriginal = false;
@@ -325,9 +327,7 @@ export const BookmarkCommand = (provider: BookmarkProviderType, _context: vscode
                 }
                 deleteOriginal = choice === "Bookmark + Original File";
               }
-              for (const originalPath of itemsToRemove) {
-                await provider.removeBookmark(originalPath, deleteOriginal);
-              }
+              await Promise.all(itemsToRemove.map((originalPath) => provider.removeBookmark(originalPath, deleteOriginal)));
               removedBookmarksWithOriginal = deleteOriginal;
             }
             if (originalItemsToRemove.length > 0) {
@@ -463,9 +463,7 @@ export const BookmarkCommand = (provider: BookmarkProviderType, _context: vscode
               }
               deleteOriginal = choice === "Bookmark + Original File";
             }
-            for (const item of allItems) {
-              await provider.removeBookmark(item.originalPath, deleteOriginal);
-            }
+            await Promise.all(allItems.map((item) => provider.removeBookmark(item.originalPath, deleteOriginal)));
             provider.refresh();
 
             const successMessage = deleteOriginal ? `All ${allItems.length} bookmarks and original files deleted` : `All ${allItems.length} bookmarks deleted`;
