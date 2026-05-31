@@ -1,4 +1,4 @@
 // exports/ExportCommands.ts
 
 // ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
-export { BookmarkCommand } from "@commands/BookmarkCommand";
+export { BmCmd as BookmarkCommand } from "@commands/BookmarkCommand";

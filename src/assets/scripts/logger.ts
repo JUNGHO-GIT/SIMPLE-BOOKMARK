@@ -5,96 +5,109 @@
 
 import { vscode } from "@exportLibs";
 
-// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+const TLR024 = /^\s+/gm;
 const MAIN = `Simple-Bookmark`;
-const logLevelMap = { off: 0, debug: 1, info: 2, hint: 3, warn: 4, error: 5 } as const;
-const logConfig = {
-  line: {
-    str: `―――――――――――――――――――――――――――――――――――――――--`,
-    color: `\u001b[38;2;255;162;0m`,
+const LOG_LEVEL_MAP = {
+  "off": 0,
+  "debug": 10,
+  "info": 20,
+  "hint": 30,
+  "warn": 40,
+  "error": 50,
+} as const;
+const LOG_CONFIG = {
+  "line": {
+    "str": `―――――――――――――――――――――――――――――――――――――――――`,
+    "color": `\u001B[38;2;255;162;0m`,
   },
-  title: {
-    str: `[${MAIN}]`,
-    color: `\u001b[38;2;78;201;176m`,
+  "debug": {
+    "str": `[D]`,
+    "color": `\u001B[38;5;141m`,
   },
-  debug: {
-    str: `[DEBUG]`,
-    color: `\u001b[38;5;141m`,
+  "info": {
+    "str": `[I]`,
+    "color": `\u001B[38;5;111m`,
   },
-  info: {
-    str: `[INFO]`,
-    color: `\u001b[38;5;46m`,
+  "hint": {
+    "str": `[H]`,
+    "color": `\u001B[38;5;45m`,
   },
-  hint: {
-    str: `[HINT]`,
-    color: `\u001b[38;5;39m`,
+  "warn": {
+    "str": `[W]`,
+    "color": `\u001B[38;5;220m`,
   },
-  warn: {
-    str: `[WARN]`,
-    color: `\u001b[38;5;214m`,
+  "error": {
+    "str": `[E]`,
+    "color": `\u001B[38;5;196m`,
   },
-  error: {
-    str: `[ERROR]`,
-    color: `\u001b[38;5;196m`,
-  },
-  reset: {
-    str: ``,
-    color: `\u001b[0m`,
+  "reset": {
+    "str": ``,
+    "color": `\u001B[0m`,
   },
 } as const;
-type LogType = Exclude<keyof typeof logLevelMap, `off`>;
-let outputChannel: vscode.OutputChannel | null = null;
 
-// 1-1. 로거 초기화
+type LogType = Exclude<keyof typeof LOG_LEVEL_MAP, `off`>;
+
+let otptChnn: vscode.OutputChannel | null = null;
+
+// 1. Init logger ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 export const initLogger = (): void => {
-  if (!outputChannel) {
-  	outputChannel = vscode.window.createOutputChannel(MAIN);
-  }
+  otptChnn ??= vscode.window.createOutputChannel(MAIN);
 };
 
-// 1-2. 로그 레벨 조회
+// 2. Get log level ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 const getLogLevel = (): number => {
   const config = vscode.workspace.getConfiguration(MAIN);
   const level = config.get<string>(`logLevel`, `info`);
-  const rs = logLevelMap[level as keyof typeof logLevelMap] ?? 2;
-  return rs;
+  const result = LOG_LEVEL_MAP[level as keyof typeof LOG_LEVEL_MAP] ?? LOG_LEVEL_MAP.info;
+  return result;
 };
 
-// 1-3. 출력 채널 반영
-const appendOutput = (msg: string): void => {
-  outputChannel?.appendLine(msg);
-};
-
-// 1-4. 로그 문자열 정리
-const formatLog = (text=``): string => text.trim().replace(/^\s+/gm, ``);
-
-// 1-5. 로그 출력 여부
+// 3. Should log ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 const shouldLog = (type: LogType): boolean => {
-  const currentLevel = getLogLevel();
-  return currentLevel !== logLevelMap.off && currentLevel <= logLevelMap[type];
+  const activeLevel = getLogLevel();
+  return activeLevel !== LOG_LEVEL_MAP.off && LOG_LEVEL_MAP[type] >= activeLevel;
 };
 
-// 1-6. 로그 출력
+// 4. Format log ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+const formatLog = (text = ``): string => text.trim().replaceAll(TLR024, ``);
+
+// 5. Append output ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+const appendOutput = (message: string): void => {
+  otptChnn?.appendLine(message);
+};
+
+// 6. Logger ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 export const logger = (type: LogType, value: string): void => {
-  if (shouldLog(type)) {
-    const separator = `${logConfig.reset.color}${logConfig.line.color}${logConfig.line.str}${logConfig.reset.color}`;
-    const title = `${logConfig.reset.color}${logConfig.title.color}${logConfig.title.str}${logConfig.reset.color}`;
-    const level = `${logConfig.reset.color}${logConfig[type].color}${logConfig[type].str}${logConfig.reset.color}`;
-    const logMsg = formatLog(`
-  ${separator}
-  ${title} ${level}
-  ${value}
+  if (!shouldLog(type)) {
+    return;
+  }
+
+  const levelConfig = LOG_CONFIG[type];
+  const level = `${LOG_CONFIG.reset.color}${levelConfig.color}${levelConfig.str}${LOG_CONFIG.reset.color}`;
+  const text = `${levelConfig.color}${value}${LOG_CONFIG.reset.color}`;
+  const logMsg = formatLog(`
+    ${level} ${text}
   `);
-    const outputMsg = formatLog(`
-  ${logConfig.line.str}
-  ${logConfig[type].str} - ${value}
+  const outputMsg = formatLog(`
+    ${levelConfig.str} ${value}
   `);
 
-    type === `debug` && console.debug(logMsg);
-    type === `info` && console.info(logMsg);
-    type === `hint` && console.log(logMsg);
-    type === `warn` && console.warn(logMsg);
-    type === `error` && console.error(logMsg);
-    appendOutput(outputMsg);
+  if (type === `debug`) {
+    console.debug(logMsg);
   }
+  else if (type === `info`) {
+    console.info(logMsg);
+  }
+  else if (type === `hint`) {
+    console.log(logMsg);
+  }
+  else if (type === `warn`) {
+    console.warn(logMsg);
+  }
+  else if (type === `error`) {
+    console.error(logMsg);
+  }
+
+  appendOutput(outputMsg);
 };

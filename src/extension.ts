@@ -1,10 +1,10 @@
 // extension.ts
 
-import { BookmarkCommand } from "@exportCommands";
+import { BookmarkCommand as BmCmd } from "@exportCommands";
 import { vscode } from "@exportLibs";
-import { BookmarkProvider } from "@exportProviders";
+import { BookmarkProvider as BmProv } from "@exportProviders";
 import { initLogger, logger, notify } from "@exportScripts";
-import type { BookmarkCommandType, BookmarkModelType, BookmarkProviderType } from "@exportTypes";
+import type { BookmarkCommandType as BmCmdTyp, BookmarkModelType as BmMdlTyp, BookmarkProviderType as BmProvTyp } from "@exportTypes";
 
 // 1-1. deactivate
 export const deactivate = () => {};
@@ -15,16 +15,16 @@ export const activate = (context: vscode.ExtensionContext) => {
   // 0. Initialize Logger ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
   initLogger();
   logger(`info`, `Simple-Bookmark is now active!`);
-  const workspaceRoot = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0 ? vscode.workspace.workspaceFolders[0].uri.fsPath : undefined;
+  const wsRt = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0 ? vscode.workspace.workspaceFolders[0].uri.fsPath : undefined;
 
-  !workspaceRoot && (() => {
+  !wsRt && (() => {
       notify(`warn`, `activate - requires an open workspace to function properly.`);
       logger(`debug`, `activate - no workspace`);
     })();
 
-  const provider = BookmarkProvider(workspaceRoot);
-  const commandManager = BookmarkCommand(provider, context);
-  const commands = commandManager.registerCommands();
+  const provider = BmProv(wsRt);
+  const cmdMgr = BmCmd(provider, context);
+  const commands = cmdMgr.registerCommands();
   const treeView = vscode.window.createTreeView(`Simple-Bookmark`, {
     treeDataProvider: provider,
     canSelectMany: true,
@@ -40,9 +40,9 @@ export const activate = (context: vscode.ExtensionContext) => {
     p && provider.markCollapsed(p);
   });
 
-  const additionalListeners = setupAdditionalListeners(provider, commandManager, treeView);
+  const addLstn = stpAddLstn(provider, cmdMgr, treeView);
 
-  context.subscriptions.push(treeView, ...commands, ...additionalListeners, {
+  context.subscriptions.push(treeView, ...commands, ...addLstn, {
     dispose: () => {
       provider.dispose();
     },
@@ -50,32 +50,32 @@ export const activate = (context: vscode.ExtensionContext) => {
 };
 
 // 1-3. 추가 리스너 설정
-const setupAdditionalListeners = (provider: BookmarkProviderType, commandManager: BookmarkCommandType, treeView: vscode.TreeView<BookmarkModelType>): vscode.Disposable[] => {
+const stpAddLstn = (provider: BmProvTyp, cmdMgr: BmCmdTyp, treeView: vscode.TreeView<BmMdlTyp>): vscode.Disposable[] => {
   const listeners: vscode.Disposable[] = [];
-  let selectionTimer: NodeJS.Timeout | null = null;
-  let workspaceTimer: NodeJS.Timeout | null = null;
+  let slctTmr: NodeJS.Timeout | null = null;
+  let wsTmr: NodeJS.Timeout | null = null;
   let configTimer: NodeJS.Timeout | null = null;
 
   const selListener = treeView.onDidChangeSelection((e) => {
-    selectionTimer && clearTimeout(selectionTimer);
-    selectionTimer = setTimeout(() => {
+    slctTmr && clearTimeout(slctTmr);
+    slctTmr = setTimeout(() => {
       logger(`debug`, `select - ${e.selection.map((item) => item.label).join(`, `)}`);
-      commandManager.updateSelectedBookmark(e.selection as BookmarkModelType[]);
-      selectionTimer = null;
+      cmdMgr.updateSelectedBookmark(e.selection as BmMdlTyp[]);
+      slctTmr = null;
     }, 50);
   });
 
-  const workspaceListener = vscode.workspace.onDidChangeWorkspaceFolders(() => {
-    workspaceTimer && clearTimeout(workspaceTimer);
-    workspaceTimer = setTimeout(() => {
+  const wsLstn = vscode.workspace.onDidChangeWorkspaceFolders(() => {
+    wsTmr && clearTimeout(wsTmr);
+    wsTmr = setTimeout(() => {
       logger(`debug`, `activate - workspace changed`);
       notify(`info`, `activate - Bookmarks may need to be refreshed.`);
       provider.refresh();
-      workspaceTimer = null;
+      wsTmr = null;
     }, 200);
   });
 
-  const configListener = vscode.workspace.onDidChangeConfiguration((e) => {
+  const cfgLstn = vscode.workspace.onDidChangeConfiguration((e) => {
     (e.affectsConfiguration(`Simple-Bookmark`) || e.affectsConfiguration(`files.exclude`)) && (() => {
         configTimer && clearTimeout(configTimer);
         configTimer = setTimeout(() => {
@@ -88,13 +88,13 @@ const setupAdditionalListeners = (provider: BookmarkProviderType, commandManager
 
   const timerCleanup: vscode.Disposable = {
     dispose: () => {
-      selectionTimer && clearTimeout(selectionTimer);
-      workspaceTimer && clearTimeout(workspaceTimer);
+      slctTmr && clearTimeout(slctTmr);
+      wsTmr && clearTimeout(wsTmr);
       configTimer && clearTimeout(configTimer);
-      selectionTimer = workspaceTimer = configTimer = null;
+      slctTmr = wsTmr = configTimer = null;
     },
   };
 
-  listeners.push(selListener, workspaceListener, configListener, timerCleanup);
+  listeners.push(selListener, wsLstn, cfgLstn, timerCleanup);
   return listeners;
 };

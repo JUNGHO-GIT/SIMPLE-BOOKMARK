@@ -1,16 +1,16 @@
 // services/BookmarkOperationService.ts
 
 import { path, vscode } from "@exportLibs";
-import { logger, notify, validateFileName } from "@exportScripts";
-import type { BookmarkSyncServiceType } from "@exportTypes";
+import { logger, notify, validateFileName as valFlNm } from "@exportScripts";
+import type { BookmarkSyncServiceType as BmSyncSvcTyp } from "@exportTypes";
 
-export const BookmarkOperationService = (bookmarkPath: string, _syncService?: BookmarkSyncServiceType) => {
+export const BmOpSvc = (bookmarkPath: string, _syncService?: BmSyncSvcTyp) => {
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
   logger(`debug`, `activate - ${bookmarkPath}`);
   logger(`debug`, `activate - syncService initialized`);
 
   // 모든 파일 경로(flat) 목록을 반환 ――――――――――――――――――――――――――――――――――――――――――――――――――――――--
-  const flattenToFiles = async (uri: vscode.Uri, visited: Set<string> = new Set()): Promise<string[]> => {
+  const flttTFls = async (uri: vscode.Uri, visited: Set<string> = new Set()): Promise<string[]> => {
     const currentPath = process.platform === `win32` ? path.resolve(uri.fsPath).toLowerCase() : path.resolve(uri.fsPath);
     if (visited.has(currentPath)) {
     	return [];
@@ -18,37 +18,37 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
     visited.add(currentPath);
 
     const stat = await vscode.workspace.fs.stat(uri);
-    let flattenedFiles: string[] = [];
+    let flttFls: string[] = [];
 
     if (stat.type === vscode.FileType.File) {
-    	flattenedFiles = [uri.fsPath];
+    	flttFls = [uri.fsPath];
     }
     else {
       const entries = await vscode.workspace.fs.readDirectory(uri);
       const nestedFiles = await Promise.all(
         entries.map(async ([name, type]) => {
           const childPath = path.join(uri.fsPath, name);
-          return type === vscode.FileType.File ? [childPath] : type === vscode.FileType.Directory ? await flattenToFiles(vscode.Uri.file(childPath), visited) : [];
+          return type === vscode.FileType.File ? [childPath] : type === vscode.FileType.Directory ? await flttTFls(vscode.Uri.file(childPath), visited) : [];
         }),
       );
 
       nestedFiles.forEach((filePaths) => {
-        flattenedFiles.push(...filePaths);
+        flttFls.push(...filePaths);
       });
     }
-    return flattenedFiles;
+    return flttFls;
   };
 
   // 파일 경로 비교를 위해 정규화 ―――――――――――――――――――――――――――――――――――――――――――――――――――--
-  const normalizeForCompare = (p: string): string => process.platform === `win32` ? path.resolve(p).toLowerCase() : path.resolve(p);
-  const isSameFsPath = (a: string, b: string): boolean => normalizeForCompare(a) === normalizeForCompare(b);
+  const nrmlFrCmpr = (p: string): string => process.platform === `win32` ? path.resolve(p).toLowerCase() : path.resolve(p);
+  const isSameFsPath = (a: string, b: string): boolean => nrmlFrCmpr(a) === nrmlFrCmpr(b);
   const isSubPath = (parent: string, child: string): boolean => {
     const rel = path.relative(parent, child);
     return rel.length > 0 && !rel.startsWith(`..`) && !path.isAbsolute(rel);
   };
 
   // 파일 또는 폴더를 대상 위치로 복사 ――――――――――――――――――――――――――――――――――――――――――――――――――――――
-  const copyFileOrFolder = async (source: string, target: string): Promise<void> => {
+  const cpyFlOrFldr = async (source: string, target: string): Promise<void> => {
     const srcUri = vscode.Uri.file(source);
     const tgtUri = vscode.Uri.file(target);
     const stat = await vscode.workspace.fs.stat(srcUri);
@@ -76,7 +76,7 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
         const copyPromises = entries.map(([name]) => {
           const sourcePath = path.join(source, name);
           const targetPath = path.join(target, name);
-          return copyFileOrFolder(sourcePath, targetPath);
+          return cpyFlOrFldr(sourcePath, targetPath);
         });
 
         await Promise.all(copyPromises);
@@ -132,7 +132,7 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
             // 파일이 없으면 무시하고 계속 진행
           }
           // 복사 실행
-          await copyFileOrFolder(item.fsPath, targetFile);
+          await cpyFlOrFldr(item.fsPath, targetFile);
           pasteCount++;
         }
         catch (error) {
@@ -146,7 +146,7 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
   };
 
   // 루트 붙여넣기 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
-  const pasteItemsToRoot = async (copiedItems: vscode.Uri[], nameToOriginalPath: Map<string, string>, sourceToOriginalPath: Map<string, string> = new Map()): Promise<void> => {
+  const pstItmsTRt = async (copiedItems: vscode.Uri[], nmTOrigPth: Map<string, string>, srcTOrigPth: Map<string, string> = new Map()): Promise<void> => {
     const proceed = copiedItems.length > 0;
 
     if (!proceed) {
@@ -156,23 +156,23 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
 
     const srcFilesSet = new Set<string>();
     for (const uri of copiedItems) {
-      const flattenedFiles = await flattenToFiles(uri);
-      for (const filePath of flattenedFiles) {
+      const flttFls = await flttTFls(uri);
+      for (const filePath of flttFls) {
         srcFilesSet.add(filePath);
       }
     }
     const srcFiles = Array.from(srcFilesSet.values());
 
-    let overwriteCount = 0;
+    let ovrwCnt = 0;
     const skipped: string[] = [];
-    const normalizedSourceMap = new Map<string, string>();
+    const normSrcMp = new Map<string, string>();
 
-    for (const [sourcePath, targetPath] of sourceToOriginalPath.entries()) {
-      normalizedSourceMap.set(normalizeForCompare(sourcePath), targetPath);
+    for (const [sourcePath, targetPath] of srcTOrigPth.entries()) {
+      normSrcMp.set(nrmlFrCmpr(sourcePath), targetPath);
     }
     for (const src of srcFiles) {
       const fileName = path.basename(src);
-      const realTarget = normalizedSourceMap.get(normalizeForCompare(src)) || nameToOriginalPath.get(fileName);
+      const realTarget = normSrcMp.get(nrmlFrCmpr(src)) || nmTOrigPth.get(fileName);
 
       if (!realTarget) {
         skipped.push(fileName);
@@ -191,8 +191,8 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
             // 파일이 없으면 무시하고 계속 진행
           }
           // 복사 실행
-          await copyFileOrFolder(src, realTarget);
-          overwriteCount++;
+          await cpyFlOrFldr(src, realTarget);
+          ovrwCnt++;
         }
         catch (error) {
           notify(`error`, `paste: Overwrite failed at original location for ${fileName}: ${String(error)}`);
@@ -200,17 +200,17 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
       }
     }
 
-    if (overwriteCount > 0) {
-      overwriteCount === 1 ? notify(`info`, `paste - 1 file overwritten at original location`) : notify(`info`, `paste - ${overwriteCount} files overwritten at original locations`);
+    if (ovrwCnt > 0) {
+      ovrwCnt === 1 ? notify(`info`, `paste - 1 file overwritten at original location`) : notify(`info`, `paste - ${ovrwCnt} files overwritten at original locations`);
     }
     skipped.length > 0 && notify(`warn`, `paste - ${skipped.length} files skipped (no matching original names)`);
   };
 
   // 실제 원본 파일/폴더 삭제 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
-  const deleteOriginalFiles = async (items: vscode.Uri[]): Promise<void> => {
+  const dltOrigFls = async (items: vscode.Uri[]): Promise<void> => {
     let deleteCount = 0;
 
-    const deleteResults = await Promise.all(items.map(async (item) => {
+    const dltRess = await Promise.all(items.map(async (item) => {
       try {
         await vscode.workspace.fs.delete(item, { recursive: true });
         logger(`debug`, `remove - ${item.fsPath}`);
@@ -221,7 +221,7 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
         return false;
       }
     }));
-    deleteCount = deleteResults.filter(Boolean).length;
+    deleteCount = dltRess.filter(Boolean).length;
     const successValue = deleteCount === 1 ? "Deleted 1 original file" : `Deleted ${deleteCount} original files`;
 
     notify(`info`, `remove - ${successValue}`);
@@ -229,7 +229,7 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
 
   // 실제 위치에 새 폴더 생성 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
   const createFolder = async (parentPath: string, folderName: string): Promise<void> => {
-    const error = validateFileName(folderName);
+    const error = valFlNm(folderName);
 
     return error ? void notify(`error`, `create - Invalid folder name: ${error}`) : await (async () => {
           const folderPath = path.join(parentPath, folderName);
@@ -251,7 +251,7 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
 
   // 실제 위치에 새 파일 생성 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
   const createFile = async (parentPath: string, fileName: string): Promise<void> => {
-    const error = validateFileName(fileName);
+    const error = valFlNm(fileName);
 
     return error ? void notify(`error`, `create - Invalid file name: ${error}`) : await (async () => {
           const filePath = path.join(parentPath, fileName);
@@ -280,7 +280,7 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
   };
 
   // 파일 변경 감지 (존재 여부 확인) ―――――――――――――――――――――――――――――――――――――――――――――――――――-
-  const checkForChanges = async (filePaths: string[]): Promise<string[]> => {
+  const chckFrChgs = async (filePaths: string[]): Promise<string[]> => {
     const changedFiles: string[] = [];
 
     for (const filePath of filePaths) {
@@ -295,18 +295,18 @@ export const BookmarkOperationService = (bookmarkPath: string, _syncService?: Bo
   };
 
   // 북마크 폴더 경로 업데이트 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
-  const updateBookmarkPath = (newPath: string): void => {
+  const updtBmPth = (newPath: string): void => {
     bookmarkPath = newPath;
   };
 
   // 99. return ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
   return {
     pasteItems,
-    pasteItemsToRoot,
-    deleteOriginalFiles,
+    pasteItemsToRoot: pstItmsTRt,
+    deleteOriginalFiles: dltOrigFls,
     createFolder,
     createFile,
-    checkForChanges,
-    updateBookmarkPath,
+    checkForChanges: chckFrChgs,
+    updateBookmarkPath: updtBmPth,
   };
 };

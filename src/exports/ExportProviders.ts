@@ -1,4 +1,4 @@
 // exports/ExportProviders.ts
 
 // ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
-export { BookmarkProvider } from "@providers/BookmarkProvider";
+export { BmProv as BookmarkProvider } from "@providers/BookmarkProvider";

@@ -1,26 +1,26 @@
 // models/BookmarkModel.ts
 
 import { vscode } from "@exportLibs";
-import type { BookmarkMetadata, BookmarkModelType } from "@exportTypes";
-import { BookmarkStatus } from "@exportTypes";
+import type { BookmarkMetadata as BmMeta, BookmarkModelType as BmMdlTyp } from "@exportTypes";
+import { BookmarkStatus as BmStat } from "@exportTypes";
 
-export const BookmarkModel = (metadata: BookmarkMetadata, status: BookmarkStatus=BookmarkStatus.SYNCED, options?: { contextValueOverride?: string }): BookmarkModelType => {
+export const BmMdl = (metadata: BmMeta, status: BmStat=BmStat.SYNCED, options?: { contextValueOverride?: string }): BmMdlTyp => {
   // 0. 변수 설정 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
-  const collapsibleState = metadata.isFile ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed;
-  const base = new vscode.TreeItem(metadata.bookmarkName, collapsibleState) as BookmarkModelType;
+  const cllpSt = metadata.isFile ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed;
+  const base = new vscode.TreeItem(metadata.bookmarkName, cllpSt) as BmMdlTyp;
 
   // 1-1. 표시 속성 갱신
-  const setupDisplay = (item: BookmarkModelType): void => {
+  const setupDisplay = (item: BmMdlTyp): void => {
     const baseName = item.bookmarkMetadata.bookmarkName;
     item.label = baseName;
-    const [desc, colorId] = item.status === BookmarkStatus.SYNCED ? [``, `foreground`] : item.status === BookmarkStatus.MISSING ? [`(missing)`, `errorForeground`] : item.status === BookmarkStatus.MODIFIED ? [`(modified)`, `gitModified`] : [`(error)`, `errorForeground`];
+    const [desc, colorId] = item.status === BmStat.SYNCED ? [``, `foreground`] : item.status === BmStat.MISSING ? [`(missing)`, `errorForeground`] : item.status === BmStat.MODIFIED ? [`(modified)`, `gitModified`] : [`(error)`, `errorForeground`];
 
     item.description = desc;
     item.iconPath = item.bookmarkMetadata.isFile ? new vscode.ThemeIcon(`file`, new vscode.ThemeColor(colorId)) : new vscode.ThemeIcon(`folder`, new vscode.ThemeColor(colorId));
 
     item.tooltip = new vscode.MarkdownString(`**${item.bookmarkMetadata.bookmarkName}**\n\n**Original Path:** ${item.originalPath}`);
 
-    item.command = item.bookmarkMetadata.isFile && item.status === BookmarkStatus.SYNCED ? {
+    item.command = item.bookmarkMetadata.isFile && item.status === BmStat.SYNCED ? {
           command: `vscode.open`,
           title: `Open Original File`,
           arguments: [vscode.Uri.file(item.originalPath)],
@@ -28,7 +28,7 @@ export const BookmarkModel = (metadata: BookmarkMetadata, status: BookmarkStatus
   };
 
   // 1-2. 상태 갱신
-  const updateStatus = function (this: BookmarkModelType, newStatus: BookmarkStatus): void {
+  const updateStatus = function (this: BmMdlTyp, newStatus: BmStat): void {
     if (this.status !== newStatus) {
     	this.status = newStatus;
       setupDisplay(this);
@@ -36,7 +36,7 @@ export const BookmarkModel = (metadata: BookmarkMetadata, status: BookmarkStatus
   };
 
   // 1-3. 원본 사용 가능 여부 계산
-  const computeIsOriginalAvailable = (status: BookmarkStatus): boolean => status === BookmarkStatus.SYNCED || status === BookmarkStatus.MODIFIED;
+  const cmpIsOrAv = (status: BmStat): boolean => status === BmStat.SYNCED || status === BmStat.MODIFIED;
 
   // 1-4. 베이스 속성 주입
   base.originalPath = metadata.originalPath;
@@ -49,7 +49,7 @@ export const BookmarkModel = (metadata: BookmarkMetadata, status: BookmarkStatus
 
   Object.defineProperty(base, "isOriginalAvailable", {
     get(): boolean {
-      return computeIsOriginalAvailable(base.status);
+      return cmpIsOrAv(base.status);
     },
   });
   setupDisplay(base);

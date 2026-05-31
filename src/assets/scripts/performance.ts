@@ -76,7 +76,7 @@ export const batchProcess = async <T, R>(items: T[], processor: (item: T) => Pro
 export const isFileType = (type: number, target: number): boolean => (type & target) === target;
 
 // 1-11. safeJsonParse
-export const safeJsonParse = <T>(jsonString: string): T | null => {
+export const sfJsnPrs = <T>(jsonString: string): T | null => {
   try {
     return JSON.parse(jsonString) as T;
   }

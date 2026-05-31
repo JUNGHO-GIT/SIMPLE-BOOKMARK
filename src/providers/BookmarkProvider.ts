@@ -1,26 +1,26 @@
 // providers/BookmarkProvider.ts
 
 import { path, vscode } from "@exportLibs";
-import { BookmarkModel } from "@exportModels";
-import { getBookmarkPath, getLegacyBookmarkPath, logger, notify } from "@exportScripts";
-import { BookmarkOperationService, BookmarkSyncService } from "@exportServices";
-import type { BookmarkMetadata, BookmarkModelType, BookmarkOperationServiceType, BookmarkSyncServiceType } from "@exportTypes";
-import { BookmarkStatus } from "@exportTypes";
+import { BookmarkModel as BmMdl } from "@exportModels";
+import { getBookmarkPath as gtBmPth, getLegacyBookmarkPath as gtLgcyBmPth, logger, notify } from "@exportScripts";
+import { BookmarkOperationService as BmOpSvc, BookmarkSyncService as BmSyncSvc } from "@exportServices";
+import type { BookmarkMetadata as BmMeta, BookmarkModelType as BmMdlTyp, BookmarkOperationServiceType as BmOpSvcTyp, BookmarkSyncServiceType as BmSyncSvcTyp } from "@exportTypes";
+import { BookmarkStatus as BmStat } from "@exportTypes";
 
-export const BookmarkProvider = (workspaceRoot: string | undefined) => {
+export const BmProv = (wsRt: string | undefined) => {
   // 0. 변수 설정 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
-  const _onDidChangeTreeData = new vscode.EventEmitter<BookmarkModelType | undefined | null | void>();
-  const onDidChangeTreeData = _onDidChangeTreeData.event;
+  const _onDdChgTrDt = new vscode.EventEmitter<BmMdlTyp | undefined | null | void>();
+  const onDdChgTrDt = _onDdChgTrDt.event;
   let bookmarkPath: string | undefined;
-  let copiedBookmarks: vscode.Uri[] = [];
-  let fileOperationService: BookmarkOperationServiceType | undefined;
-  let syncService: BookmarkSyncServiceType | undefined;
-  const bookmarkStatusMap: Map<string, BookmarkStatus> = new Map();
-  const expandedDirPaths: Set<string> = new Set();
+  let cpdBms: vscode.Uri[] = [];
+  let flOpSvc: BmOpSvcTyp | undefined;
+  let syncService: BmSyncSvcTyp | undefined;
+  const bmStatMp: Map<string, BmStat> = new Map();
+  const expnDrPths: Set<string> = new Set();
   let refreshTimer: NodeJS.Timeout | null = null;
-  let initialRefreshPending = true;
+  let intlRfrsPndn = true;
   setTimeout(() => {
-    initializeBookmarkFolder().catch ((err: unknown) => logger(`error`, `activate - ${err instanceof Error ? err.message : String(err)}`));
+    intlBmFldr().catch ((err: unknown) => logger(`error`, `activate - ${err instanceof Error ? err.message : String(err)}`));
   }, 0);
 
   // 북마크 경로 존재 여부 확인 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
@@ -35,7 +35,7 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
   };
 
   // 북마크 저장소 폴더 준비 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
-  const ensureBookmarkFolder = async (targetPath: string): Promise<boolean> => {
+  const ensrBmFldr = async (targetPath: string): Promise<boolean> => {
     if (await pathExists(targetPath)) {
     	return true;
     }
@@ -51,39 +51,39 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
   };
 
   // 기존 워크스페이스 북마크 메타데이터 마이그레이션 ―――――――――――――――――――――――――――――――――――――――――――――-
-  const migrateLegacyBookmarkFolder = async (legacyPath: string, targetPath: string): Promise<void> => {
-    const samePath = normalizePath(legacyPath) === normalizePath(targetPath);
+  const mgrLgBmFl = async (legacyPath: string, targetPath: string): Promise<void> => {
+    const samePath = nrmlPth(legacyPath) === nrmlPth(targetPath);
     if (samePath || !(await pathExists(legacyPath))) {
     	return;
     }
     try {
       const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(legacyPath));
-      const metadataEntries = entries.filter(([name, type]) => type === vscode.FileType.File && name.endsWith(`.bookmark.json`));
+      const metaEntr = entries.filter(([name, type]) => type === vscode.FileType.File && name.endsWith(`.bookmark.json`));
 
-      if (metadataEntries.length === 0) {
+      if (metaEntr.length === 0) {
       	return;
       }
-      let migratedCount = 0;
-      for (const [name] of metadataEntries) {
-        const legacyFilePath = path.join(legacyPath, name);
-        const targetFilePath = path.join(targetPath, name);
+      let mgrtCnt = 0;
+      for (const [name] of metaEntr) {
+        const lgcyFlPth = path.join(legacyPath, name);
+        const tgtFlPth = path.join(targetPath, name);
 
-        if (await pathExists(targetFilePath)) {
-          logger(`debug`, `migrate - skip existing ${targetFilePath}`);
+        if (await pathExists(tgtFlPth)) {
+          logger(`debug`, `migrate - skip existing ${tgtFlPth}`);
           continue;
         }
-        await vscode.workspace.fs.rename(vscode.Uri.file(legacyFilePath), vscode.Uri.file(targetFilePath), { overwrite: false });
-        migratedCount++;
+        await vscode.workspace.fs.rename(vscode.Uri.file(lgcyFlPth), vscode.Uri.file(tgtFlPth), { overwrite: false });
+        mgrtCnt++;
       }
-      const remainingEntries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(legacyPath));
-      remainingEntries.length === 0 && (await vscode.workspace.fs.delete(vscode.Uri.file(legacyPath), {
+      const rmnnEntr = await vscode.workspace.fs.readDirectory(vscode.Uri.file(legacyPath));
+      rmnnEntr.length === 0 && (await vscode.workspace.fs.delete(vscode.Uri.file(legacyPath), {
           recursive: false,
           useTrash: false,
         }));
 
-      if (migratedCount > 0) {
-        notify(`info`, `migrate - ${migratedCount} bookmark metadata moved to ${targetPath}`);
-        logger(`info`, `migrate - ${legacyPath} -> ${targetPath} (${migratedCount})`);
+      if (mgrtCnt > 0) {
+        notify(`info`, `migrate - ${mgrtCnt} bookmark metadata moved to ${targetPath}`);
+        logger(`info`, `migrate - ${legacyPath} -> ${targetPath} (${mgrtCnt})`);
       }
     }
     catch (error) {
@@ -92,36 +92,36 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
   };
 
   // bookmark 폴더를 준비하고 서비스 초기화 ――――――――――――――――――――――――――――――――――――――――――――――――-
-  const initializeBookmarkFolder = async (): Promise<void> => {
-    const hasRoot = !!workspaceRoot;
+  const intlBmFldr = async (): Promise<void> => {
+    const hasRoot = !!wsRt;
 
     return !hasRoot ? void 0 : (
         await (async () => {
-          bookmarkPath = getBookmarkPath(workspaceRoot as string);
-          const legacyBookmarkPath = getLegacyBookmarkPath(workspaceRoot as string);
+          bookmarkPath = gtBmPth(wsRt as string);
+          const lgcyBmPth = gtLgcyBmPth(wsRt as string);
 
-          if (!(await ensureBookmarkFolder(bookmarkPath))) {
+          if (!(await ensrBmFldr(bookmarkPath))) {
           	return;
           }
-          await migrateLegacyBookmarkFolder(legacyBookmarkPath, bookmarkPath);
+          await mgrLgBmFl(lgcyBmPth, bookmarkPath);
 
           if (bookmarkPath) {
-            syncService = BookmarkSyncService(
+            syncService = BmSyncSvc(
               bookmarkPath,
-              (p: string, status: BookmarkStatus) => {
-                bookmarkStatusMap.set(p, status);
+              (p: string, status: BmStat) => {
+                bmStatMp.set(p, status);
               },
               () => {
-                if (initialRefreshPending) {
+                if (intlRfrsPndn) {
                   refreshNow();
-                  initialRefreshPending = false;
+                  intlRfrsPndn = false;
                 }
                 else {
                   refresh();
                 }
               },
             );
-            fileOperationService = BookmarkOperationService(bookmarkPath, syncService);
+            flOpSvc = BmOpSvc(bookmarkPath, syncService);
           }
         })()
       );
@@ -131,45 +131,45 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
   const refreshNow = (): void => {
     refreshTimer && clearTimeout(refreshTimer);
     refreshTimer = null;
-    _onDidChangeTreeData.fire();
+    _onDdChgTrDt.fire();
   };
 
   // 트리 갱신 이벤트를 디바운싱하여 갱신 ―――――――――――――――――――――――――――――――――――――――――――――――――――
   const refresh = (): void => {
     refreshTimer && clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(() => _onDidChangeTreeData.fire(), 50);
+    refreshTimer = setTimeout(() => _onDdChgTrDt.fire(), 50);
   };
 
   // TreeItem을 그대로 반환 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
-  const getTreeItem = (element: BookmarkModelType): vscode.TreeItem => element;
+  const getTreeItem = (element: BmMdlTyp): vscode.TreeItem => element;
 
   // 자식 항목 가져오기 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
   // - 최상위: 실제 루트 북마크 목록만 반환(가짜 아이템 없음)
   // - 폴더 내부 탐색 시 순환(심볼릭 링크 등)으로 동일 경로가 반복적으로 나타나는 문제 방지
   // - 트리에서 루트 또는 자식 북마크 항목을 비동기로 생성하여 반환
-  const getChildren = async (element?: BookmarkModelType): Promise<BookmarkModelType[]> => {
+  const getChildren = async (element?: BmMdlTyp): Promise<BmMdlTyp[]> => {
     const ready = !!bookmarkPath && !!syncService;
 
     return (
-      !ready ? [] : !element ? await getRootBookmarks() : await (async () => {
+      !ready ? [] : !element ? await gtRtBms() : await (async () => {
           const ancestor = element._ancestorPaths;
-          const isCycle = !!ancestor && ancestor.has(normalizePath(element.originalPath));
+          const isCycle = !!ancestor && ancestor.has(nrmlPth(element.originalPath));
 
           return (
-            isCycle ? [] : !element.bookmarkMetadata.isFile ? await getFolderContents(element.originalPath, ancestor) : []
+            isCycle ? [] : !element.bookmarkMetadata.isFile ? await gtFldrCntn(element.originalPath, ancestor) : []
           );
         })()
     );
   };
 
   // 경로 비교를 위해 플랫폼별 정규화 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
-  const normalizePath = (p: string): string => {
+  const nrmlPth = (p: string): string => {
     const resolvedPath = path.resolve(p);
     return process.platform === "win32" ? resolvedPath.toLowerCase() : resolvedPath;
   };
 
   // 디렉토리 우선, 이름 오름차순으로 정렬 ―――――――――――――――――――――――――――――――――――――――――――――――――――-
-  const sortItems = (a: BookmarkModelType, b: BookmarkModelType): number => {
+  const sortItems = (a: BmMdlTyp, b: BmMdlTyp): number => {
     const aIsDir = !a.bookmarkMetadata.isFile;
     const bIsDir = !b.bookmarkMetadata.isFile;
     return (
@@ -178,21 +178,21 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
   };
 
   // 저장된 모든 루트 북마크를 불러와 TreeItem으로 변환 ―――――――――――――――――――――――――――――――――――――――
-  const getRootBookmarks = async (): Promise<BookmarkModelType[]> => {
+  const gtRtBms = async (): Promise<BmMdlTyp[]> => {
     if (!syncService) {
 	  return [];
     }
 
     const bookmarks = syncService.getAllBookmarks();
-    const items: BookmarkModelType[] = [];
+    const items: BmMdlTyp[] = [];
 
     for (const metadata of bookmarks) {
-      const status = bookmarkStatusMap.get(metadata.originalPath) ?? BookmarkStatus.SYNCED;
-      const item = BookmarkModel(metadata, status);
+      const status = bmStatMp.get(metadata.originalPath) ?? BmStat.SYNCED;
+      const item = BmMdl(metadata, status);
 
       !metadata.isFile && (() => {
-          const key = normalizePath(metadata.originalPath);
-          item.collapsibleState = expandedDirPaths.has(key) ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed;
+          const key = nrmlPth(metadata.originalPath);
+          item.collapsibleState = expnDrPths.has(key) ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed;
         })();
 
       items.push(item);
@@ -210,22 +210,22 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
   };
 
   // 폴더의 하위 항목 가져오기 ――――――――――――――――――――――――――――――――――――――――――――――――――――――--
-  const getFolderContents = async (folderPath: string, ancestor?: Set<string>): Promise<BookmarkModelType[]> => {
+  const gtFldrCntn = async (folderPath: string, ancestor?: Set<string>): Promise<BmMdlTyp[]> => {
     try {
       const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(folderPath));
-      const items: BookmarkModelType[] = [];
-      const sortedEntries = entries.sort(sortEntries);
+      const items: BmMdlTyp[] = [];
+      const srtdEntr = entries.sort(sortEntries);
       const now = Date.now();
 
-      for (const [name, type] of sortedEntries) {
+      for (const [name, type] of srtdEntr) {
         const itemPath = path.join(folderPath, name);
-        const normalizedItemPath = normalizePath(itemPath);
+        const normItmPth = nrmlPth(itemPath);
 
-        if (ancestor?.has(normalizedItemPath)) {
+        if (ancestor?.has(normItmPth)) {
         	continue;
         }
         const isFile = type === vscode.FileType.File;
-        const virtualMetadata = {
+        const vrtlMeta = {
           originalPath: itemPath,
           bookmarkName: name,
           isFile,
@@ -234,17 +234,17 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
           originalExists: true,
         };
 
-        const sysItem = BookmarkModel(virtualMetadata, BookmarkStatus.SYNCED);
+        const sysItem = BmMdl(vrtlMeta, BmStat.SYNCED);
         // 동일한 실제 경로가 트리의 여러 위치(루트 북마크/다른 폴더 하위)에서 동시에 노출될 수 있으므로
         // TreeItem.id 를 부모 경로를 포함한 고유 값으로 재정의하여 "요소가 이미 등록" 오류를 방지
         sysItem.id = `child:${folderPath}|${itemPath}`;
 
         !isFile && (() => {
-            const key = normalizedItemPath;
-            sysItem.collapsibleState = expandedDirPaths.has(key) ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed;
+            const key = normItmPth;
+            sysItem.collapsibleState = expnDrPths.has(key) ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed;
 
             const chain = new Set<string>(ancestor ?? []);
-            chain.add(normalizePath(folderPath));
+            chain.add(nrmlPth(folderPath));
             sysItem._ancestorPaths = chain;
           })();
 
@@ -259,7 +259,7 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
   };
 
   // 경로가 루트 북마크 또는 그 하위에 속하는지 확인 ――――――――――――――――――――――――――――――――――――――――――――――――
-  const resolveRootBookmarkPath = (targetPath: string): string | undefined => {
+  const rslvRtBmPth = (targetPath: string): string | undefined => {
     if (!syncService) {
     	return ;
     }
@@ -267,17 +267,17 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
     if (direct) {
     	return direct.originalPath;
     }
-    const normalizedTarget = path.resolve(targetPath);
-    const folderBookmarks = syncService
+    const normTgt = path.resolve(targetPath);
+    const fldrBms = syncService
       .getAllBookmarks()
       .filter((bookmark) => !bookmark.isFile)
       .sort((a, b) => b.originalPath.length - a.originalPath.length);
 
-    for (const bookmark of folderBookmarks) {
-      const relative = path.relative(bookmark.originalPath, normalizedTarget);
-      const withinBookmark = relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+    for (const bookmark of fldrBms) {
+      const relative = path.relative(bookmark.originalPath, normTgt);
+      const wthnBm = relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 
-      if (withinBookmark) {
+      if (wthnBm) {
       	return bookmark.originalPath;
       }
     }
@@ -293,16 +293,16 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
 
     return await (async () => {
           try {
-            const finalBookmarkName = bookmarkName || path.basename(sourcePath);
+            const fnlBmNm = bookmarkName || path.basename(sourcePath);
 
             // 기존 동명 북마크 제거 후 생성
-            const existing = syncService.getAllBookmarks().filter((b: BookmarkMetadata) => b.bookmarkName === finalBookmarkName);
+            const existing = syncService.getAllBookmarks().filter((b: BmMeta) => b.bookmarkName === fnlBmNm);
             for (const meta of existing) {
               await syncService.removeBookmark(meta.originalPath);
             }
-            await syncService.addBookmark(sourcePath, finalBookmarkName);
-            notify(`info`, `overwrite - ${finalBookmarkName}`);
-            logger(`debug`, `add - ${sourcePath} -> ${finalBookmarkName}`);
+            await syncService.addBookmark(sourcePath, fnlBmNm);
+            notify(`info`, `overwrite - ${fnlBmNm}`);
+            logger(`debug`, `add - ${sourcePath} -> ${fnlBmNm}`);
           }
           catch (error) {
             notify(`error`, `add - ${error}`);
@@ -311,14 +311,14 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
   };
 
   // 북마크 제거 (원본 파일/폴더 삭제 여부 선택 가능) ――――――――――――――――――――――――――――――――――――――――――
-  const removeBookmark = async (originalPath: string, deleteOriginal: boolean=false): Promise<void> => {
+  const rmvBm = async (originalPath: string, dltOrig: boolean=false): Promise<void> => {
     const ready = !!syncService;
 
     return !ready ? notify(`error`, `activate: Bookmark service is not initialized.`) : await (async () => {
           try {
             await syncService?.removeBookmark(originalPath);
 
-            deleteOriginal && (await (async () => {
+            dltOrig && (await (async () => {
                 try {
                   await vscode.workspace.fs.delete(vscode.Uri.file(originalPath), { recursive: true });
                   logger(`debug`, `remove - ${originalPath}`);
@@ -328,7 +328,7 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
                   logger(`debug`, `remove - ${originalPath}`);
                 }
               })());
-            logger(`debug`, `remove - ${originalPath} ${deleteOriginal ? "with original" : "bookmark only"}`);
+            logger(`debug`, `remove - ${originalPath} ${dltOrig ? "with original" : "bookmark only"}`);
           }
           catch (error) {
             notify(`error`, `remove - ${error}`);
@@ -339,7 +339,7 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
   // 북마크 이름 변경 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
   // - 루트 북마크: syncService 통해 메타데이터+원본 rename
   // - 비루트(가상 항목): 파일시스템 직접 rename
-  const renameBookmark = async (originalPath: string, newName: string): Promise<void> => {
+  const rnmBm = async (originalPath: string, newName: string): Promise<void> => {
     const ready = !!syncService;
 
     return !ready ? notify(`error`, `activate: Bookmark service is not initialized.`) : await (async () => {
@@ -357,7 +357,7 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
                   // 확장자 보존
                   const hasDot = newName.includes(".");
                   const ext = stat.type === vscode.FileType.File ? path.extname(originalPath) : "";
-                  const baseCandidate = stat.type === vscode.FileType.File && !hasDot ? `${newName}${ext}` : newName;
+                  const bsCndd = stat.type === vscode.FileType.File && !hasDot ? `${newName}${ext}` : newName;
 
                   // 충돌 회피용 유니크 이름 생성
                   const mkUnique = async (candidate: string): Promise<string> => {
@@ -365,14 +365,14 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
                     let i = 1;
                     // 동일한 원본 경로는 충돌로 간주하지 않음 (Windows 대소문자 처리 고려)
                     while (true) {
-                      const candidatePath = path.join(dir, name);
-                      const resolvedCandidate = path.resolve(candidatePath);
-                      const resolvedOriginal = path.resolve(originalPath);
-                      if (resolvedCandidate === resolvedOriginal || (process.platform === "win32" && resolvedCandidate.toLowerCase() === resolvedOriginal.toLowerCase())) {
+                      const cnddPth = path.join(dir, name);
+                      const rslvCndd = path.resolve(cnddPth);
+                      const rslvOrig = path.resolve(originalPath);
+                      if (rslvCndd === rslvOrig || (process.platform === "win32" && rslvCndd.toLowerCase() === rslvOrig.toLowerCase())) {
                       	return name;
                       }
                       try {
-                        await vscode.workspace.fs.stat(vscode.Uri.file(candidatePath));
+                        await vscode.workspace.fs.stat(vscode.Uri.file(cnddPth));
                         const e = path.extname(candidate);
                         const stem = path.basename(candidate, e);
                         name = `${stem}_${i}${e}`;
@@ -384,7 +384,7 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
                     }
                   };
 
-                  const finalName = await mkUnique(baseCandidate);
+                  const finalName = await mkUnique(bsCndd);
                   const newPath = path.join(dir, finalName);
 
                   await vscode.workspace.fs.rename(uri, vscode.Uri.file(newPath), { overwrite: false });
@@ -399,39 +399,39 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
 
   // 복사 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
   // - 스냅샷 + 중복 제거
-  const copyBookmarks = (items: BookmarkModelType[]): void => {
+  const cpyBms = (items: BmMdlTyp[]): void => {
     const dedup = new Map<string, vscode.Uri>();
     for (const it of items) {
       !dedup.has(it.originalPath) && dedup.set(it.originalPath, vscode.Uri.file(it.originalPath));
     }
-    copiedBookmarks = Array.from(dedup.values());
-    if (copiedBookmarks.length === 1) {
-      const copiedName = path.basename(copiedBookmarks[0].fsPath);
+    cpdBms = Array.from(dedup.values());
+    if (cpdBms.length === 1) {
+      const copiedName = path.basename(cpdBms[0].fsPath);
       notify(`info`, `copy - ${copiedName}`);
       logger(`debug`, `copy - ${copiedName}`);
     }
     else {
-      notify(`info`, `copy - ${copiedBookmarks.length}`);
-      logger(`debug`, `copy - ${copiedBookmarks.length}`);
+      notify(`info`, `copy - ${cpdBms.length}`);
+      logger(`debug`, `copy - ${cpdBms.length}`);
     }
   };
 
   // 붙여넣기 (대상 폴더에 덮어쓰기) ――――――――――――――――――――――――――――――――――――――――――――――――――――――
   const pasteItems = async (targetPath: string): Promise<void> => {
-    const ready = !!fileOperationService;
+    const ready = !!flOpSvc;
 
-    return !ready ? notify(`error`, `activate - File operation service is not initialized.`) : await fileOperationService?.pasteItems(copiedBookmarks, targetPath);
+    return !ready ? notify(`error`, `activate - File operation service is not initialized.`) : await flOpSvc?.pasteItems(cpdBms, targetPath);
   };
 
   // 폴더 내 모든 파일 경로를 재귀적으로 수집 ――――――――――――――――――――――――――――――――――――――――――--
-  const collectFilesFromFolder = async (folderPath: string, visited: Set<string> = new Set()): Promise<string[]> => {
+  const cllFlFrFl = async (folderPath: string, visited: Set<string> = new Set()): Promise<string[]> => {
     const files: string[] = [];
-    const normalizedPath = normalizePath(folderPath);
+    const normPth = nrmlPth(folderPath);
 
     // 순환 참조 방지 (심볼릭 링크 등)
-    if (!visited.has(normalizedPath)) {
+    if (!visited.has(normPth)) {
       try {
-        visited.add(normalizedPath);
+        visited.add(normPth);
         const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(folderPath));
         for (const [name, type] of entries) {
           const itemPath = path.join(folderPath, name);
@@ -439,7 +439,7 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
             files.push(itemPath);
           }
           else if (type === vscode.FileType.Directory) {
-            const subFiles = await collectFilesFromFolder(itemPath, visited);
+            const subFiles = await cllFlFrFl(itemPath, visited);
             files.push(...subFiles);
           }
         }
@@ -452,103 +452,103 @@ export const BookmarkProvider = (workspaceRoot: string | undefined) => {
   };
 
   // 루트 붙여넣기: 파일명 매칭 → 각 북마크의 실제 경로에 덮어쓰기 ――――――――――――――――――――――――-
-  const pasteItemsToRoot = async (): Promise<void> => {
-    const activeFileOperationService = fileOperationService;
-    const activeSyncService = syncService;
+  const pstItmsTRt = async (): Promise<void> => {
+    const actvFlOpSvc = flOpSvc;
+    const actvSyncSvc = syncService;
 
-    if (!activeFileOperationService || !activeSyncService) {
+    if (!actvFlOpSvc || !actvSyncSvc) {
       notify(`error`, `activate - File operation service is not initialized.`);
       return;
     }
 
-    const all = activeSyncService.getAllBookmarks();
+    const all = actvSyncSvc.getAllBookmarks();
 
     // 모든 북마크(파일 및 폴더 내 파일)를 파일명으로 매핑
     // 참고: 동일 파일명이 여러 곳에 있을 경우 마지막 것이 사용됨
-    const nameToOriginalPath = new Map<string, string>();
-    const sourceToOriginalPath = new Map<string, string>();
+    const nmTOrigPth = new Map<string, string>();
+    const srcTOrigPth = new Map<string, string>();
     for (const m of all) {
       if (m.isFile) {
-        nameToOriginalPath.set(m.bookmarkName, m.originalPath);
+        nmTOrigPth.set(m.bookmarkName, m.originalPath);
       }
       else {
-        const folderFiles = await collectFilesFromFolder(m.originalPath);
-        const isBaseBookmark = m.bookmarkName === `.base` || path.basename(m.originalPath) === `.base`;
+        const folderFiles = await cllFlFrFl(m.originalPath);
+        const isBsBm = m.bookmarkName === `.base` || path.basename(m.originalPath) === `.base`;
 
         for (const filePath of folderFiles) {
           const fileName = path.basename(filePath);
-          nameToOriginalPath.set(fileName, filePath);
+          nmTOrigPth.set(fileName, filePath);
 
-          if (isBaseBookmark && workspaceRoot) {
+          if (isBsBm && wsRt) {
             const relativePath = path.relative(m.originalPath, filePath);
-            const isRelativePath = relativePath !== "" && !relativePath.startsWith("..") && !path.isAbsolute(relativePath);
+            const isRltvPth = relativePath !== "" && !relativePath.startsWith("..") && !path.isAbsolute(relativePath);
 
-            isRelativePath && sourceToOriginalPath.set(filePath, path.join(workspaceRoot, relativePath));
+            isRltvPth && srcTOrigPth.set(filePath, path.join(wsRt, relativePath));
           }
         }
       }
     }
 
-    nameToOriginalPath.size === 0 ? void vscode.window.showWarningMessage("[Simple-Bookmark] No root file bookmarks to overwrite.") : await activeFileOperationService.pasteItemsToRoot(copiedBookmarks, nameToOriginalPath, sourceToOriginalPath);
+    nmTOrigPth.size === 0 ? void vscode.window.showWarningMessage("[Simple-Bookmark] No root file bookmarks to overwrite.") : await actvFlOpSvc.pasteItemsToRoot(cpdBms, nmTOrigPth, srcTOrigPth);
   };
 
   // 폴더 생성 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
   const createFolder = async (parentPath: string, folderName: string): Promise<void> => {
-    const ready = !!fileOperationService;
+    const ready = !!flOpSvc;
 
-    return !ready ? notify(`error`, `activate - File operation service is not initialized.`) : await fileOperationService?.createFolder(parentPath, folderName);
+    return !ready ? notify(`error`, `activate - File operation service is not initialized.`) : await flOpSvc?.createFolder(parentPath, folderName);
   };
 
   // 파일 생성 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
   const createFile = async (parentPath: string, fileName: string): Promise<void> => {
-    const ready = !!fileOperationService;
+    const ready = !!flOpSvc;
 
-    return !ready ? notify(`error`, `activate - File operation service is not initialized.`) : await fileOperationService?.createFile(parentPath, fileName);
+    return !ready ? notify(`error`, `activate - File operation service is not initialized.`) : await flOpSvc?.createFile(parentPath, fileName);
   };
 
   // 원본 파일/폴더 직접 삭제 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
-  const deleteOriginalItems = async (originalPaths: string[]): Promise<void> => {
-    const ready = !!fileOperationService;
+  const dltOrigItms = async (origPths: string[]): Promise<void> => {
+    const ready = !!flOpSvc;
 
-    return !ready ? notify(`error`, `activate - File operation service is not initialized.`) : await fileOperationService?.deleteOriginalFiles(originalPaths.map((originalPath) => vscode.Uri.file(originalPath)));
+    return !ready ? notify(`error`, `activate - File operation service is not initialized.`) : await flOpSvc?.deleteOriginalFiles(origPths.map((originalPath) => vscode.Uri.file(originalPath)));
   };
 
   // Getter 및 상태 확인 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
   const rootPath = (): string | undefined => bookmarkPath;
-  const hasCopiedItems = (): boolean => copiedBookmarks.length > 0;
+  const hsCpdItms = (): boolean => cpdBms.length > 0;
   const dispose = (): void => syncService?.dispose();
-  const getBookmarkStatus = (originalPath: string): BookmarkStatus => bookmarkStatusMap.get(originalPath) || BookmarkStatus.SYNCED;
-  const isRootBookmark = (originalPath: string): boolean => !!syncService?.getBookmark(originalPath);
+  const gtBmStat = (originalPath: string): BmStat => bmStatMp.get(originalPath) || BmStat.SYNCED;
+  const isRtBm = (originalPath: string): boolean => !!syncService?.getBookmark(originalPath);
 
   // 99. return ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
   return {
-    onDidChangeTreeData,
+    onDidChangeTreeData: onDdChgTrDt,
     getTreeItem,
     getChildren,
     refresh,
-    hasCopiedItems,
-    getBookmarkStatus,
-    isRootBookmark,
-    resolveRootBookmarkPath,
+    hasCopiedItems: hsCpdItms,
+    getBookmarkStatus: gtBmStat,
+    isRootBookmark: isRtBm,
+    resolveRootBookmarkPath: rslvRtBmPth,
     dispose,
     addBookmark,
-    removeBookmark,
-    renameBookmark,
-    copyBookmarks,
+    removeBookmark: rmvBm,
+    renameBookmark: rnmBm,
+    copyBookmarks: cpyBms,
     pasteItems,
-    pasteItemsToRoot,
+    pasteItemsToRoot: pstItmsTRt,
     createFolder,
     createFile,
-    deleteOriginalItems,
+    deleteOriginalItems: dltOrigItms,
     // 1-1. markExpanded
     markExpanded(path: string) {
-      const key = normalizePath(path);
-      expandedDirPaths.add(key);
+      const key = nrmlPth(path);
+      expnDrPths.add(key);
     },
     // 1-2. markCollapsed
     markCollapsed(path: string) {
-      const key = normalizePath(path);
-      expandedDirPaths.delete(key);
+      const key = nrmlPth(path);
+      expnDrPths.delete(key);
     },
     get rootPath() {
       return rootPath();

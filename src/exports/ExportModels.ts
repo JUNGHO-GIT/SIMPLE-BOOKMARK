@@ -1,4 +1,4 @@
 // exports/ExportModels.ts
 
 // ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
-export { BookmarkModel } from "@models/BookmarkModel";
+export { BmMdl as BookmarkModel } from "@models/BookmarkModel";

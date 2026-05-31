@@ -5,49 +5,48 @@
 
 import { vscode } from "@exportLibs";
 
-// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
 const MAIN = `Simple-Bookmark`;
-const AUTO_CLOSE_MS = 1000;
+const AT_CLS_MS = 1000;
+const LOG_CONFIG = {
+  "debug": {
+    "str": `[D]`,
+  },
+  "info": {
+    "str": `[I]`,
+  },
+  "hint": {
+    "str": `[H]`,
+  },
+  "warn": {
+    "str": `[W]`,
+  },
+  "error": {
+    "str": `[E]`,
+  },
+} as const;
 
-// 1-1. 진행 알림 표시
+type NotifyType = keyof typeof LOG_CONFIG;
+
+// 1. Show progress ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
 const showProgress = async (text: string): Promise<void> => {
   await vscode.window.withProgress(
     {
-      location: vscode.ProgressLocation.Notification,
-      title: text,
-      cancellable: false,
+      "location": vscode.ProgressLocation.Notification,
+      "title": text,
+      "cancellable": false,
     },
     async () => {
       await new Promise<void>((resolve) => {
-        setTimeout(resolve, AUTO_CLOSE_MS);
+        setTimeout(resolve, AT_CLS_MS);
       });
     },
   );
 };
 
-// 1-2. 알림 출력
-export const notify = async (type: `debug` | `info` | `hint` | `warn` | `error`, value: string): Promise<void> => {
-  const config = {
-    title: {
-      str: `[${MAIN}]`,
-    },
-    debug: {
-      str: `[DEBUG]`,
-    },
-    info: {
-      str: `[INFO]`,
-    },
-    hint: {
-      str: `[HINT]`,
-    },
-    warn: {
-      str: `[WARN]`,
-    },
-    error: {
-      str: `[ERROR]`,
-    },
-  };
-  const text = `${config.title.str} ${config[type].str} ${value}`;
+// 2. Format notify ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+const formatNotify = (type: NotifyType, value: string): string => `[${MAIN}] ${LOG_CONFIG[type].str} ${value}`;
 
-  await showProgress(text);
+// 3. Notify ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+export const notify = async (type: NotifyType, value: string): Promise<void> => {
+  await showProgress(formatNotify(type, value));
 };
