@@ -8,7 +8,7 @@ import type { BookmarkMetadata as BmMeta, BookmarkModelType as BmMdlTyp, Bookmar
 import { BookmarkStatus as BmStat } from "@exportTypes";
 
 export const BmProv = (wsRt: string | undefined) => {
-  // 0. 변수 설정 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 0. 변수 설정 ----------------------------------------------------------------------------
   const _onDdChgTrDt = new vscode.EventEmitter<BmMdlTyp | undefined | null | void>();
   const onDdChgTrDt = _onDdChgTrDt.event;
   let bookmarkPath: string | undefined;
@@ -23,7 +23,7 @@ export const BmProv = (wsRt: string | undefined) => {
     intlBmFldr().catch ((err: unknown) => logger(`error`, `activate - ${err instanceof Error ? err.message : String(err)}`));
   }, 0);
 
-  // 북마크 경로 존재 여부 확인 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 북마크 경로 존재 여부 확인 -------------------------------------------------------------------
   const pathExists = async (targetPath: string): Promise<boolean> => {
     try {
       await vscode.workspace.fs.stat(vscode.Uri.file(targetPath));
@@ -34,7 +34,7 @@ export const BmProv = (wsRt: string | undefined) => {
     }
   };
 
-  // 북마크 저장소 폴더 준비 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 북마크 저장소 폴더 준비 ---------------------------------------------------------------------
   const ensrBmFldr = async (targetPath: string): Promise<boolean> => {
     if (await pathExists(targetPath)) {
     	return true;
@@ -50,7 +50,7 @@ export const BmProv = (wsRt: string | undefined) => {
     }
   };
 
-  // 기존 워크스페이스 북마크 메타데이터 마이그레이션 ―――――――――――――――――――――――――――――――――――――――――――――-
+  // 기존 워크스페이스 북마크 메타데이터 마이그레이션 ----------------------------------------------
   const mgrLgBmFl = async (legacyPath: string, targetPath: string): Promise<void> => {
     const samePath = nrmlPth(legacyPath) === nrmlPth(targetPath);
     if (samePath || !(await pathExists(legacyPath))) {
@@ -91,7 +91,7 @@ export const BmProv = (wsRt: string | undefined) => {
     }
   };
 
-  // bookmark 폴더를 준비하고 서비스 초기화 ――――――――――――――――――――――――――――――――――――――――――――――――-
+  // bookmark 폴더를 준비하고 서비스 초기화 -------------------------------------------------
   const intlBmFldr = async (): Promise<void> => {
     const hasRoot = !!wsRt;
 
@@ -127,23 +127,23 @@ export const BmProv = (wsRt: string | undefined) => {
       );
   };
 
-  // 트리 갱신 이벤트 즉시 반영 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 트리 갱신 이벤트 즉시 반영 -----------------------------------------------------------
   const refreshNow = (): void => {
     refreshTimer && clearTimeout(refreshTimer);
     refreshTimer = null;
     _onDdChgTrDt.fire();
   };
 
-  // 트리 갱신 이벤트를 디바운싱하여 갱신 ―――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 트리 갱신 이벤트를 디바운싱하여 갱신 ---------------------------------------------------
   const refresh = (): void => {
     refreshTimer && clearTimeout(refreshTimer);
     refreshTimer = setTimeout(() => _onDdChgTrDt.fire(), 50);
   };
 
-  // TreeItem을 그대로 반환 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // TreeItem을 그대로 반환 ----------------------------------------------------------------
   const getTreeItem = (element: BmMdlTyp): vscode.TreeItem => element;
 
-  // 자식 항목 가져오기 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 자식 항목 가져오기 --------------------------------------------------------------
   // - 최상위: 실제 루트 북마크 목록만 반환(가짜 아이템 없음)
   // - 폴더 내부 탐색 시 순환(심볼릭 링크 등)으로 동일 경로가 반복적으로 나타나는 문제 방지
   // - 트리에서 루트 또는 자식 북마크 항목을 비동기로 생성하여 반환
@@ -162,13 +162,13 @@ export const BmProv = (wsRt: string | undefined) => {
     );
   };
 
-  // 경로 비교를 위해 플랫폼별 정규화 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 경로 비교를 위해 플랫폼별 정규화 ----------------------------------------------------------
   const nrmlPth = (p: string): string => {
     const resolvedPath = path.resolve(p);
     return process.platform === "win32" ? resolvedPath.toLowerCase() : resolvedPath;
   };
 
-  // 디렉토리 우선, 이름 오름차순으로 정렬 ―――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 디렉토리 우선, 이름 오름차순으로 정렬 ----------------------------------------------------
   const sortItems = (a: BmMdlTyp, b: BmMdlTyp): number => {
     const aIsDir = !a.bookmarkMetadata.isFile;
     const bIsDir = !b.bookmarkMetadata.isFile;
@@ -177,7 +177,7 @@ export const BmProv = (wsRt: string | undefined) => {
     );
   };
 
-  // 저장된 모든 루트 북마크를 불러와 TreeItem으로 변환 ―――――――――――――――――――――――――――――――――――――――
+  // 저장된 모든 루트 북마크를 불러와 TreeItem으로 변환 ---------------------------------------
   const gtRtBms = async (): Promise<BmMdlTyp[]> => {
     if (!syncService) {
 	  return [];
@@ -200,7 +200,7 @@ export const BmProv = (wsRt: string | undefined) => {
     return items.sort(sortItems);
   };
 
-  // 실제 폴더의 하위 항목 가져오기 ―――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 실제 폴더의 하위 항목 가져오기 ---------------------------------------------------
   const sortEntries = (a: [string, vscode.FileType], b: [string, vscode.FileType]): number => {
     const aIsDir = a[1] === vscode.FileType.Directory;
     const bIsDir = b[1] === vscode.FileType.Directory;
@@ -209,7 +209,7 @@ export const BmProv = (wsRt: string | undefined) => {
     );
   };
 
-  // 폴더의 하위 항목 가져오기 ――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 폴더의 하위 항목 가져오기 --------------------------------------------------------
   const gtFldrCntn = async (folderPath: string, ancestor?: Set<string>): Promise<BmMdlTyp[]> => {
     try {
       const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(folderPath));
@@ -258,7 +258,7 @@ export const BmProv = (wsRt: string | undefined) => {
     }
   };
 
-  // 경로가 루트 북마크 또는 그 하위에 속하는지 확인 ――――――――――――――――――――――――――――――――――――――――――――――――
+  // 경로가 루트 북마크 또는 그 하위에 속하는지 확인 ------------------------------------------------
   const rslvRtBmPth = (targetPath: string): string | undefined => {
     if (!syncService) {
     	return ;
@@ -284,7 +284,7 @@ export const BmProv = (wsRt: string | undefined) => {
     return ;
   };
 
-  // 북마크 추가 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 북마크 추가 --------------------------------------------------------------------
   const addBookmark = async (sourcePath: string, bookmarkName?: string): Promise<void> => {
     if (!syncService) {
 	  notify(`error`, `activate - Bookmark service is not initialized.`);
@@ -310,7 +310,7 @@ export const BmProv = (wsRt: string | undefined) => {
         })();
   };
 
-  // 북마크 제거 (원본 파일/폴더 삭제 여부 선택 가능) ――――――――――――――――――――――――――――――――――――――――――
+  // 북마크 제거 (원본 파일/폴더 삭제 여부 선택 가능) ------------------------------------------
   const rmvBm = async (originalPath: string, dltOrig: boolean=false): Promise<void> => {
     const ready = !!syncService;
 
@@ -336,7 +336,7 @@ export const BmProv = (wsRt: string | undefined) => {
         })();
   };
 
-  // 북마크 이름 변경 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 북마크 이름 변경 ----------------------------------------------------------------
   // - 루트 북마크: syncService 통해 메타데이터+원본 rename
   // - 비루트(가상 항목): 파일시스템 직접 rename
   const rnmBm = async (originalPath: string, newName: string): Promise<void> => {
@@ -397,7 +397,7 @@ export const BmProv = (wsRt: string | undefined) => {
         })();
   };
 
-  // 복사 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 복사 -----------------------------------------------------------------------------------
   // - 스냅샷 + 중복 제거
   const cpyBms = (items: BmMdlTyp[]): void => {
     const dedup = new Map<string, vscode.Uri>();
@@ -416,14 +416,14 @@ export const BmProv = (wsRt: string | undefined) => {
     }
   };
 
-  // 붙여넣기 (대상 폴더에 덮어쓰기) ――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 붙여넣기 (대상 폴더에 덮어쓰기) ------------------------------------------------------
   const pasteItems = async (targetPath: string): Promise<void> => {
     const ready = !!flOpSvc;
 
     return !ready ? notify(`error`, `activate - File operation service is not initialized.`) : await flOpSvc?.pasteItems(cpdBms, targetPath);
   };
 
-  // 폴더 내 모든 파일 경로를 재귀적으로 수집 ――――――――――――――――――――――――――――――――――――――――――--
+  // 폴더 내 모든 파일 경로를 재귀적으로 수집 --------------------------------------------
   const cllFlFrFl = async (folderPath: string, visited: Set<string> = new Set()): Promise<string[]> => {
     const files: string[] = [];
     const normPth = nrmlPth(folderPath);
@@ -451,7 +451,7 @@ export const BmProv = (wsRt: string | undefined) => {
     return files;
   };
 
-  // 루트 붙여넣기: 파일명 매칭 → 각 북마크의 실제 경로에 덮어쓰기 ――――――――――――――――――――――――-
+  // 루트 붙여넣기: 파일명 매칭 → 각 북마크의 실제 경로에 덮어쓰기 -------------------------
   const pstItmsTRt = async (): Promise<void> => {
     const actvFlOpSvc = flOpSvc;
     const actvSyncSvc = syncService;
@@ -492,35 +492,35 @@ export const BmProv = (wsRt: string | undefined) => {
     nmTOrigPth.size === 0 ? void vscode.window.showWarningMessage("[Simple-Bookmark] No root file bookmarks to overwrite.") : await actvFlOpSvc.pasteItemsToRoot(cpdBms, nmTOrigPth, srcTOrigPth);
   };
 
-  // 폴더 생성 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 폴더 생성 ---------------------------------------------------------------------------------
   const createFolder = async (parentPath: string, folderName: string): Promise<void> => {
     const ready = !!flOpSvc;
 
     return !ready ? notify(`error`, `activate - File operation service is not initialized.`) : await flOpSvc?.createFolder(parentPath, folderName);
   };
 
-  // 파일 생성 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 파일 생성 ---------------------------------------------------------------------------------
   const createFile = async (parentPath: string, fileName: string): Promise<void> => {
     const ready = !!flOpSvc;
 
     return !ready ? notify(`error`, `activate - File operation service is not initialized.`) : await flOpSvc?.createFile(parentPath, fileName);
   };
 
-  // 원본 파일/폴더 직접 삭제 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 원본 파일/폴더 직접 삭제 ---------------------------------------------------------------------
   const dltOrigItms = async (origPths: string[]): Promise<void> => {
     const ready = !!flOpSvc;
 
     return !ready ? notify(`error`, `activate - File operation service is not initialized.`) : await flOpSvc?.deleteOriginalFiles(origPths.map((originalPath) => vscode.Uri.file(originalPath)));
   };
 
-  // Getter 및 상태 확인 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // Getter 및 상태 확인 --------------------------------------------------------------
   const rootPath = (): string | undefined => bookmarkPath;
   const hsCpdItms = (): boolean => cpdBms.length > 0;
   const dispose = (): void => syncService?.dispose();
   const gtBmStat = (originalPath: string): BmStat => bmStatMp.get(originalPath) || BmStat.SYNCED;
   const isRtBm = (originalPath: string): boolean => !!syncService?.getBookmark(originalPath);
 
-  // 99. return ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 99. return -----------------------------------------------------------------------------
   return {
     onDidChangeTreeData: onDdChgTrDt,
     getTreeItem,

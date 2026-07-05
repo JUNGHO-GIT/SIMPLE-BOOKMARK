@@ -27,7 +27,7 @@ const LOG_CONFIG = {
 
 type NotifyType = keyof typeof LOG_CONFIG;
 
-// 1. Show progress ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// 1. Show progress -------------------------------------------------------------
 const showProgress = async (text: string): Promise<void> => {
   await vscode.window.withProgress(
     {
@@ -43,10 +43,10 @@ const showProgress = async (text: string): Promise<void> => {
   );
 };
 
-// 2. Format notify ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// 2. Format notify -------------------------------------------------------------
 const formatNotify = (type: NotifyType, value: string): string => `[${MAIN}] ${LOG_CONFIG[type].str} ${value}`;
 
-// 3. Notify ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// 3. Notify -------------------------------------------------------------------
 export const notify = async (type: NotifyType, value: string): Promise<void> => {
   await showProgress(formatNotify(type, value));
 };

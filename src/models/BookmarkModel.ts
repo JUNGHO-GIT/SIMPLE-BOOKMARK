@@ -5,7 +5,7 @@ import type { BookmarkMetadata as BmMeta, BookmarkModelType as BmMdlTyp } from "
 import { BookmarkStatus as BmStat } from "@exportTypes";
 
 export const BmMdl = (metadata: BmMeta, status: BmStat=BmStat.SYNCED, options?: { contextValueOverride?: string }): BmMdlTyp => {
-  // 0. 변수 설정 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 0. 변수 설정 ----------------------------------------------------------------------------
   const cllpSt = metadata.isFile ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed;
   const base = new vscode.TreeItem(metadata.bookmarkName, cllpSt) as BmMdlTyp;
 
@@ -54,6 +54,6 @@ export const BmMdl = (metadata: BmMeta, status: BmStat=BmStat.SYNCED, options?: 
   });
   setupDisplay(base);
 
-  // 99. return ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 99. return -----------------------------------------------------------------------------
   return base;
 };

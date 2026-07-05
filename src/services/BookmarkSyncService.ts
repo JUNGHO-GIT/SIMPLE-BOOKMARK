@@ -6,7 +6,7 @@ import type { BookmarkMetadata as BmMeta } from "@exportTypes";
 import { BookmarkStatus as BmStat } from "@exportTypes";
 
 export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, status: BmStat) => void, onRfrsNdd?: () => void) => {
-  // 0. 변수 설정 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 0. 변수 설정 ----------------------------------------------------------------------------
   const bmWtch = new Map<string, vscode.FileSystemWatcher>();
   const wtchPthRfs = new Map<string, Set<string>>();
   const bkmrFls = new Map<string, BmMeta>();
@@ -17,7 +17,7 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
   const SYNC_DBNC_MS = 150;
   const syncTimers = new Map<string, NodeJS.Timeout>();
 
-  // 파일/폴더 존재 여부를 확인 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 파일/폴더 존재 여부를 확인 ---------------------------------------------------------------
   const fileExists = async (p: string): Promise<boolean> => {
     try {
       await vscode.workspace.fs.stat(vscode.Uri.file(p));
@@ -28,17 +28,17 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
     }
   };
 
-  // 동기화 요청을 파일별로 디바운싱 ――――――――――――――――――――――――――――――――――――――――――――――――
+  // 동기화 요청을 파일별로 디바운싱 ------------------------------------------------
   const clrSyncTmrFr = (originalPath: string): void => {
     const exstTmr = syncTimers.get(originalPath);
     exstTmr && clearTimeout(exstTmr);
     syncTimers.delete(originalPath);
   };
 
-  // 파일별 watcher 키 정규화 ――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 파일별 watcher 키 정규화 ------------------------------------------------------
   const nrmlWtchKy = (targetPath: string): string => process.platform === `win32` ? path.resolve(targetPath).toLowerCase() : path.resolve(targetPath);
 
-  // 파일 변경 이벤트 적용 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 파일 변경 이벤트 적용 --------------------------------------------------------
   const qSyncBm = (originalPath: string): void => {
     clrSyncTmrFr(originalPath);
 
@@ -52,13 +52,13 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
     syncTimers.set(originalPath, timer);
   };
 
-  // 파일의 확장자를 보존하여 새 이름을 생성 ――――――――――――――――――――――――――――――――――――――――――――――――
+  // 파일의 확장자를 보존하여 새 이름을 생성 ------------------------------------------------
   const preserveExt = (originalPath: string, newNameRaw: string, isFile: boolean): string => {
     const ext = path.extname(originalPath);
     return isFile && !newNameRaw.includes(".") && ext ? `${newNameRaw}${ext}` : newNameRaw;
   };
 
-  // 고유 파일/폴더명을 생성 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 고유 파일/폴더명을 생성 -----------------------------------------------------------------
   const gnrtUnqFsNm = async (dir: string, baseName: string): Promise<string> => {
     let name = baseName;
     let i = 1;
@@ -71,7 +71,7 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
     return name;
   };
 
-  // 이벤트 기반 동기화 설정 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 이벤트 기반 동기화 설정 ----------------------------------------------------------------
   // - 글로벌 워처 제거
   // - 북마크별 워처만 등록
   // - 문서 저장/변경/삭제 이벤트를 구독하여 북마크 상태를 갱신
@@ -86,7 +86,7 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
     disposables.push(saveListener);
   };
 
-  // 디렉터리별 워처 생성 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 디렉터리별 워처 생성 ------------------------------------------------------------
   // 같은 폴더의 북마크는 하나의 watcher를 공유하여 파일 이벤트 결과를 유지
   const crtWtchFr = (originalPath: string): void => {
     const watcherDir = path.dirname(originalPath);
@@ -119,7 +119,7 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
       })();
   };
 
-  // 특정 원본 경로의 파일시스템 워처 참조를 해제 ――――――――――――――――――――――――――――――――――――――――――――--
+  // 특정 원본 경로의 파일시스템 워처 참조를 해제 ----------------------------------------------
   const dspsWtchFr = (originalPath: string): void => {
     clrSyncTmrFr(originalPath);
     const watcherKey = nrmlWtchKy(path.dirname(originalPath));
@@ -134,7 +134,7 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
     }
   };
 
-  // 병렬 처리 및 배치 상태 업데이트 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 병렬 처리 및 배치 상태 업데이트 -------------------------------------------------------------
   const ldExstBms = async (): Promise<void> => {
     try {
       const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(bookmarkPath));
@@ -185,7 +185,7 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
     }
   };
 
-  // 북마크 추가 (메타데이터 생성 및 저장) ――――――――――――――――――――――――――――――――――――――――――――――――
+  // 북마크 추가 (메타데이터 생성 및 저장) ------------------------------------------------
   const addBookmark = async (originalPath: string, bookmarkName?: string): Promise<void> => {
     try {
       const stat = await vscode.workspace.fs.stat(vscode.Uri.file(originalPath));
@@ -220,7 +220,7 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
     }
   };
 
-  // 고유한 북마크 이름 생성 (중복 방지) ――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 고유한 북마크 이름 생성 (중복 방지) -------------------------------------------------
   const gnrtUnqBmNm = (bookmarkName: string): string => {
     let uniqueName = bookmarkName;
     let counter = 1;
@@ -233,10 +233,10 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
     return uniqueName;
   };
 
-  // 동일한 북마크 이름이 이미 존재하는지 확인 ――――――――――――――――――――――――――――――――――――――――――-
+  // 동일한 북마크 이름이 이미 존재하는지 확인 -------------------------------------------
   const isBmNmExst = (name: string): boolean => bmNms.has(name);
 
-  // 북마크 이름 변경 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 북마크 이름 변경 --------------------------------------------------------------------
   // 북마크 이름 및 원본 파일/폴더 이름을 변경하고 메타데이터를 갱신
   const rnmBm = async (originalPath: string, newNameRaw: string): Promise<void> => {
     const metadata = bkmrFls.get(originalPath);
@@ -308,7 +308,7 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
     onSyncUpdate?.(nwOrigPth, BmStat.SYNCED);
     onRfrsNdd?.();
     logger(`debug`, `rename - ${fnlMtNm} / ${nwOrigPth}`);
-  }; // 북마크 제거 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  }; // 북마크 제거 ------------------------------------------------------------------------
   // - 메타데이터 파일을 삭제하고 워처 및 내부 상태를 정리
   const rmvBm = async (originalPath: string): Promise<void> => {
     const metadata = bkmrFls.get(originalPath);
@@ -329,7 +329,7 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
       })());
   };
 
-  // 특정 북마크 동기화 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 특정 북마크 동기화 ----------------------------------------------------------------
   // 원본 파일 상태에 따라 메타데이터를 갱신하고 상태를 반영
   const syncBookmark = async (originalPath: string): Promise<void> => {
     const metadata = bkmrFls.get(originalPath);
@@ -353,14 +353,14 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
       })());
   };
 
-  // 북마크 상태 갱신 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 북마크 상태 갱신 ------------------------------------------------------------------
   // - 외부에서 전달된 상태를 즉시 반영하고 새로고침 요청
   const updtBmStat = async (originalPath: string, status: BmStat): Promise<void> => {
     onSyncUpdate?.(originalPath, status);
     onRfrsNdd?.();
   };
 
-  // 북마크 상태 확인 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 북마크 상태 확인 ----------------------------------------------------------------
   // - 파일 존재 여부 검사
   const chckBmStat = async (metadata: BmMeta): Promise<BmStat> => {
     try {
@@ -372,16 +372,16 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
     }
   };
 
-  // 북마크 여부 확인 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 북마크 여부 확인 ----------------------------------------------------------------
   const isBkmrFl = (filePath: string): boolean => bkmrFls.has(filePath);
 
-  // 메타데이터 조회 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 메타데이터 조회 -----------------------------------------------------------------
   const gtAllBms = (): BmMeta[] => Array.from(bkmrFls.values());
 
-  // 특정 메타데이터 조회 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 특정 메타데이터 조회 --------------------------------------------------------------
   const getBookmark = (originalPath: string): BmMeta | undefined => bkmrFls.get(originalPath);
 
-  // 원본 경로 변경 시 메타데이터 갱신 ―――――――――――――――――――――――――――――――――――――――――――――--
+  // 원본 경로 변경 시 메타데이터 갱신 -----------------------------------------------
   const updtOrigPth = async (oldPath: string, newPath: string): Promise<void> => {
     const metadata = bkmrFls.get(oldPath);
 
@@ -402,13 +402,13 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
       })());
   };
 
-  // 메타데이터 저장 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 메타데이터 저장 --------------------------------------------------------------------
   const saveMetadata = async (metadataPath: string, metadata: BmMeta): Promise<void> => {
     const content = JSON.stringify(metadata, null, 2);
     await vscode.workspace.fs.writeFile(vscode.Uri.file(metadataPath), textEncoder.encode(content));
   };
 
-  // 메타데이터 로드 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 메타데이터 로드 --------------------------------------------------------------------
   const loadMetadata = async (metadataPath: string): Promise<BmMeta | null> => {
     try {
       const content = await vscode.workspace.fs.readFile(vscode.Uri.file(metadataPath));
@@ -419,7 +419,7 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
     }
   };
 
-  // 리소스 정리 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 리소스 정리 -------------------------------------------------------------------
   const dispose = (): void => {
     disposables.forEach((d) => {
       d.dispose();
@@ -437,13 +437,13 @@ export const BmSyncSvc = (bookmarkPath: string, onSyncUpdate?: (p: string, statu
     bmNms.clear();
   };
 
-  // 초기화 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 초기화 ----------------------------------------------------------------------------
   stpEvtLstn();
   ldExstBms().catch ((err) => {
     logger(`error`, `activate - ${err instanceof Error ? err.message : String(err)}`);
   });
 
-  // 99. return ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 99. return -----------------------------------------------------------------------------
   return {
     addBookmark,
     renameBookmark: rnmBm,

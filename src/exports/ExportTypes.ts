@@ -6,7 +6,7 @@ import type { BookmarkOperationService as BmOpSvcFctr, BookmarkSyncService as Bm
 import type { Minimatch } from "minimatch";
 import type { TreeItem } from "vscode";
 
-// 북마크 메타데이터 인터페이스 ――――――――――――――――――――――――――――――――――――――――――――――――-
+// 북마크 메타데이터 인터페이스 -------------------------------------------------
 export interface BookmarkMetadata {
   bookmarkName: string;
   createdAt: number;
@@ -15,21 +15,21 @@ export interface BookmarkMetadata {
   originalExists: boolean;
   originalPath: string;
 }
-// 북마크 항목 상태 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// 북마크 항목 상태 ------------------------------------------------------------
 export enum BookmarkStatus {
   SYNCED = "synced",
   MODIFIED = "modified",
   MISSING = "missing",
   ERROR = `error`,
 }
-// commands ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+// commands -----------------------------------------------------------------------
 export type BookmarkCommandType = ReturnType<typeof BmCmd>;
 export type ExcludeRuleType = {
   matcher: Minimatch;
   when?: string;
 };
 
-// models ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+// models -------------------------------------------------------------------------
 export type BookmarkModelType = TreeItem & {
   originalPath: string;
   bookmarkMetadata: BookmarkMetadata;
@@ -39,9 +39,9 @@ export type BookmarkModelType = TreeItem & {
   _ancestorPaths?: Set<string>;
 };
 
-// providers ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+// providers ----------------------------------------------------------------------
 export type BookmarkProviderType = ReturnType<typeof BmProvFctr>;
 
-// services ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+// services -----------------------------------------------------------------------
 export type BookmarkOperationServiceType = ReturnType<typeof BmOpSvcFctr>;
 export type BookmarkSyncServiceType = ReturnType<typeof BmSySvFc>;

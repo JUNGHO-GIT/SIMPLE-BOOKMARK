@@ -8,11 +8,11 @@ const MEEF = 250;
 const CLPB_LN_PAT = /\r?\n/;
 type ExpandBudget = { count: number; limited: boolean };
 
-// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// ------------------------------------------------------------------------------
 // 1. 북마크 명령
-// ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+// ------------------------------------------------------------------------------
 export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) => {
-  // 0. 변수 설정 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 0. 변수 설정 ----------------------------------------------------------------------------
   const exclRlCch = new LRUCache<string, ExclRlTyp[]>(50);
   let selBms: BmMdlTyp[] = [];
   const mnmtOpts = {
@@ -26,16 +26,16 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
     return typeof whenClause === "string" ? whenClause : undefined;
   };
 
-  // 윈도우 경로 구분자를 POSIX 형식("/")으로 변환 ――――――――――――――――――――――――――――――――――――――――――--
+  // 윈도우 경로 구분자를 POSIX 형식("/")으로 변환 --------------------------------------------
   const toPosixPath = (value: string): string => value.replace(/\\/g, "/");
 
-  // 워크스페이스 폴더 기준의 상대 경로를 구하고 POSIX 형식으로 반환 ――――――――――――――――――――――――--
+  // 워크스페이스 폴더 기준의 상대 경로를 구하고 POSIX 형식으로 반환 --------------------------
   const gtRltvPth = (folder: vscode.WorkspaceFolder, target: vscode.Uri): string => {
     const relative = path.relative(folder.uri.fsPath, target.fsPath);
     return relative ? toPosixPath(relative) : "";
   };
 
-  // files.exclude 설정을 읽어 Minimatch 규칙 목록을 생성/캐시 ――――――――――――――――――――――――――――――--
+  // files.exclude 설정을 읽어 Minimatch 규칙 목록을 생성/캐시 --------------------------------
   const gtExRlTyFrFl = (folder: vscode.WorkspaceFolder): ExclRlTyp[] => {
     const cacheKey = folder.uri.toString(true);
     const cached = exclRlCch.get(cacheKey);
@@ -67,7 +67,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
       );
   };
 
-  // 조건부 숨김 여부를 결정 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 조건부 숨김 여부를 결정 --------------------------------------------------------------------
   const evltWhnCls = async (whenClause: string, folder: vscode.WorkspaceFolder, relativePath: string): Promise<boolean> => whenClause.includes("$(basename)") ? await (async () => {
           const fileName = path.posix.basename(relativePath);
           const extension = path.posix.extname(fileName);
@@ -87,7 +87,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
           }
         })() : false;
 
-  // 스킵할지 여부를 판단 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 스킵할지 여부를 판단 -----------------------------------------------------------------------
   const shldSkpEntr = async (uri: vscode.Uri, folderHint?: vscode.WorkspaceFolder, kind?: vscode.FileType): Promise<boolean> => {
     const folder = folderHint ?? vscode.workspace.getWorkspaceFolder(uri);
     return !folder ? false : (
@@ -129,19 +129,19 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
       );
   };
 
-  // 비동기 흐름 제어 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 비동기 흐름 제어 -----------------------------------------------------------------------
   const delay = async (ms: number): Promise<void> => {
     await new Promise((resolve) => {
       setTimeout(resolve, ms);
     });
   };
 
-  // 하위 경로 여부 확인 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 하위 경로 여부 확인 -----------------------------------------------------------------------
   const isWithinPath = (parentPath: string, targetPath: string): boolean => {
     const relative = path.relative(parentPath, targetPath);
     return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
   };
-  // 1. 폴더 북마크 재귀 수집 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 1. 폴더 북마크 재귀 수집 -------------------------------------------------------------
   const cllcFldrBms = async (item?: BmMdlTyp, visited: Set<string> = new Set()): Promise<BmMdlTyp[]> => {
     const children = item ? await provider.getChildren(item) : await provider.getChildren();
     const folders: BmMdlTyp[] = [];
@@ -162,7 +162,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
     return folders;
   };
 
-  // 2. 폴더 펼침 상태 일괄 반영 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 2. 폴더 펼침 상태 일괄 반영 ----------------------------------------------------------
   const stFldrExpnSt = async (expanded: boolean): Promise<void> => {
     const folders = await cllcFldrBms();
 
@@ -172,7 +172,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
     provider.refresh();
   };
 
-  // Explorer 항목을 재귀적으로 확장 ――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // Explorer 항목을 재귀적으로 확장 ------------------------------------------------------
   const expAlExFl = async (): Promise<boolean> => {
     const budget: ExpandBudget = { count: 0, limited: false };
     try {
@@ -196,7 +196,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
     return budget.limited;
   };
 
-  // 지정된 폴더와 하위 폴더 순차적으로 확장 ――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 지정된 폴더와 하위 폴더 순차적으로 확장 --------------------------------------------------
   const expnFldrRcrs = async (folderUri: vscode.Uri, budget: ExpandBudget): Promise<void> => {
     try {
       if (budget.count >= MEEF) {
@@ -241,19 +241,19 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
     }
   };
 
-  // 선택된 아이템 업데이트 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 선택된 아이템 업데이트 -----------------------------------------------------------------
   const updtSelBm = (items: BmMdlTyp[]): void => {
     selBms = items;
   };
 
-  // 북마크 새로고침 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 북마크 새로고침 -------------------------------------------------------------------------
   const rgstRfrsCmd = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.refreshentry", () => {
       logger(`debug`, `select - Refresh command executed`);
       provider.refresh();
     });
 
-  // URI 기반 북마크 추가 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // URI 기반 북마크 추가 -----------------------------------------------------------------
   const addBmFrmUr = async (targetUri: vscode.Uri): Promise<void> => {
     const stat = await vscode.workspace.fs.stat(targetUri);
     const bookmarkName = path.basename(targetUri.fsPath);
@@ -267,7 +267,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
     }
   };
 
-  // 북마크 추가 (Explorer 선택 기반) ――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 북마크 추가 (Explorer 선택 기반) --------------------------------------------------------
   const rgstAddBmCmd = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.addbookmark", async (uri?: vscode.Uri) => {
       if (uri) {
@@ -287,7 +287,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
       }
     });
 
-  // 북마크 제거 (북마크만 또는 북마크 + 원본 선택 삭제) ―――――――――――――――――――――――――――――――――――――――――――――--
+  // 북마크 제거 (북마크만 또는 북마크 + 원본 선택 삭제) -----------------------------------------------
   const rgstRmvBmCmd = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.removebookmark", async (item?: BmMdlTyp, selItms?: BmMdlTyp[]) => {
       const commandItems = selItms && selItms.length > 0 ? selItms : item ? [item] : selBms;
@@ -349,7 +349,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
           })();
     });
 
-  // 북마크 이름 변경 (루트뿐 아니라 모든 상황에서 허용) ―――――――――――――――――――――――――――――――――――――――--
+  // 북마크 이름 변경 (루트뿐 아니라 모든 상황에서 허용) -----------------------------------------
   const rgstRnmBmCmd = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.renamebookmark", async (item?: BmMdlTyp) => {
       const target: BmMdlTyp | undefined = item || (selBms.length > 0 ? selBms[0] : undefined);
@@ -373,7 +373,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
           })();
     });
 
-  // 복사 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 복사 ----------------------------------------------------------------------------------
   const rgstCpyBmCmd = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.copybookmark", (item?: BmMdlTyp, selected?: BmMdlTyp[]) => {
       let targets: BmMdlTyp[] = Array.isArray(selected) && selected.length > 0 ? selected : selBms.length > 0 ? selBms : item ? [item] : [];
@@ -394,7 +394,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
           })();
     });
 
-  // 붙여넣기 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 붙여넣기 ---------------------------------------------------------------------------
   const rgstPstBmCmd = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.pastebookmark", async (item?: BmMdlTyp) => {
       if (!provider.hasCopiedItems()) {
@@ -431,14 +431,14 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
       }
     });
 
-  // 붙여넣기(루트 전용) ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 붙여넣기(루트 전용) -----------------------------------------------------------------
   const rgsPsTRtBmCm = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.pasterootbookmark", async () => !provider.hasCopiedItems() ? notify(`error`, `paste - Nothing to paste: clipboard is empty.`) : await (async () => {
             await provider.pasteItemsToRoot();
             provider.refresh();
           })());
 
-  // 모든 북마크 삭제 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 모든 북마크 삭제 --------------------------------------------------------------------
   const rgsDlAlBmCm = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.removeallbookmark", async () => {
       const allItems = await provider.getChildren();
@@ -472,7 +472,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
           })();
     });
 
-  // 폴더 생성 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 폴더 생성 --------------------------------------------------------------------------
   const rgsCrFlCm = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.createfolder", async (item?: BmMdlTyp) => {
       const folderName = await vscode.window.showInputBox({
@@ -502,7 +502,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
         );
     });
 
-  // 파일 생성 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 파일 생성 --------------------------------------------------------------------------
   const rgstCrtFlCmd = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.createfile", async (item?: BmMdlTyp) => {
       const fileName = await vscode.window.showInputBox({
@@ -532,7 +532,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
         );
     });
 
-  // 3. 선택 폴더 펼침 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 3. 선택 폴더 펼침 ------------------------------------------------------------------
   const rgsExBmFlCm = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.expandbookmarkfolder", async (item?: BmMdlTyp) => {
       const target: BmMdlTyp | undefined = item || (selBms.length > 0 ? selBms[0] : undefined);
@@ -549,18 +549,18 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
       }
     });
 
-  // 4. 전체 북마크 펼침 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 4. 전체 북마크 펼침 -----------------------------------------------------------------
   const rgsExAlBmCm = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.expandallbookmarks", async () => {
       await stFldrExpnSt(true);
     });
 
-  // 5. 전체 북마크 접힘 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 5. 전체 북마크 접힘 -----------------------------------------------------------------
   const rgsClAlBmCm = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.collapseallbookmarks", async () => {
       await stFldrExpnSt(false);
     });
-  // 탐색기 전체 확장 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 탐색기 전체 확장 ------------------------------------------------------------------
   const rgsExExCm = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.expandexplorer", async () => {
       logger(`debug`, `select - registerExpandExplorerCommand`);
@@ -577,7 +577,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
           })();
     });
 
-  // 특정 폴더 확장 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 특정 폴더 확장 ---------------------------------------------------------------------
   const rgsExFlCm = (): vscode.Disposable =>
     vscode.commands.registerCommand("Simple-Bookmark.expandfolder", async (uri: vscode.Uri) => {
       logger(`debug`, `expand - ${uri?.fsPath}`);
@@ -625,7 +625,7 @@ export const BmCmd = (provider: BmProvTyp, _context: vscode.ExtensionContext) =>
       }
     });
 
-  // 99. return ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 99. return -----------------------------------------------------------------------------
   return {
     updateSelectedBookmark: updtSelBm,
     registerCommands: (): vscode.Disposable[] => [rgstRfrsCmd(), rgstAddBmCmd(), rgstRmvBmCmd(), rgstRnmBmCmd(), rgstCpyBmCmd(), rgstPstBmCmd(), rgsPsTRtBmCm(), rgsDlAlBmCm(), rgsCrFlCm(), rgstCrtFlCmd(), rgsExBmFlCm(), rgsExAlBmCm(), rgsClAlBmCm(), rgsExExCm(), rgsExFlCm()],

@@ -12,7 +12,7 @@ export const deactivate = () => {};
 // 1-2. activate
 export const activate = (context: vscode.ExtensionContext) => {
 
-  // 0. Initialize Logger ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 0. Initialize Logger ------------------------------------------------------------------------
   initLogger();
   logger(`info`, `Simple-Bookmark is now active!`);
   const wsRt = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0 ? vscode.workspace.workspaceFolders[0].uri.fsPath : undefined;

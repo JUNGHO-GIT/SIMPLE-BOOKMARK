@@ -5,10 +5,10 @@ import { logger, notify, validateFileName as valFlNm } from "@exportScripts";
 import type { BookmarkSyncServiceType as BmSyncSvcTyp } from "@exportTypes";
 
 export const BmOpSvc = (bookmarkPath: string, _syncService?: BmSyncSvcTyp) => {
-  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // -----------------------------------------------------------------------------------------
   logger(`debug`, `activate - ${bookmarkPath}`);
 
-  // 모든 파일 경로(flat) 목록을 반환 ――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 모든 파일 경로(flat) 목록을 반환 --------------------------------------------------------
   const flttTFls = async (uri: vscode.Uri, visited: Set<string> = new Set()): Promise<string[]> => {
     const currentPath = process.platform === `win32` ? path.resolve(uri.fsPath).toLowerCase() : path.resolve(uri.fsPath);
     if (visited.has(currentPath)) {
@@ -38,7 +38,7 @@ export const BmOpSvc = (bookmarkPath: string, _syncService?: BmSyncSvcTyp) => {
     return flttFls;
   };
 
-  // 파일 경로 비교를 위해 정규화 ―――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 파일 경로 비교를 위해 정규화 -----------------------------------------------------
   const nrmlFrCmpr = (p: string): string => process.platform === `win32` ? path.resolve(p).toLowerCase() : path.resolve(p);
   const isSameFsPath = (a: string, b: string): boolean => nrmlFrCmpr(a) === nrmlFrCmpr(b);
   const isSubPath = (parent: string, child: string): boolean => {
@@ -46,7 +46,7 @@ export const BmOpSvc = (bookmarkPath: string, _syncService?: BmSyncSvcTyp) => {
     return rel.length > 0 && !rel.startsWith(`..`) && !path.isAbsolute(rel);
   };
 
-  // 파일 또는 폴더를 대상 위치로 복사 ――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 파일 또는 폴더를 대상 위치로 복사 ------------------------------------------------------
   const cpyFlOrFldr = async (source: string, target: string): Promise<void> => {
     const srcUri = vscode.Uri.file(source);
     const tgtUri = vscode.Uri.file(target);
@@ -82,7 +82,7 @@ export const BmOpSvc = (bookmarkPath: string, _syncService?: BmSyncSvcTyp) => {
       })();
   };
 
-  // 파일/폴더 붙여넣기 (강제 덮어쓰기) - 일반 폴더 대상 ―――――――――――――――――――――――――――――――――――――――
+  // 파일/폴더 붙여넣기 (강제 덮어쓰기) - 일반 폴더 대상 ---------------------------------------
   const pasteItems = async (copiedItems: vscode.Uri[], targetPath: string): Promise<void> => {
     const proceed = copiedItems.length > 0;
 
@@ -144,7 +144,7 @@ export const BmOpSvc = (bookmarkPath: string, _syncService?: BmSyncSvcTyp) => {
     logger(`debug`, `paste - ${pasteCount}`);
   };
 
-  // 루트 붙여넣기 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 루트 붙여넣기 -------------------------------------------------------------
   const pstItmsTRt = async (copiedItems: vscode.Uri[], nmTOrigPth: Map<string, string>, srcTOrigPth: Map<string, string> = new Map()): Promise<void> => {
     const proceed = copiedItems.length > 0;
 
@@ -205,7 +205,7 @@ export const BmOpSvc = (bookmarkPath: string, _syncService?: BmSyncSvcTyp) => {
     skipped.length > 0 && notify(`warn`, `paste - ${skipped.length} files skipped (no matching original names)`);
   };
 
-  // 실제 원본 파일/폴더 삭제 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 실제 원본 파일/폴더 삭제 -------------------------------------------------------------
   const dltOrigFls = async (items: vscode.Uri[]): Promise<void> => {
     let deleteCount = 0;
 
@@ -226,7 +226,7 @@ export const BmOpSvc = (bookmarkPath: string, _syncService?: BmSyncSvcTyp) => {
     notify(`info`, `remove - ${successValue}`);
   };
 
-  // 실제 위치에 새 폴더 생성 ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-
+  // 실제 위치에 새 폴더 생성 -------------------------------------------------------------
   const createFolder = async (parentPath: string, folderName: string): Promise<void> => {
     const error = valFlNm(folderName);
 
@@ -248,7 +248,7 @@ export const BmOpSvc = (bookmarkPath: string, _syncService?: BmSyncSvcTyp) => {
         })();
   };
 
-  // 실제 위치에 새 파일 생성 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 실제 위치에 새 파일 생성 ---------------------------------------------------------------
   const createFile = async (parentPath: string, fileName: string): Promise<void> => {
     const error = valFlNm(fileName);
 
@@ -278,12 +278,12 @@ export const BmOpSvc = (bookmarkPath: string, _syncService?: BmSyncSvcTyp) => {
         })();
   };
 
-  // 북마크 폴더 경로 업데이트 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 북마크 폴더 경로 업데이트 -----------------------------------------------------------
   const updtBmPth = (newPath: string): void => {
     bookmarkPath = newPath;
   };
 
-  // 99. return ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
+  // 99. return -----------------------------------------------------------------------------
   return {
     pasteItems,
     pasteItemsToRoot: pstItmsTRt,
