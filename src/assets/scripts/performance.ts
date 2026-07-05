@@ -44,43 +44,5 @@ export class LRUCache<K, V> {
     return this.cache.size;
   }
 }
-// 1-8. debounce
-export const debounce = <Args extends unknown[]>(func: (...args: Args) => void, delay: number): ((...args: Args) => void) => {
-  let timeoutId: NodeJS.Timeout | null = null;
-
-  return (...args: Args) => {
-    timeoutId && clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => {
-      func(...args);
-      timeoutId = null;
-    }, delay);
-  };
-};
-
-// 1-9. batchProcess
-export const batchProcess = async <T, R>(items: T[], processor: (item: T) => Promise<R>, batchSize: number = 10): Promise<R[]> => {
-  const results: R[] = [];
-  const totalBatches = Math.ceil(items.length / batchSize);
-
-  for (let i = 0; i < totalBatches; i++) {
-    const start = i * batchSize;
-    const end = Math.min(start + batchSize, items.length);
-    const batch = items.slice(start, end);
-    const batchResults = await Promise.all(batch.map(processor));
-    results.push(...batchResults);
-  }
-  return results;
-};
-
-// 1-10. isFileType
+// 1-8. isFileType
 export const isFileType = (type: number, target: number): boolean => (type & target) === target;
-
-// 1-11. safeJsonParse
-export const sfJsnPrs = <T>(jsonString: string): T | null => {
-  try {
-    return JSON.parse(jsonString) as T;
-  }
-  catch {
-    return null;
-  }
-};

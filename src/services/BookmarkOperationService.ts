@@ -7,7 +7,6 @@ import type { BookmarkSyncServiceType as BmSyncSvcTyp } from "@exportTypes";
 export const BmOpSvc = (bookmarkPath: string, _syncService?: BmSyncSvcTyp) => {
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
   logger(`debug`, `activate - ${bookmarkPath}`);
-  logger(`debug`, `activate - syncService initialized`);
 
   // 모든 파일 경로(flat) 목록을 반환 ――――――――――――――――――――――――――――――――――――――――――――――――――――――--
   const flttTFls = async (uri: vscode.Uri, visited: Set<string> = new Set()): Promise<string[]> => {
@@ -279,21 +278,6 @@ export const BmOpSvc = (bookmarkPath: string, _syncService?: BmSyncSvcTyp) => {
         })();
   };
 
-  // 파일 변경 감지 (존재 여부 확인) ―――――――――――――――――――――――――――――――――――――――――――――――――――-
-  const chckFrChgs = async (filePaths: string[]): Promise<string[]> => {
-    const changedFiles: string[] = [];
-
-    for (const filePath of filePaths) {
-      try {
-        await vscode.workspace.fs.stat(vscode.Uri.file(filePath));
-      }
-      catch {
-        changedFiles.push(filePath);
-      }
-    }
-    return changedFiles;
-  };
-
   // 북마크 폴더 경로 업데이트 ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――--
   const updtBmPth = (newPath: string): void => {
     bookmarkPath = newPath;
@@ -306,7 +290,6 @@ export const BmOpSvc = (bookmarkPath: string, _syncService?: BmSyncSvcTyp) => {
     deleteOriginalFiles: dltOrigFls,
     createFolder,
     createFile,
-    checkForChanges: chckFrChgs,
     updateBookmarkPath: updtBmPth,
   };
 };
