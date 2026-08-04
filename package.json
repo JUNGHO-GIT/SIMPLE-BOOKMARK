@@ -6,7 +6,7 @@
   "icon": "logo.webp",
   "license": "Apache-2.0",
   "main": "./out/extension.js",
-  "version": "4.2.6",
+  "version": "4.2.7",
   "repository": {
     "type": "git",
     "url": "https://github.com/jungho-dev/simple-bookmark.git"
@@ -332,36 +332,36 @@
     }
   },
   "engines": {
-    "vscode": ">=1.125.0",
+    "vscode": ">=1.116.0",
     "node": ">=21.0.0",
     "npm": ">=10.0.0",
     "pnpm": ">=9.0.0"
   },
   "scripts": {
-    "git": "bun run ~/.bootstrap/bootstrap-sync.ts --git",
-    "swc": "bun run ~/.bootstrap/bootstrap-sync.ts --swc",
-    "sync": "bun run ~/.bootstrap/bootstrap-sync.ts --sync",
-    "tools": "bun run ~/.bootstrap/bootstrap-sync.ts --tools"
+    "git": "bun ~/.bootstrap/bootstrap-sync.ts --git",
+    "swc": "bun ~/.bootstrap/bootstrap-sync.ts --swc",
+    "sync": "bun ~/.bootstrap/bootstrap-sync.ts --sync",
+    "tools": "bun ~/.bootstrap/bootstrap-sync.ts --tools"
   },
   "dependencies": {
-    "minimatch": "^10.2.5"
+    "minimatch": "^10.2.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.2",
+    "@biomejs/biome": "2.5.6",
     "@swc/cli": "^0.8.1",
-    "@swc/core": "^1.15.43",
+    "@swc/core": "^1.15.47",
     "@swc/helpers": "^0.5.23",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^26.1.0",
-    "@types/vscode": "^1.125.0",
-    "@vscode/test-electron": "^3.0.0",
+    "@types/node": "^26.1.2",
+    "@types/vscode": "1.116.0",
+    "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^3.9.2",
-    "concurrently": "^10.0.3",
+    "concurrently": "^10.0.4",
     "esbuild": "^0.28.1",
-    "mocha": "^11.7.6",
+    "mocha": "^11.8.0",
     "ts-morph": "^28.0.0",
     "ts-prune": "^0.10.3",
-    "tsc-alias": "^1.9.0",
-    "typescript": "^6.0.3"
+    "tsc-alias": "^1.9.1",
+    "typescript": "^7.0.2"
   }
 }
