@@ -6,7 +6,7 @@
   "icon": "logo.webp",
   "license": "Apache-2.0",
   "main": "./out/extension.js",
-  "version": "4.2.7",
+  "version": "4.2.8",
   "repository": {
     "type": "git",
     "url": "https://github.com/jungho-dev/simple-bookmark.git"
@@ -347,21 +347,21 @@
     "minimatch": "^10.2.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.6",
+    "@biomejs/biome": "2.5.11",
     "@swc/cli": "^0.8.1",
-    "@swc/core": "^1.15.47",
+    "@swc/core": "^1.16.1",
     "@swc/helpers": "^0.5.23",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^26.1.2",
+    "@types/node": "^26.4.0",
     "@types/vscode": "1.116.0",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^3.9.2",
-    "concurrently": "^10.0.4",
-    "esbuild": "^0.28.1",
+    "concurrently": "^10.0.5",
+    "esbuild": "^0.28.2",
     "mocha": "^11.8.0",
     "ts-morph": "^28.0.0",
     "ts-prune": "^0.10.3",
-    "tsc-alias": "^1.9.1",
+    "tsc-alias": "^1.9.2",
     "typescript": "^7.0.2"
   }
 }
